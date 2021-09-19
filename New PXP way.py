@@ -299,7 +299,7 @@ def Fig2A(EigenEnVecs,Op): #checking the expectation values with final H eigenve
     plt.ylabel(r'$\langle\hat{O}^{Z}\rangle$')
     plt.savefig('Expectation_Value_OZ.pdf')
     return plt.show()
-Fig2A(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m),SubspaceMat(m, O_z(m)))
+# Fig2A(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m),SubspaceMat(m, O_z(m)))
 #Fig2A(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m),SubspaceMat(m, Z_1(m)))
 
 def Fig2Aalt(EigenEnVecs,Op): #an alternative way of checking the expectation values
