@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
+from scipy import integrate
 
 #####OPERATOR AND BASIS DEFINITIONS#####
 
@@ -19,6 +20,7 @@ Q_i=np.array([[1,0],[0,0]]) #projector on rydberg state (density of excited stat
 P_i=np.array([[0,0],[0,1]]) #projector on ground state (density of ground states) |g><g|
 # print("P_i = \n",P_i)
 
+Z_i=np.array([[1,0],[0,-1]]) # pauli Z
 
 
 def Z_1(n):
@@ -297,10 +299,12 @@ def Fig2A(EigenEnVecs,Op): #checking the expectation values with final H eigenve
         plt.plot(Eval[j],  np.real(y[j,j]), marker='.', color='C2')
     plt.xlabel('$A_n/A_{n-1}$')
     plt.ylabel(r'$\langle\hat{O}^{Z}\rangle$')
-    plt.savefig('Expectation_Value_OZ.pdf')
+    #plt.savefig('Expectation_Value_OZ.pdf')
     return plt.show()
 # Fig2A(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m),SubspaceMat(m, O_z(m)))
 #Fig2A(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m),SubspaceMat(m, Z_1(m)))
+
+#TODO I GOT UP TO HERE WITH TRANSFERING CODES TO THE NEW PROJECT!!!!!!
 
 def Fig2Aalt(EigenEnVecs,Op): #an alternative way of checking the expectation values
     Eval, Evec = EigenEnVecs
@@ -310,7 +314,7 @@ def Fig2Aalt(EigenEnVecs,Op): #an alternative way of checking the expectation va
         plt.plot(Eval[j], np.real(y), marker='.', color='blue')
     plt.xlabel('$A_n/A_{n-1}$')
     plt.ylabel(r'$\langle\hat{O}^{Z}\rangle$')
-    plt.savefig('Expectation_Value_OZ.pdf')
+    #plt.savefig('Expectation_Value_OZ.pdf')
     return plt.show()
 #Fig2Aalt(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m), SubspaceMat(m, O_z(m)))
 #Fig2Aalt(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m), SubspaceMat(m, Z_1(m)))
@@ -392,4 +396,331 @@ def TimePropnew(EigenEnVecs,Subspcdim,Spans): #time propagation of each eigensta
         plt.savefig('fidelity_12atoms.pdf')
         #plt.title('Quantum Fidelity of the Neel State vs. Time')
     return plt.show()
-#TimePropnew(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m),Subspccount(m), EigenSpan(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m), Neelstate(m)))
+TimePropnew(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m),Subspccount(m), EigenSpan(EigenEnVecsFin(SubspaceMat(m, PXPHamPBC(m)), SubspaceMat(m, T_op(m)), m), Neelstate(m)))
+
+
+#==================================PXP BATH!======================================#
+
+def PXPHamOBC(n):
+    d= 2**n
+    pxp_fin = np.zeros((d, d))
+    for i in range(1, n+1):  # goes over all atoms for total sum in the end
+        piminus1 = P_i
+        xi = X_i
+        piplus1 = P_i
+        for m in range(1, n):  # for kronecker product of P_(i-1)
+            if i == 1:
+                piminus1 = np.identity(d)
+            elif m < i - 1:
+                piminus1 = np.kron(np.identity(2), piminus1)
+            else:
+                piminus1 = np.kron(piminus1, np.identity(2))
+            #OKOKOKOKOKOKOKOKOKOK
+        for t in range(1, n):  # for kronecker product of X_(i)
+            if t < i:
+                xi = np.kron(np.identity(2), xi)
+            else:
+                xi = np.kron(xi, np.identity(2))
+            #OKOKOKOKOKOKOKOKOKOK
+        for c in range(1, n):  # for kronecker product of P_(i+1)
+            if i == n:
+                piplus1 = np.identity(d)
+            elif c < i + 1:
+                piplus1 = np.kron(np.identity(2), piplus1)
+            else:
+                piplus1 = np.kron(piplus1, np.identity(2))
+            #OKOKOKOKOKOKOKOKOK
+        pxp_ar = np.matmul(np.matmul(piminus1, xi), piplus1)  # calculates PXP form for a given site
+        pxp_fin = np.add(pxp_fin, pxp_ar)  # cumulative sum of PXP's
+    return pxp_fin.astype('int32')
+
+# print("\n PXP= \n", PXPHamOBC(4))
+
+def TiltedIsingHam(n,h_x,h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (must be =>2)
+    d= 2**n
+    pxp_fin = np.zeros((d, d))
+    for i in range(1,n+1): # goes over all atoms for total sum in the end
+        zi= Z_i
+        ziplus1=Z_i
+        xi= X_i
+        for m in range(1, n): # For Z_i term (Z_1 up to Z_n)
+            if m < i:
+                zi = np.kron(np.identity(2), zi)
+            else:
+                zi = np.kron(zi, np.identity(2))
+        for t in range(1, n): # For Z_i+1 term PBC
+            if i == n:
+                ziplus1= np.zeros((d,d)) # terminates Z_n*Z_n+1
+            elif t < i + 1:
+                ziplus1= np.kron(np.identity(2), ziplus1)
+            else:
+                ziplus1= np.kron(ziplus1, np.identity(2))
+        for c in range(1, n): # For X_i term
+            if c < i:
+                xi= np.kron(np.identity(2), xi)
+            else:
+                xi= np.kron(xi, np.identity(2))
+        pxp_ar =np.add(np.add(np.matmul(zi, ziplus1),(h_z)*zi),(h_x)*xi) #calculates hamiltonian PER i
+        pxp_fin =np.add(pxp_fin,pxp_ar) # cumulative sum over i
+    return pxp_fin.astype('int32')
+
+# Zi*Zi+1 term always diagonal so Zi*Zi+1=Zi+1*Zi
+
+
+def PXPIsing(ntot, n, hx, hz): #complete hamiltonian of coupled systems OBC, ntot= number of total atoms, n= number of PXP system
+    d= 2**ntot #total dimension of hilbert space
+    pxp_fin= np.zeros((d,d))
+    for i in range(1,ntot + 1): #all initial declarations are already taking in account the separations of the systems)
+        pimin1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        xiPXP = np.kron(X_i,np.identity(2**(ntot-n))) # of PXP model
+        pipl1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        zi = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        zipl1 = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        xiTI = np.kron(np.identity(2**(n-1)),X_i) # of titled Ising model (n-1 due to coupling)
+        for m in range(1,n): # for kronecker product of Pi-1
+            if i > n-1: # stops the PXP chain after n atoms #todo change to n (think if we want to close OBC of PXP before TI or not
+                pimin1= np.zeros((d,d))
+            elif i == 1:  # for XP for first site (OBC)
+                pimin1 = np.identity(d)
+            elif m < i - 1:
+                pimin1 = np.kron(np.identity(2), pimin1)
+            else:
+                pimin1 = np.kron(pimin1, np.identity(2))
+        for t in range(1,n): # for kronecker product of Xi
+            if i > n-1: # stops the PXP chain after n atoms #todo change to n (think if we want to close OBC of PXP before TI or not
+                xiPXP= np.zeros((d,d))
+            elif t < i:
+                xiPXP = np.kron(np.identity(2), xiPXP)
+            else:
+                xiPXP = np.kron(xiPXP, np.identity(2))
+        for c in range(1, n):  # for kronecker product of Pi+1
+            if i > n-1: #stops the PXP chain after n atoms #todo we will never have to change this one, only add identity term like for i==0 for pi-1
+                pipl1 = np.zeros((d,d))
+            elif c < i+1:
+                pipl1 = np.kron(np.identity(2), pipl1)
+            else:
+                pipl1 = np.kron(pipl1, np.identity(2))
+# =======END OF PXP PART============
+        for j in range(n, ntot): # for kronecker product of Zi term
+            if i < n:
+                zi = np.zeros((d,d))
+            elif j < i:
+                zi= np.kron(np.identity(2), zi)
+            else:
+                zi= np.kron(zi, np.identity(2))
+        for b in range(n, ntot): # from kronecker product of Zi+1 term
+            if i < n:
+                zipl1 = np.zeros((d,d))
+            elif b < i+1:
+                zipl1 = np.kron(np.identity(2), zipl1)
+            else:
+                zipl1 = np.kron(zipl1, np.identity(2))
+        for g in range(n, ntot): # for kronecker product of Xi term
+            if i < n:
+                xiTI = np.zeros((d,d))
+            elif g < i:
+                xiTI = np.kron(np.identity(2), xiTI)
+            else:
+                xiTI = np.kron(xiTI, np.identity(2))
+        if i < ntot:
+            pxp_ar = np.matmul(np.matmul(pimin1, xiPXP), pipl1) +np.matmul(zi,zipl1) + (hz) * (zi) + (hx) * (xiTI)
+        else:
+            pxp_ar= np.matmul(np.matmul(pimin1,xiPXP),pipl1)+(hz)*(zi)+(hx)*(xiTI)
+        pxp_fin=np.add(pxp_ar,pxp_fin) #summation of each i's hamiltonian
+    return pxp_fin.astype('int32')
+
+
+def PXPIsing2(ntot, n, hx, hz): ### PXPIsing2 was meant to compare slightly different methods (doesn't count as a serious check..)
+    d= 2**ntot #total dimension of hilbert space
+    pxp_fin= np.zeros((d,d))
+    for i in range(1,ntot + 1): #all initial declarations are already taking in account the separations of the systems)
+        pimin1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        xiPXP = np.kron(X_i,np.identity(2**(ntot-n))) # of PXP model
+        pipl1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        zi = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        zipl1 = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        xiTI = np.kron(np.identity(2**(n-1)),X_i) # of titled Ising model (n-1 due to coupling)
+        for m in range(1,n): # for kronecker product of Pi-1
+            if i > n-1: # stops the PXP chain after n atoms #todo change to n (think if we want to close OBC of PXP before TI or not
+                pimin1= np.zeros((d,d))
+            elif i == 1:  # for XP for first site (OBC)
+                pimin1 = np.identity(d)
+            elif m < i - 1:
+                pimin1 = np.kron(np.identity(2), pimin1)
+            else:
+                pimin1 = np.kron(pimin1, np.identity(2))
+        for t in range(1,n): # for kronecker product of Xi
+            if i > n-1: # stops the PXP chain after n atoms #todo change to n (think if we want to close OBC of PXP before TI or not
+                xiPXP= np.zeros((d,d))
+            elif t < i:
+                xiPXP = np.kron(np.identity(2), xiPXP)
+            else:
+                xiPXP = np.kron(xiPXP, np.identity(2))
+        for c in range(1, n):  # for kronecker product of Pi+1
+            if i > n-1: #stops the PXP chain after n atoms #todo we will never have to change this one, only add identity term like for i==0 for pi-1
+                pipl1 = np.zeros((d,d))
+            elif c < i+1:
+                pipl1 = np.kron(np.identity(2), pipl1)
+            else:
+                pipl1 = np.kron(pipl1, np.identity(2))
+# =======END OF PXP PART============
+        for j in range(n, ntot): # for kronecker product of Zi term
+            if i < n:
+                zi = np.zeros((d,d))
+            elif j < i:
+                zi= np.kron(np.identity(2), zi)
+            else:
+                zi= np.kron(zi, np.identity(2))
+        for b in range(n, ntot): # from kronecker product of Zi+1 term
+            if i < n:
+                zipl1 = np.zeros((d,d))
+            elif i == ntot: #blows up last sum (it's uneccessary)
+                zipl1= np.zeros((d,d))
+            elif b < i+1:
+                zipl1 = np.kron(np.identity(2), zipl1)
+            else:
+                zipl1 = np.kron(zipl1, np.identity(2))
+        for g in range(n, ntot): # for kronecker product of Xi term
+            if i < n:
+                xiTI = np.zeros((d,d))
+            elif g < i:
+                xiTI = np.kron(np.identity(2), xiTI)
+            else:
+                xiTI = np.kron(xiTI, np.identity(2))
+        pxp_ar = np.matmul(np.matmul(pimin1, xiPXP), pipl1) +np.matmul(zi,zipl1) + (hz) * (zi) + (hx) * (xiTI)
+        pxp_fin=np.add(pxp_ar,pxp_fin) #summation of each i's hamiltonian
+    return pxp_fin.astype('int32')
+
+#we took PXP to be OBC only on the left hand side,
+
+
+
+def PXPIsing3(ntot, n, hx, hz): #full OBC version for PXP system
+    d= 2**ntot #total dimension of hilbert space
+    pxp_fin= np.zeros((d,d))
+    for i in range(1,ntot + 1): #all initial declarations are already taking in account the separations of the systems)
+        pimin1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        xiPXP = np.kron(X_i,np.identity(2**(ntot-n))) # of PXP model
+        pipl1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        zi = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        zipl1 = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        xiTI = np.kron(np.identity(2**(n-1)),X_i) # of titled Ising model (n-1 due to coupling)
+        for m in range(1,n): # for kronecker product of Pi-1
+            if i > n: # stops the PXP chain after n+1 atoms
+                pimin1= np.zeros((d,d))
+            elif i == 1:  # for XP for first site (OBC)
+                pimin1 = np.identity(d)
+            elif m < i - 1:
+                pimin1 = np.kron(np.identity(2), pimin1)
+            else:
+                pimin1 = np.kron(pimin1, np.identity(2))
+        for t in range(1,n): # for kronecker product of Xi
+            if i > n: # stops the PXP chain after n+1 atoms
+                xiPXP= np.zeros((d,d))
+            elif t < i:
+                xiPXP = np.kron(np.identity(2), xiPXP)
+            else:
+                xiPXP = np.kron(xiPXP, np.identity(2))
+        for c in range(1, n):  # for kronecker product of Pi+1
+            if i > n: #stops the PXP chain after n atoms
+                pipl1 = np.zeros((d,d))
+            elif i == n:
+                pipl1 = np.identity(d)
+            elif c < i+1:
+                pipl1 = np.kron(np.identity(2), pipl1)
+            else:
+                pipl1 = np.kron(pipl1, np.identity(2))
+# =======END OF PXP PART============
+        for j in range(n, ntot): # for kronecker product of Zi term
+            if i < n:
+                zi = np.zeros((d,d))
+            elif j < i:
+                zi= np.kron(np.identity(2), zi)
+            else:
+                zi= np.kron(zi, np.identity(2))
+        for b in range(n, ntot): # from kronecker product of Zi+1 term
+            if i < n:
+                zipl1 = np.zeros((d,d))
+            elif i == ntot: #blows up last sum (it's uneccessary)
+                zipl1= np.zeros((d,d))
+            elif b < i+1:
+                zipl1 = np.kron(np.identity(2), zipl1)
+            else:
+                zipl1 = np.kron(zipl1, np.identity(2))
+        for g in range(n, ntot): # for kronecker product of Xi term
+            if i < n:
+                xiTI = np.zeros((d,d))
+            elif g < i:
+                xiTI = np.kron(np.identity(2), xiTI)
+            else:
+                xiTI = np.kron(xiTI, np.identity(2))
+        pxp_ar = np.matmul(np.matmul(pimin1, xiPXP), pipl1) +np.matmul(zi,zipl1) + (hz) * (zi) + (hx) * (xiTI)
+        pxp_fin=np.add(pxp_ar,pxp_fin) #summation of each i's hamiltonian
+    return pxp_fin.astype('int32')
+
+
+def PXPIsing4(ntot, n, hx, hz): #Full OBC PXP, faster method
+    d= 2**ntot #total dimension of hilbert space
+    pxp_fin= np.zeros((d,d))
+    for i in range(1,ntot + 1): #all initial declarations are already taking in account the separations of the systems)
+        pimin1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        xiPXP = np.kron(X_i,np.identity(2**(ntot-n))) # of PXP model
+        pipl1 = np.kron(P_i, np.identity(2**(ntot-n))) # of PXP model
+        zi = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        zipl1 = np.kron(np.identity(2**(n-1)),Z_i) # of Tilted Ising model (n-1 due to coupling)
+        xiTI = np.kron(np.identity(2**(n-1)),X_i) # of titled Ising model (n-1 due to coupling)
+        for m in range(1,n): # for kronecker product of Pi-1
+            if i > n: # stops the PXP chain after n+1 atoms
+                pimin1= np.zeros((d,d))
+            elif i == 1:  # for XP for first site (OBC)
+                pimin1 = np.identity(d)
+            elif m < i - 1:
+                pimin1 = np.kron(np.identity(2), pimin1)
+            else:
+                pimin1 = np.kron(pimin1, np.identity(2))
+        for t in range(1,n): # for kronecker product of Xi
+            if i > n: # stops the PXP chain after n+1 atoms
+                xiPXP= np.zeros((d,d))
+            elif t < i:
+                xiPXP = np.kron(np.identity(2), xiPXP)
+            else:
+                xiPXP = np.kron(xiPXP, np.identity(2))
+        for c in range(1, n):  # for kronecker product of Pi+1
+            if i > n: # stops the PXP chain after n+1 atoms
+                pipl1 = np.zeros((d,d))
+            elif c < i+1:
+                pipl1 = np.kron(np.identity(2), pipl1)
+            else:
+                pipl1 = np.kron(pipl1, np.identity(2))
+# =======END OF PXP PART============
+        for j in range(n, ntot): # for kronecker product of Zi term
+            if i < n:
+                zi = np.zeros((d,d))
+            elif j < i:
+                zi= np.kron(np.identity(2), zi)
+            else:
+                zi= np.kron(zi, np.identity(2))
+        for b in range(n, ntot): # from kronecker product of Zi+1 term
+            if i < n:
+                zipl1 = np.zeros((d,d))
+            elif b < i+1:
+                zipl1 = np.kron(np.identity(2), zipl1)
+            else:
+                zipl1 = np.kron(zipl1, np.identity(2))
+        for g in range(n, ntot): # for kronecker product of Xi term
+            if i < n:
+                xiTI = np.zeros((d,d))
+            elif g < i:
+                xiTI = np.kron(np.identity(2), xiTI)
+            else:
+                xiTI = np.kron(xiTI, np.identity(2))
+        if i==ntot:
+            pxp_ar= np.matmul(np.matmul(pimin1,xiPXP),pipl1)+(hz)*(zi)+(hx)*(xiTI)
+        elif i==1:
+            pxp_ar= np.matmul(xiPXP,pipl1)
+        elif i < n:
+            pxp_ar= np.matmul(np.matmul(pimin1,xiPXP),pipl1)
+        elif i > n-1:
+            pxp_ar = np.matmul(np.matmul(pimin1, xiPXP), pipl1) +np.matmul(zi,zipl1) + (hz) * (zi) + (hx) * (xiTI)
+        pxp_fin=np.add(pxp_ar,pxp_fin) #summation of each i's hamiltonian
+    return pxp_fin.astype('int32')
