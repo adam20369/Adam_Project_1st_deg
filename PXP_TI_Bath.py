@@ -99,14 +99,15 @@ def SubspcNeelstate(n):  # outputs the neel state (Z_2) in standard basis in sub
 
 def Neelstate(n): # GENERAL NEELSTATE
     d = 2 ** n
-    k = np.array(n / 2).astype('int32')
-    Neel = np.kron(r, g).astype('int32')
-    for i in range(0, k - 1):
-        Neel = np.kron(np.kron(Neel, r), g)
+    k= np.array(n)
+    Neel= np.array(1)
+    Even= np.arange(0,n,2)
+    for i in range(0,n):
+        if i in Even:
+            Neel = np.kron(Neel, r)
+        else:
+            Neel = np.kron(Neel, g)
     return Neel
-
-
-# TODO even and odd Neelstate??
 
 def PXPHamOBC(n):
     d = 2 ** n
@@ -221,7 +222,7 @@ def Coupling(n_tot, n, Coupmat):
     CoupMat_n = np.kron(np.kron(np.identity(2 ** (n - 1)), Coupmat), np.identity(d_TI))
     CoupMat_nplus1 = np.kron(np.kron(np.identity(d_pxp), Coupmat), np.identity(2 ** (n_tot - (n + 1))))
     Coupterm = np.matmul(CoupMat_n, CoupMat_nplus1)
-    return Coupterm
+    return Coupterm #returns hilbert space matrix of dimension 2**n_tot
 
 
 # TODO check that the coupling is on the right i atoms (n and n+1)
@@ -373,16 +374,16 @@ def TimePropPXP(EigenEnVecs, Subspcdim, Spans,
         Z_2 = np.zeros(Subspcdim)
         Z_2t = np.zeros(Subspcdim)
         for j in range(0, np.size(Eval)):  # alternative way- just multiply evecs as orthogonal ones (easier)
-            Z_2 = Z_2 + np.dot(w[j], Evec[:, j])  # Z_2 spanned in eigenstate basis as Cols of a matrix
+            Z_2 = Z_2 + np.dot(w[j], Evec[:, j])  # Z_2 spanned in eigenstate basis as Cols of a matrix TODO can take it out
             Z_2t = Z_2t + np.dot(np.dot((np.exp(-1j * Eval[j] * t)), w[j]),
                                  Evec[:, j])  # Z_2(t) spanned in eigenstate basis as Cols of a matrix
         y = (np.absolute(np.dot(np.conjugate((Z_2)), (Z_2t)))) ** 2
         plt.plot(t, np.round(y, 4), marker='.', color='C2')
-        plt.xlabel('$t$')
-        plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
-        plt.savefig('fidelity_12atoms.png')
-        plt.title('Quantum Fidelity of the Neel State vs. Time')
-    return plt.show()
+    plt.xlabel('$t$')
+    plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
+    plt.savefig('fidelity_12atoms.png')
+    plt.title('Quantum Fidelity of the Neel State vs. Time')
+    plt.show()
 #TODO FIX NORMALIZATION!!!
 #TimePropPXP(EvecEval(SubspaceMat(m, Hamiltonian)),Subspccount(m,Hamiltonian), EigenSpan(EvecEval(SubspaceMat(m, Hamiltonian)), SubspcNeelstate(m)),T_max)
 
@@ -452,3 +453,6 @@ def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
 #     plt.plot(t, r,  marker= '.', color='c4')
 # plt.title('11 Atoms')
 # plt.show()
+
+if __name__ == '__main__':
+    print('adam')
