@@ -14,6 +14,6 @@ def plotRmetric(n_TI, theta_i, theta_f, res):
         plt.plot(t, r,  marker= '.', color='C4')
     plt.title('Angle dependance of r-metric, {} Atoms'.format(n_TI))
     plt.xlabel(r"$\theta$")
-    plt.ylabel(r"$\langle(r)\rangle$")
+    plt.ylabel(r"$\langle r \rangle$")
 # plotRmetric(10, 1, 2, 500)
 # plt.show()
