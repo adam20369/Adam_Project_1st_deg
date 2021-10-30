@@ -388,7 +388,7 @@ def TimePropPXP(EigenEnVecs, Subspcdim, Spans,
 #TimePropPXP(EvecEval(SubspaceMat(m, Hamiltonian)),Subspccount(m,Hamiltonian), EigenSpan(EvecEval(SubspaceMat(m, Hamiltonian)), SubspcNeelstate(m)),T_max)
 
 def TimeProp(EigenEnVecs, n_tot, Nstate,
-             T_max, Color,marker):  # N_TotGENERAL DIM  time propagation of each eigenstate with it's corresponding eigenenergy
+             T_max, Color, marker):  # N_TotGENERAL DIM  time propagation of each eigenstate with it's corresponding eigenenergy
     Eval, Evec = EigenEnVecs
     w = np.dot(1 / (np.sqrt(normconst(EigenSpan(EigenEnVecs, Nstate)))), (EigenSpan(EigenEnVecs, Nstate)))
     t = np.arange(1, T_max, 0.05)
@@ -401,21 +401,10 @@ def TimeProp(EigenEnVecs, n_tot, Nstate,
             Z_2t = Z_2t + np.dot(np.dot((np.exp(-1j * Eval[j] * t)), w[j]),
                                  Evec[:, j])  # Z_2(t) spanned in eigenstate basis as Cols of a matrix
         y = (np.absolute(np.dot(np.conjugate((Z_2)), (Z_2t)))) ** 2
-        plt.plot(t, np.round(y, 4), marker=marker, markersize=3, color=Color)
+        plt.plot(t, np.round(y, 4), marker=marker, markersize=2, color=Color)
     #plt.show()
 #TODO FIX NORMALIZATION!!!
 
-
-def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, T_max=20):#only even numbers right now
-    """
-    Runs TimeProp
-    """
-    H = PXPBathHam(n_tot, n, Coupl, h_x, h_z)
-    # H= PXPBathHamUncoup(n_tot, n, Coupl, h_x, h_z) # Uncoupled version
-    EV = EvecEval(H)
-    Neel = Neelstate(n_tot)
-    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    TimeProp(EV, n_tot, Neel, T_max,Color)
 
 
 #TODO check if you can throw
