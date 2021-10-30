@@ -7,21 +7,8 @@ from scipy import integrate
 from matplotlib.lines import Line2D
 from PXP_TI_Bath import *
 
-def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, T_max=20):# Time propagation of PXP TI COUPLED
-    """
-    Runs TimeProp
-    """
-    H = PXPBathHam(n_tot, n, Coupl, h_x, h_z)
-    # H= PXPBathHamUncoup(n_tot, n, Coupl, h_x, h_z) # Uncoupled version
-    EV = EvecEval(H)
-    Neel = Neelstate(n_tot)
-    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    markers = np.random.choice(np.array(('s', '^', 'o', '*'))) #TODO could be broken
-    TimeProp(EV, n_tot, Neel, T_max, Color, markers)
-
-
 def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=1, h_z=1, T_max=20): #time propagation of 4 different PXP atom sizes (total N conserved)
-    markers = np.array(('s', '^', 'o', '*'))
+    markers = np.array(('s', '^', 'o', 'X'))
     colors = np.array(('b','r','y','k'))
     n_start= n_Array[0]
     for n in n_Array:
