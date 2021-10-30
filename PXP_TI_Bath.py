@@ -461,6 +461,7 @@ def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
         #print(c)
     r = r / (S.shape[0] - (c+1))  # n-1 minus c+1 more (n-2-c total)
     return r
+
 def plotRmetric(n_TI, theta_i, theta_f, res):
     theta=np.linspace(theta_i, theta_f, res)
     for t in np.nditer(theta):
