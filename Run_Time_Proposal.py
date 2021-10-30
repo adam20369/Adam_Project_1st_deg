@@ -8,7 +8,7 @@ from matplotlib.lines import Line2D
 from PXP_TI_Bath import *
 
 def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=1, h_z=1, T_max=20): #time propagation of 4 different PXP atom sizes (total N conserved)
-    markers = np.array(('s', '^', 'o', 'X'))
+    markers = np.array(('s', '^', 'o', 'd'))
     colors = np.array(('b','r','y','k'))
     n_start= n_Array[0]
     for n in n_Array:
