@@ -7,7 +7,7 @@ from scipy import integrate
 from matplotlib.lines import Line2D
 from PXP_TI_Bath import *
 
-def plotRmetric(n_TI, theta_i, theta_f, res):
+def plotRmetric(n_TI, theta_i, theta_f, res): #running the r metric for a range of thetas
     theta=np.linspace(theta_i, theta_f, res)
     for t in np.nditer(theta):
         r=RunRmetric(n_TI, np.sin(t), np.cos(t), TIOBCNewImpure) #IMPURE MODEL!!

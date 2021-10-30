@@ -237,11 +237,15 @@ def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!
 def Coupling(n_tot, n, Coupmat, h_c): #TODO ADD IF ELSE FOR N-NTOT SMALLER THAN 2
     d_pxp = 2 ** n
     d_TI = 2 ** np.subtract(n_tot, n)
+    d_TOT = 2 ** n_tot
     # d_tot = 2 ** n_tot
-    Coupmat = (h_c)*Coupmat  # the coupling nature (2x2 matrix- usually pauli)
-    CoupMat_n = np.kron(np.kron(np.identity(2 ** (n - 1)), Coupmat), np.identity(d_TI))
-    CoupMat_nplus1 = np.kron(np.kron(np.identity(d_pxp), Coupmat), np.identity(2 ** (n_tot - (n + 1))))
-    Coupterm = np.matmul(CoupMat_n, CoupMat_nplus1)
+    Coupmat = (h_c) * Coupmat  # the coupling nature (2x2 matrix- usually pauli)
+    if np.subtract(n_tot,n)==0 or np.subtract(n_tot,n)==n_tot:
+        Coupterm = np.zeros((d_TOT,d_TOT))
+    else:
+        CoupMat_n = np.kron(np.kron(np.identity(2 ** (n - 1)), Coupmat), np.identity(d_TI))
+        CoupMat_nplus1 = np.kron(np.kron(np.identity(d_pxp), Coupmat), np.identity(2 ** (n_tot - (n + 1))))
+        Coupterm = np.matmul(CoupMat_n, CoupMat_nplus1)
     return Coupterm #returns hilbert space matrix of dimension 2**n_tot
 
 # TODO check that the coupling is on the right i atoms (n and n+1)
@@ -384,7 +388,7 @@ def normconst(EigenSpan):  # sum of the inner products for normalization
 # normconst(EigenSpan(EvecEval(SubspaceMat(m, Hamiltonian)), (SubspaceMat(m, Neelstate(m)))))
 
 def TimePropPXP(EigenEnVecs, Subspcdim, Spans,
-                T_max):  # SUBSPC Dim time propagation of each eigenstate with it's corresponding eigenenergy
+                T_max):  # SUBSPC Dim time propagation of each eigenstate with it's corresponding eigenenergy (OLD)
     Eval, Evec = EigenEnVecs
     w = np.dot(np.divide(1,(np.sqrt(normconst(Spans)))), (Spans))
     t = np.arange(0, T_max, 0.05)
@@ -423,7 +427,7 @@ def TimeProp(EigenEnVecs, n_tot, Nstate,
     #plt.show()
 #TODO FIX NORMALIZATION!!!
 
-def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# Time propagation of PXP TI COUPLED
+def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# 1 Time propagation of PXP TI COUPLED
     """
     Runs TimeProp
     """
@@ -432,7 +436,7 @@ def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# Time propa
     EV = EvecEval(H)
     Neel = Neelstate(n_tot)
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    markers = np.random.choice(np.array(('s', '^', 'o', 'X'))) #TODO could be broken!!!
+    markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
     TimeProp(EV, n_tot, Neel, T_max, Color, markers)
 
 
@@ -440,7 +444,7 @@ def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# Time propa
 #TODO CHeck why it doesn't work for 8 tot and 8 pxp
 #TODO- play with bigger number of atoms
 
-def RunRmetric(n_TI, h_x, h_z, Hamiltonian):
+def RunRmetric(n_TI, h_x, h_z, Hamiltonian): #running the metric for average r per one theta
     H = Hamiltonian(n_TI, h_x, h_z)
     EV = la.eigvalsh(H)
     # print(EV)
