@@ -26,4 +26,6 @@ def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=1, h_z=1, T_max=20): #time propa
     plt.xlabel('$t$')
     plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
     plt.savefig('new fidelity_12atoms.pdf')
-    plt.title('Quantum Fidelity of the Neel State vs. Time')
+    plt.title('Quantum Fidelity of {}-atom Neel State'.format(n_tot))
+# RunTimeProp4(10,np.arange(5,9,1), Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=(0.485*np.pi), T_max=20)
+# plt.show()

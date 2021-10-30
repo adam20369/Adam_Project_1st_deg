@@ -142,7 +142,7 @@ def PXPHamOBC(n):
 
 
 # print("\n PXP= \n", PXPHamOBC(4))
-def PXPOBCNew(n):  # OBC #TODO WORKS!
+def PXPOBCNew(n):  # OBC
     d = 2 ** n
     pxp_fin = np.zeros((d, d))
     for i in range(0, n):  # goes over all atoms (i [from 0 to n-1]= the atom) for total sum in the end
@@ -196,7 +196,7 @@ def TiltedIsingHam(n, h_x, h_z):  # Tilted Ising Hamiltonian OBC n= no of atoms 
 
 # Zi*Zi+1 term always diagonal so Zi*Zi+1=Zi+1*Zi
 
-def TIOBCNew(n_TI, h_x, h_z):  # TODO WORKS!
+def TIOBCNew(n_TI, h_x, h_z):
     d = 2 ** n_TI
     pxp_fin = np.zeros((d, d))
     for i in range(0, n_TI):
@@ -214,8 +214,27 @@ def TIOBCNew(n_TI, h_x, h_z):  # TODO WORKS!
         pxp_fin = np.add(pxp_fin, pxp_ar)
     return pxp_fin
 
+def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!!
+    d = 2 ** n_TI
+    pxp_fin = np.zeros((d, d))
+    for i in range(0, n_TI):
+        zi = Z_i  # inital declaration
+        ziplus1 = Z_i  # inital declaration
+        xi = X_i  # inital declaration
+        zi = np.kron(np.identity(2 ** i), np.kron(zi, np.identity(2 ** (n_TI - (i + 1)))))  # Z_i term
+        if i == n_TI - 1:
+            ziplus1 = np.zeros((d, d))  # Z_i+1 boundary (kills boundary)
+        else:
+            ziplus1 = np.kron(np.identity(2 ** (i + 1)),
+                              np.kron(ziplus1, np.identity(2 ** (n_TI - (i + 2)))))  # Z_i+1 term
+        xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
+        pxp_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
+        pxp_fin = np.add(pxp_fin, pxp_ar)
+    pxp_fin_new= np.add(pxp_fin, 0.11*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
+    return pxp_fin_new
 
-def Coupling(n_tot, n, Coupmat):
+
+def Coupling(n_tot, n, Coupmat): #TODO ADD IF ELSE FOR N-NTOT SMALLER THAN 2
     d_pxp = 2 ** n
     d_TI = 2 ** np.subtract(n_tot, n)
     # d_tot = 2 ** n_tot
@@ -423,8 +442,8 @@ def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, T_max=20):# Time propagation 
 # TimeProp(EvecEval(PXPBathHam(n_tot,n,Z_i,1,1)), n_tot, Neelstate(n_tot),T_max)
 # TODO- play with bigger number of atoms
 
-def RunRmetric(n, h_x, h_z, Hamiltonian):
-    H = Hamiltonian(n, h_x, h_z)
+def RunRmetric(n_TI, h_x, h_z, Hamiltonian):
+    H = Hamiltonian(n_TI, h_x, h_z)
     EV = la.eigvalsh(H)
     # print(EV)
     return RMeanMetric(EV)
@@ -442,11 +461,15 @@ def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
         #print(c)
     r = r / (S.shape[0] - (c+1))  # n-1 minus c+1 more (n-2-c total)
     return r
-# theta=np.linspace(1.5,1.64,1000)
-# for t in np.nditer(theta):
-#     r=RunRmetric(11, np.sin(t), np.cos(t), TIOBCNew)
-#     plt.plot(t, r,  marker= '.', color='c4')
-# plt.title('11 Atoms')
+def plotRmetric(n_TI, theta_i, theta_f, res):
+    theta=np.linspace(theta_i, theta_f, res)
+    for t in np.nditer(theta):
+        r=RunRmetric(n_TI, np.sin(t), np.cos(t), TIOBCNew)
+        plt.plot(t, r,  marker= '.', color='C4')
+    plt.title('11 Atoms')
+    plt.xlabel(r"$\theta$")
+    plt.ylabel(r"$\langle(r)\rangle$")
+
 # plt.show()
 
 if __name__ == '__main__':
