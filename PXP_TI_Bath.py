@@ -388,13 +388,11 @@ def TimePropPXP(EigenEnVecs, Subspcdim, Spans,
 #TimePropPXP(EvecEval(SubspaceMat(m, Hamiltonian)),Subspccount(m,Hamiltonian), EigenSpan(EvecEval(SubspaceMat(m, Hamiltonian)), SubspcNeelstate(m)),T_max)
 
 def TimeProp(EigenEnVecs, n_tot, Nstate,
-             T_max, Color):  # N_TotGENERAL DIM  time propagation of each eigenstate with it's corresponding eigenenergy
+             T_max, Color,marker):  # N_TotGENERAL DIM  time propagation of each eigenstate with it's corresponding eigenenergy
     Eval, Evec = EigenEnVecs
     w = np.dot(1 / (np.sqrt(normconst(EigenSpan(EigenEnVecs, Nstate)))), (EigenSpan(EigenEnVecs, Nstate)))
     t = np.arange(1, T_max, 0.05)
     y = 0
-    markers = ['s', '^', 'X', 'o', '*', 'h', 'D', '1']
-    marker = np.random.choice(markers)
     for t in np.nditer(t):
         Z_2 = np.zeros(2 ** n_tot)
         Z_2t = np.zeros(2 ** n_tot)
@@ -403,11 +401,7 @@ def TimeProp(EigenEnVecs, n_tot, Nstate,
             Z_2t = Z_2t + np.dot(np.dot((np.exp(-1j * Eval[j] * t)), w[j]),
                                  Evec[:, j])  # Z_2(t) spanned in eigenstate basis as Cols of a matrix
         y = (np.absolute(np.dot(np.conjugate((Z_2)), (Z_2t)))) ** 2
-        plt.plot(t, np.round(y, 4), marker=marker, color=Color)
-    plt.xlabel('$t$')
-    plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
-    plt.savefig('new fidelity_12atoms.pdf')
-    plt.title('Quantum Fidelity of the Neel State vs. Time')
+        plt.plot(t, np.round(y, 4), marker=marker, markersize=3, color=Color)
     #plt.show()
 #TODO FIX NORMALIZATION!!!
 
