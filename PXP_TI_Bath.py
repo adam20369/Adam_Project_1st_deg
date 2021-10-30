@@ -234,20 +234,19 @@ def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!
     return pxp_fin_new
 
 
-def Coupling(n_tot, n, Coupmat): #TODO ADD IF ELSE FOR N-NTOT SMALLER THAN 2
+def Coupling(n_tot, n, Coupmat, h_c): #TODO ADD IF ELSE FOR N-NTOT SMALLER THAN 2
     d_pxp = 2 ** n
     d_TI = 2 ** np.subtract(n_tot, n)
     # d_tot = 2 ** n_tot
-    Coupmat = Coupmat  # the coupling nature (2x2 matrix- usually pauli)
+    Coupmat = (h_c)*Coupmat  # the coupling nature (2x2 matrix- usually pauli)
     CoupMat_n = np.kron(np.kron(np.identity(2 ** (n - 1)), Coupmat), np.identity(d_TI))
     CoupMat_nplus1 = np.kron(np.kron(np.identity(d_pxp), Coupmat), np.identity(2 ** (n_tot - (n + 1))))
     Coupterm = np.matmul(CoupMat_n, CoupMat_nplus1)
     return Coupterm #returns hilbert space matrix of dimension 2**n_tot
 
-
 # TODO check that the coupling is on the right i atoms (n and n+1)
 
-def PXPBathHamUncoup(n_tot, n, Coupmat, h_x, h_z):  # PXP+Bath UNCOUPLED!!!!
+def PXPBathHamUncoup(n_tot, n, Coupmat, h_x, h_z,h_c):  # PXP+Bath UNCOUPLED!!!!
     d_pxp = 2 ** n
     d_TI = 2 ** np.subtract(n_tot, n)
     # d_tot = 2 ** n_tot
@@ -258,14 +257,14 @@ def PXPBathHamUncoup(n_tot, n, Coupmat, h_x, h_z):  # PXP+Bath UNCOUPLED!!!!
     return HamNoCoup
 
 
-def PXPBathHam(n_tot, n, Coupmat, h_x, h_z):
+def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c):
     d_pxp = 2 ** n
     d_TI = 2 ** np.subtract(n_tot, n)
     # d_tot = 2 ** n_tot
     PXP = PXPOBCNew(n)
     TI = TIOBCNew(np.subtract(n_tot, n), h_x, h_z)
     HamNoCoup = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_pxp), TI))
-    TotHam = np.add(HamNoCoup, Coupling(n_tot, n, Coupmat))
+    TotHam = np.add(HamNoCoup, Coupling(n_tot, n, Coupmat, h_c))
     return TotHam
 
 
@@ -424,23 +423,22 @@ def TimeProp(EigenEnVecs, n_tot, Nstate,
     #plt.show()
 #TODO FIX NORMALIZATION!!!
 
-def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, T_max=20):# Time propagation of PXP TI COUPLED
+def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# Time propagation of PXP TI COUPLED
     """
     Runs TimeProp
     """
-    H = PXPBathHam(n_tot, n, Coupl, h_x, h_z)
+    H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c)
     # H= PXPBathHamUncoup(n_tot, n, Coupl, h_x, h_z) # Uncoupled version
     EV = EvecEval(H)
     Neel = Neelstate(n_tot)
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    markers = np.random.choice(np.array(('s', '^', 'o', 'X'))) #TODO could be broken
+    markers = np.random.choice(np.array(('s', '^', 'o', 'X'))) #TODO could be broken!!!
     TimeProp(EV, n_tot, Neel, T_max, Color, markers)
 
 
 #TODO check if you can throw
 #TODO CHeck why it doesn't work for 8 tot and 8 pxp
-# TimeProp(EvecEval(PXPBathHam(n_tot,n,Z_i,1,1)), n_tot, Neelstate(n_tot),T_max)
-# TODO- play with bigger number of atoms
+#TODO- play with bigger number of atoms
 
 def RunRmetric(n_TI, h_x, h_z, Hamiltonian):
     H = Hamiltonian(n_TI, h_x, h_z)
@@ -462,16 +460,6 @@ def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
     r = r / (S.shape[0] - (c+1))  # n-1 minus c+1 more (n-2-c total)
     return r
 
-def plotRmetric(n_TI, theta_i, theta_f, res):
-    theta=np.linspace(theta_i, theta_f, res)
-    for t in np.nditer(theta):
-        r=RunRmetric(n_TI, np.sin(t), np.cos(t), TIOBCNew)
-        plt.plot(t, r,  marker= '.', color='C4')
-    plt.title('11 Atoms')
-    plt.xlabel(r"$\theta$")
-    plt.ylabel(r"$\langle(r)\rangle$")
-
-# plt.show()
 
 if __name__ == '__main__':
     print('adam')
