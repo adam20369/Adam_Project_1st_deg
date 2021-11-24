@@ -26,16 +26,19 @@ Z_i = np.array([[1, 0], [0, -1]])  # pauli Z
 
 # ======================== declarations of operators in D=2**n Hilbert (Kronecker) space ===========================
 
-def Z_1(n):
-    Z_1 = np.array([[1, 0], [0, -1]])  # pauli Z matrix
+def Z_1_old(n):
+    Z_1 = Z_i  # pauli Z matrix
     for i in range(0, n - 1):
         Z_1 = np.kron(Z_1, np.identity(2)).astype('int32')
     return Z_1
 
+def Z_1(n):
+    Z_1 = np.kron(Z_i, np.identity(2**(n-1)))
+    return Z_1
 
 # print(Z_1(3))
 
-def O_z(n):
+def O_z_old(n):
     d = 2 ** n
     O_zsum = np.zeros((d, d))
     for i in range(0, n):
@@ -48,6 +51,16 @@ def O_z(n):
         O_zsum = np.add(O_zsum, Z_i)  # summation over n pauli Z matrices of dimension d
     O_zop = (1 / n) * O_zsum
     return O_zop
+
+def O_z(n):
+    d = 2 ** n
+    O_zsum = np.zeros((d,d))
+    for i in range(0,n):
+        z_i= np.kron(np.kron(np.identity(2**i),Z_i), np.identity(2**(n-(i+1))))
+        O_zsum= np.add(O_zsum, z_i)
+    O_zop= (1/n) * O_zsum
+    return O_zop
+
 
 
 # print(O_z(3))
@@ -234,7 +247,7 @@ def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!
     return pxp_fin_new
 
 
-def Coupling(n_tot, n, Coupmat, h_c): #TODO ADD IF ELSE FOR N-NTOT SMALLER THAN 2
+def Coupling(n_tot, n, Coupmat, h_c):
     d_pxp = 2 ** n
     d_TI = 2 ** np.subtract(n_tot, n)
     d_TOT = 2 ** n_tot
@@ -248,17 +261,16 @@ def Coupling(n_tot, n, Coupmat, h_c): #TODO ADD IF ELSE FOR N-NTOT SMALLER THAN 
         Coupterm = np.matmul(CoupMat_n, CoupMat_nplus1)
     return Coupterm #returns hilbert space matrix of dimension 2**n_tot
 
-# TODO check that the coupling is on the right i atoms (n and n+1)
 
-def PXPBathHamUncoup(n_tot, n, Coupmat, h_x, h_z,h_c):  # PXP+Bath UNCOUPLED!!!!
-    d_pxp = 2 ** n
-    d_TI = 2 ** np.subtract(n_tot, n)
-    # d_tot = 2 ** n_tot
-    PXP = PXPOBCNew(n)
-    TI = TIOBCNew(np.subtract(n_tot, n), h_x, h_z)
-    HamNoCoup = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_pxp), TI))
-    ####TotHam= np.add(HamNoCoup,Coupling(n_tot,n ,Coupmat))####
-    return HamNoCoup
+# def PXPBathHamUncoup(n_tot, n, Coupmat, h_x, h_z,h_c):  # PXP+Bath UNCOUPLED!!!!
+#     d_pxp = 2 ** n
+#     d_TI = 2 ** np.subtract(n_tot, n)
+#     # d_tot = 2 ** n_tot
+#     PXP = PXPOBCNew(n)
+#     TI = TIOBCNew(np.subtract(n_tot, n), h_x, h_z)
+#     HamNoCoup = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_pxp), TI))
+#     ####TotHam= np.add(HamNoCoup,Coupling(n_tot,n ,Coupmat))####
+#     return HamNoCoup
 
 
 def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c):

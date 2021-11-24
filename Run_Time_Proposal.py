@@ -7,12 +7,12 @@ from scipy import integrate
 from matplotlib.lines import Line2D
 from PXP_TI_Bath import *
 
-def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=1, h_z=1, T_max=20): #time propagation of 4 different PXP atom sizes (total N conserved)
+def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20): #time propagation of 4 different PXP atom sizes (total N conserved)
     markers = np.array(('s', '^', 'o', 'd'))
     colors = np.array(('b','r','y','k'))
     n_start = n_Array[0]
     for n in n_Array:
-        H = PXPBathHam(n_tot, n, Coupl, h_x, h_z)
+        H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c)
         EV = EvecEval(H)
         Neel = Neelstate(n_tot)
         Color = colors[n-n_start]
@@ -26,6 +26,10 @@ def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=1, h_z=1, T_max=20): #time propa
     plt.xlabel('$t$')
     plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
     plt.savefig('new fidelity_12atoms.pdf')
-    plt.title('Quantum Fidelity of {}-atom Neel State'.format(n_tot))
+    plt.title('Quantum Fidelity of {}-atom Neel State with coupling strength {}'.format(n_tot,h_c))
 # RunTimeProp4(10,np.arange(5,9,1), Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=(0.485*np.pi), T_max=20)
 # plt.show()
+
+#Haar state
+#taking without coupling and with coupling and seeing that neel state of ONLY the PXP model
+# and seeing that it stays the same about the part of the TI model, we take an infinite temperature state (average energy state, (1/Z)*tr(H)
