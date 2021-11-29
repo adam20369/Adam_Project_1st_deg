@@ -123,6 +123,17 @@ def Neelstate(n): # GENERAL NEELSTATE
             Neel = np.kron(Neel, g)
     return Neel
 
+def Haarstate(n): # GENERAL HAAR STATE
+    alpha= np.random.normal(0,1,2**n)
+    betta= np.random.normal(0,1,2**n)
+    v= alpha+1j*betta
+    HaarVec= np.divide(v, la.norm(v))
+    return HaarVec
+
+def NeelHaar(n_tot, n):
+    NeelHaarstate = np.kron(Neelstate(n), Haarstate(n_tot - n))
+    return NeelHaarstate
+
 def PXPHamOBC(n):
     d = 2 ** n
     pxp_fin = np.zeros((d, d))
@@ -411,7 +422,7 @@ def TimeProp(EigenEnVecs, n_tot, Nstate,
         y = (np.absolute(np.dot(np.conjugate((Z_2)), (Z_2t)))) ** 2
         plt.plot(t, np.round(y, 4), marker=marker, markersize=3, color=Color)
     #plt.show()
-#TODO FIX NORMALIZATION!!!
+#TODO FIX NORMALIZATION????
 
 def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# 1 Time propagation of PXP TI COUPLED
     """
@@ -424,17 +435,8 @@ def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# 1 Time pro
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
     markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
     TimeProp(EV, n_tot, Neel, T_max, Color, markers)
+#### OLD RUN ######
 
-
-#TODO check if you can throw
-#TODO CHeck why it doesn't work for 8 tot and 8 pxp
-#TODO- play with bigger number of atoms
-
-def RunRmetric(n_TI, h_x, h_z, Hamiltonian): #running the metric for average r per one theta
-    H = Hamiltonian(n_TI, h_x, h_z)
-    EV = la.eigvalsh(H)
-    # print(EV)
-    return RMeanMetric(EV)
 
 
 def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
@@ -450,6 +452,16 @@ def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
     r = r / (S.shape[0] - (c+1))  # n-1 minus c+1 more (n-2-c total)
     return r
 
+def RunRmetric(n_TI, h_x, h_z, Hamiltonian): #running the metric for average r per one theta
+    H = Hamiltonian(n_TI, h_x, h_z)
+    EV = la.eigvalsh(H)
+    # print(EV)
+    return RMeanMetric(EV)
+
 
 if __name__ == '__main__':
     print('adam')
+
+#TODO checking what happens when I take coupling to 0 (should work) comparing with the other method of only PXP
+#TODO-2- after checks, make python file for only the new pxp obc (no subspace!)
+#TODO-3- New hamiltonian method and moving all code to that
