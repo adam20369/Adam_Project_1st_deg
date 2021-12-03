@@ -124,10 +124,14 @@ def Neelstate(n): # GENERAL NEELSTATE
     return Neel
 
 def Haarstate(n): # GENERAL HAAR STATE
-    alpha= np.random.normal(0,1,2**n)
-    betta= np.random.normal(0,1,2**n)
-    v= alpha+1j*betta
-    HaarVec= np.divide(v, la.norm(v))
+    if n == 0:
+         HaarVec= np.array(1)
+    else:
+        d = 2 ** n
+        alpha= np.random.normal(0, 1, 2**n)
+        betta= np.random.normal(0, 1, 2 ** n)
+        v= alpha + 1j*betta
+        HaarVec= np.divide(v, la.norm(v))
     return HaarVec
 
 def NeelHaar(n_tot, n):
@@ -381,7 +385,8 @@ def normconst(EigenSpan):  # sum of the inner products for normalization
     # print("\n sum \n", np.round(np.real(sum),3))
     return np.round(np.real(sum), 5)
 
-
+def normconst2(EigenSpan):
+    return la.norm(EigenSpan)
 # normconst(EigenSpan(EvecEval(SubspaceMat(m, Hamiltonian)), (SubspaceMat(m, Neelstate(m)))))
 
 def TimePropPXP(EigenEnVecs, Subspcdim, Spans,
@@ -405,6 +410,8 @@ def TimePropPXP(EigenEnVecs, Subspcdim, Spans,
     plt.title('Quantum Fidelity of the Neel State vs. Time')
     plt.show()
 #TimePropPXP(EvecEval(SubspaceMat(m, Hamiltonian)),Subspccount(m,Hamiltonian), EigenSpan(EvecEval(SubspaceMat(m, Hamiltonian)), SubspcNeelstate(m)),T_max)
+
+#TODO FIX NORMCONST AND SOLVE NORMALIATION BULLSHIT
 
 def TimeProp(EigenEnVecs, n_tot, Nstate,
              T_max, Color, marker):  # N_TotGENERAL DIM  time propagation of each eigenstate with it's corresponding eigenenergy
