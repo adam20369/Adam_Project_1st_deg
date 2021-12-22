@@ -193,7 +193,7 @@ def PXPOBCNew(n):  # OBC
     return pxp_fin
 
 
-def TiltedIsingHam(n, h_x, h_z):  # Tilted Ising Hamiltonian OBC n= no of atoms (must be =>2)
+def TiltedIsingHam(n, h_x, h_z):  # !!!!OLD!!! Tilted Ising Hamiltonian OBC n= no of atoms (must be =>2)
     d = 2 ** n
     pxp_fin = np.zeros((d, d))
     for i in range(1, n + 1):  # goes over all atoms for total sum in the end
@@ -224,9 +224,15 @@ def TiltedIsingHam(n, h_x, h_z):  # Tilted Ising Hamiltonian OBC n= no of atoms 
 
 # Zi*Zi+1 term always diagonal so Zi*Zi+1=Zi+1*Zi
 
-def TIOBCNew(n_TI, h_x, h_z):
+def TIOBCNew(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n must be =>2)
+    """
+    :param n_TI: No of Tilted ising atoms MUST BE =>2
+    :param h_x: transverse field
+    :param h_z: Z field
+    :return:
+    """
     d = 2 ** n_TI
-    pxp_fin = np.zeros((d, d))
+    TI_fin = np.zeros((d, d))
     for i in range(0, n_TI):
         zi = Z_i  # inital declaration
         ziplus1 = Z_i  # inital declaration
@@ -238,13 +244,13 @@ def TIOBCNew(n_TI, h_x, h_z):
             ziplus1 = np.kron(np.identity(2 ** (i + 1)),
                               np.kron(ziplus1, np.identity(2 ** (n_TI - (i + 2)))))  # Z_i+1 term
         xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
-        pxp_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
-        pxp_fin = np.add(pxp_fin, pxp_ar)
-    return pxp_fin
+        TI_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
+        TI_fin = np.add(TI_fin, TI_ar)
+    return TI_fin
 
 def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!!
     d = 2 ** n_TI
-    pxp_fin = np.zeros((d, d))
+    TI_fin = np.zeros((d, d))
     for i in range(0, n_TI):
         zi = Z_i  # inital declaration
         ziplus1 = Z_i  # inital declaration
@@ -256,10 +262,10 @@ def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!
             ziplus1 = np.kron(np.identity(2 ** (i + 1)),
                               np.kron(ziplus1, np.identity(2 ** (n_TI - (i + 2)))))  # Z_i+1 term
         xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
-        pxp_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
-        pxp_fin = np.add(pxp_fin, pxp_ar)
-    pxp_fin_new= np.add(pxp_fin, 0.11*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
-    return pxp_fin_new
+        TI_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
+        TI_fin = np.add(TI_fin, TI_ar)
+    TI_fin_new= np.add(TI_fin, 0.11*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
+    return TI_fin_new
 
 
 def Coupling(n_tot, n, Coupmat, h_c):
@@ -390,7 +396,7 @@ def normconst2(EigenSpan):
 # normconst(EigenSpan(EvecEval(SubspaceMat(m, Hamiltonian)), (SubspaceMat(m, Neelstate(m)))))
 
 def TimePropPXP(EigenEnVecs, Subspcdim, Spans,
-                T_max):  # SUBSPC Dim time propagation of each eigenstate with it's corresponding eigenenergy (OLD)
+                T_max):  # SUBSPC Dim time propagation of each eigenstate with it's corresponding eigenenergy ########OLD#########
     Eval, Evec = EigenEnVecs
     w = np.dot(np.divide(1,(np.sqrt(normconst(Spans)))), (Spans))
     t = np.arange(0, T_max, 0.05)
@@ -470,5 +476,4 @@ if __name__ == '__main__':
     print('adam')
 
 #TODO checking what happens when I take coupling to 0 (should work) comparing with the other method of only PXP
-#TODO-2- after checks, make python file for only the new pxp obc (no subspace!)
-#TODO-3- New hamiltonian method and moving all code to that
+#TODO-1- New hamiltonian method and moving all code to that
