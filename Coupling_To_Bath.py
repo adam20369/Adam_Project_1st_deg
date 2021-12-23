@@ -122,7 +122,7 @@ def TIOBCNew(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n m
         TI_fin = np.add(TI_fin, TI_ar)
     return TI_fin
 
-def TIOBCNewImpure(n_TI, h_x, h_z): #same Tilted Ising only with impurity at the Z_1 site!!
+def TIOBCNewImpure(n_TI, h_x, h_z, h_i): #same Tilted Ising only with impurity at the Z_1 site!!
     d = 2 ** n_TI
     TI_fin = np.zeros((d, d))
     for i in range(0, n_TI):
@@ -138,8 +138,8 @@ def TIOBCNewImpure(n_TI, h_x, h_z): #same Tilted Ising only with impurity at the
         xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
         TI_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
         TI_fin = np.add(TI_fin, TI_ar)
-    TI_fin_new= np.add(TI_fin, 0.11*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
-    return TI_fin_new
+    TI_fin_impure= np.add(TI_fin, h_i*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
+    return TI_fin_impure
 
 def Coupling(n_tot, n, Coupmat, h_c): # 2 site coupling matrix in TOTAL Hamiltonian size (2**n_totx2**n_tot )
     """
@@ -193,7 +193,7 @@ def Couplingalt(n_tot, n, Coupmat, h_c): #alternative way to write coupling (slo
 #     ####TotHam= np.add(HamNoCoup,Coupling(n_tot,n ,Coupmat))####
 #     return HamNoCoup
 
-def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c): # FULL COUPLED HAMILTONIAN Builder
+def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c, h_i): # FULL COUPLED HAMILTONIAN Builder
     """
     :param n_tot: Total atom number
     :param n: PXP Atom number
@@ -207,7 +207,7 @@ def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c): # FULL COUPLED HAMILTONIAN Bui
     d_TI = 2 ** np.subtract(n_tot, n)
     # d_tot = 2 ** n_tot
     PXP = PXPOBCNew(n)
-    TI = TIOBCNew(np.subtract(n_tot, n), h_x, h_z)
+    TI = TIOBCNewImpure(np.subtract(n_tot, n), h_x, h_z, h_i)
     HamNoCoup = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_pxp), TI))
     TotHam = np.add(HamNoCoup, Coupling(n_tot, n, Coupmat, h_c))
     return TotHam
@@ -290,28 +290,33 @@ def RunTimeProp(n_tot, n, Vecstate, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20, T_
     markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
     TimeProp(H, n_tot, InitVecstate, T_max, T_int, Color, markers)
 
-# TODO Up until here Everything is fixed
 
-# TODO Left to fix these two below, fix the scripts that run functions from here
+# TODO fix the scripts that run functions from here
 # TODO check that h_c=0 is equal to Coupmat=([0,0],[0,0])
+#TODO organize files in venv folder so it's not in such a balagan
+
 # TODO Continue!
 
-def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
-    S = np.diff(EV)  # returns an array of n-1 (NonNegative)
-    # print(S)
+
+def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
+    """
+    :param EV: EigenValues (size-ordered: smallest to biggest)
+    :return: r mean value
+    """
+    S = np.diff(EV)  # returns  array of n-1 (Non-Negative) differences between Eigenvalues
     r = 0
-    c = 0  #counts the r's that don't contribute
+    #c = 0  #counts the r's that don't contribute
     for i in range(1, S.shape[0]):
-        r = r + np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1])) #out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
+        r = r + np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1])) #???out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
         #print(max(S[i], S[i - 1]))
         # c = c + np.array((0,1))[int(max(S[i], S[i - 1]) == 0)]  # counts the r's that don't contribute
-        #print(c)
-    r = r / (S.shape[0] - (c+1))  # n-1 minus c+1 more (n-2-c total)
+    r = r / (S.shape[0] - 1)  # n-1 minus c+1 more (n-2-c total)
     return r
+    #TODO check if there are r=-inf that we need to deal with??
 
-def RunRmetric(n_TI, h_x, h_z, Hamiltonian): #running the metric for average r per one theta
-    H = Hamiltonian(n_TI, h_x, h_z)
-    EV = la.eigvalsh(H)
+def RunRmetric(n_TI, h_x, h_z, h_i, Hamiltonian): #Run the RMeanMetric function om  Tilted Ising model
+    H = Hamiltonian(n_TI, h_x, h_z, h_i)
+    EV = la.eigvalsh(H) #outputs vector of eigenvalues, from smallest to biggest
     # print(EV)
     return RMeanMetric(EV)
 

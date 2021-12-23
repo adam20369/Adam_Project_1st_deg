@@ -5,7 +5,6 @@ import itertools
 import timeit
 from scipy import integrate
 from matplotlib.lines import Line2D
-from PXP_TI_Bath import *
 from Coupling_To_Bath import *
 
 def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, T_max=20, T_int=0.05):
@@ -24,7 +23,7 @@ def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(
     colors = np.array(('b','r','y','k'))
     n_start = n_Array[0]
     for n in n_Array:
-        H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c)
+        H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c, h_i=0.4)
         EV = EvecEval(H)
         NeelHaarstate = NeelHaar(n_tot, n_Array)
         Color = colors[n-n_start]
@@ -61,7 +60,7 @@ def RunTimeProp4new(n_totArray, n_pxp, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=n
     colors = np.array(('b','r','y','k'))
     n_start = n_totArray[0]
     for n_tot in n_totArray:
-        H = PXPBathHam(n_tot, n_pxp, Coupl, h_x, h_z, h_c) #TODO check what happens if coupling=0
+        H = PXPBathHam(n_tot, n_pxp, Coupl, h_x, h_z, h_c, h_i=0.4) #TODO check what happens if coupling=0
         EV = EvecEval(H)
         NeelHaarstate = NeelHaar(n_tot, n_pxp)
         Color = colors[n_tot-n_start]
