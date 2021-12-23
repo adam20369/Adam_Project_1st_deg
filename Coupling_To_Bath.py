@@ -282,17 +282,18 @@ def RunTimeProp(n_tot, n, Vecstate, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20, T_
     """
     Runs TimeProp
     """
-    H= PXPOBCNew(n_tot)
-    # H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c)
+    H_pxp= PXPOBCNew(n_tot)
+    H_tot = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c, h_i=0.4)
     # H= PXPBathHamUncoup(n_tot, n, Coupl, h_x, h_z) # Uncoupled version
     InitVecstate = Vecstate(n_tot)
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
     markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
-    TimeProp(H, n_tot, InitVecstate, T_max, T_int, Color, markers)
+    #TimeProp(H_pxp, n_tot, InitVecstate, T_max, T_int, Color, markers)
+    TimeProp(H_tot, n_tot, InitVecstate, T_max, T_int, Color, markers)
 
 
-# TODO fix the scripts that run functions from here
-# TODO check that h_c=0 is equal to Coupmat=([0,0],[0,0])
+
+# TODO fix the different scripts that run functions from here
 #TODO organize files in venv folder so it's not in such a balagan
 
 # TODO Continue!
@@ -313,6 +314,7 @@ def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
     r = r / (S.shape[0] - 1)  # n-1 minus c+1 more (n-2-c total)
     return r
     #TODO check if there are r=-inf that we need to deal with??
+    #TODO think about the problem with the values for different Impurity strength and different atom chain sizes
 
 def RunRmetric(n_TI, h_x, h_z, h_i, Hamiltonian): #Run the RMeanMetric function om  Tilted Ising model
     H = Hamiltonian(n_TI, h_x, h_z, h_i)

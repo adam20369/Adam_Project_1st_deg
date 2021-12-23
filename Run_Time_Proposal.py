@@ -7,11 +7,50 @@ from scipy import integrate
 from matplotlib.lines import Line2D
 from Coupling_To_Bath import *
 
-def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, T_max=20, T_int=0.05):
+def RunTimeProp4PxpConserve(n_totArray, n_pxp, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, T_max=20, T_int=0.05):
+    """
+      time propagation of 4 different TOTAL atom sizes, PXP number conserved
+    :param n_totArray: Array of 4 different TOTAL atom numbers
+    :param n_pxp: number of PXP atoms
+    :param Coupl: Nature of coupling (2x2 matrix)
+    :param h_x: transverse field strength
+    :param h_z: Z field strength
+    :param h_c: coupling strength
+    :param T_max: max time
+    :param T_int: step size (between steps)
+    :return: Timeprop graph x4
+    """
+    markers = np.array(('s', '^', 'o', 'd'))
+    colors = np.array(('b','r','y','k'))
+    n_start = n_totArray[0]
+    for n_tot in n_totArray: #running over n_tots
+        H = PXPBathHam(n_tot, n_pxp, Coupl, h_x, h_z, h_c, h_i=0.4)
+        Initialstate = Neelstate(n_tot)
+        #Initialstate = NeelHaar(n_tot, n_pxp)
+        Color = colors[n_tot-n_start]
+        marker = markers[n_tot-n_start]
+        TimeProp(H, n_tot, Initialstate, T_max, T_int, Color, marker)
+    custom_lines = [Line2D([0], [0], color=colors[0], marker=markers[0]),
+                    Line2D([0], [0], color=colors[1], marker=markers[1]),
+                    Line2D([0], [0], color=colors[2], marker=markers[2]),
+                    Line2D([0], [0], color=colors[3], marker=markers[3])] #LEGEND DEFINITIONS
+    plt.legend(custom_lines, ['{} atoms'.format(n_totArray[0]), '{} atoms'.format(n_totArray[1]), '{} atoms'.format(n_totArray[2]),'{} atoms'.format(n_totArray[3])])
+    plt.xlabel('$t$')
+    plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
+    #plt.savefig('new fidelity_12atoms.pdf')
+    plt.title('Quantum Fidelity of {}-PXP Neel State with coupling strength {}'.format(n_pxp,h_c))
+
+#RunTimeProp4new(np.arange(9,13,1),6 , Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), T_max=20)
+# plt.show()
+
+
+
+def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, T_max=20, T_int=0.05): # time propagation of 4 different PXP atom sizes (total N conserved)
+
     """
     time propagation of 4 different PXP atom sizes (total N conserved)
-    :param n_tot:
-    :param n_Array:
+    :param n_tot: Total number of atoms in the chain
+    :param n_Array: array of
     :param Coupl:
     :param h_x:
     :param h_z:
@@ -24,11 +63,10 @@ def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(
     n_start = n_Array[0]
     for n in n_Array:
         H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c, h_i=0.4)
-        EV = EvecEval(H)
         NeelHaarstate = NeelHaar(n_tot, n_Array)
         Color = colors[n-n_start]
         marker = markers[n-n_start]
-        TimeProp(EV, n_tot, NeelHaarstate, T_max, T_int, Color, marker)
+        TimeProp(H, n_tot, NeelHaarstate, T_max, T_int, Color, marker)
     custom_lines = [Line2D([0], [0], color=colors[0], marker=markers[0]),
                     Line2D([0], [0], color=colors[1], marker=markers[1]),
                     Line2D([0], [0], color=colors[2], marker=markers[2]),
@@ -43,38 +81,3 @@ def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(
 
 #taking without coupling and with coupling and seeing that neel state of ONLY the PXP model
 # and seeing that it stays the same about the part of the TI model, we take an infinite temperature state (average energy state, (1/Z)*tr(H)
-
-def RunTimeProp4new(n_totArray, n_pxp, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, T_max=20):
-    """
-      time propagation of 4 different TOTAL atom sizes, PXP number conserved
-    :param n_totArray:
-    :param n_pxp:
-    :param Coupl:
-    :param h_x:
-    :param h_z:
-    :param h_c:
-    :param T_max:
-    :return:
-    """
-    markers = np.array(('s', '^', 'o', 'd'))
-    colors = np.array(('b','r','y','k'))
-    n_start = n_totArray[0]
-    for n_tot in n_totArray:
-        H = PXPBathHam(n_tot, n_pxp, Coupl, h_x, h_z, h_c, h_i=0.4) #TODO check what happens if coupling=0
-        EV = EvecEval(H)
-        NeelHaarstate = NeelHaar(n_tot, n_pxp)
-        Color = colors[n_tot-n_start]
-        marker = markers[n_tot-n_start]
-        TimeProp(EV, n_tot, NeelHaarstate, T_max, Color, marker)
-    custom_lines = [Line2D([0], [0], color=colors[0], marker=markers[0]),
-                    Line2D([0], [0], color=colors[1], marker=markers[1]),
-                    Line2D([0], [0], color=colors[2], marker=markers[2]),
-                    Line2D([0], [0], color=colors[3], marker=markers[3])] #LEGEND DEFINITIONS
-    plt.legend(custom_lines, ['{} atoms'.format(n_totArray[0]), '{} atoms'.format(n_totArray[1]), '{} atoms'.format(n_totArray[2]),'{} atoms'.format(n_totArray[3])])
-    plt.xlabel('$t$')
-    plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
-    #plt.savefig('new fidelity_12atoms.pdf')
-    plt.title('Quantum Fidelity of {}-PXP Neel State with coupling strength {}'.format(n_pxp,h_c))
-
-#RunTimeProp4new(np.arange(9,13,1),6 , Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), T_max=20)
-# plt.show()
