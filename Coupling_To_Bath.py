@@ -141,12 +141,31 @@ def TIOBCNewImpure(n_TI, h_x, h_z): #same Tilted Ising only with impurity at the
     TI_fin_new= np.add(TI_fin, 0.11*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
     return TI_fin_new
 
-def Coupling(n_tot, n, Coupmat, h_c): # 2 site coupling term in size 2**n_totx2**n_tot
+def Coupling(n_tot, n, Coupmat, h_c): # 2 site coupling matrix in TOTAL Hamiltonian size (2**n_totx2**n_tot )
+    """
+    :param n_tot: Total number of atoms in hamiltonian (PXP+ TI)
+    :param n: Number of PXP atoms
+    :param Coupmat: Coupling 2x2 matrix ( one site matrix)
+    :param h_c: strength parameter
+    :return:
+    """
+    d_pxp = 2 ** n
+    d_TI = 2 ** np.subtract(n_tot, n)
+    d_TOT = 2 ** n_tot
+    Couplmat = (h_c) * np.kron(Coupmat,Coupmat)
+    if np.subtract(n_tot,n) == 0 or np.subtract(n_tot,n) == n_tot or h_c == 0:
+        Coupterm = np.zeros((d_TOT,d_TOT))
+    else:
+        Coupterm = np.kron(np.kron(np.identity(2 ** (n - 1)), Couplmat), np.identity(2 ** (np.subtract(n_tot, n)-1)))
+    return Coupterm
+
+
+def Couplingalt(n_tot, n, Coupmat, h_c): #alternative way to write coupling (slower!!!, the older one)
     """
     :param n_tot: Total number of atoms in hamiltonian (PXP+ TI)
     :param n: Number of PXP atoms
     :param Coupmat: Coupling matrix (2x2- on one site first)
-    :param h_c: parameter strength
+    :param h_c: strength parameter
     :return:
     """
     d_pxp = 2 ** n
@@ -162,16 +181,6 @@ def Coupling(n_tot, n, Coupmat, h_c): # 2 site coupling term in size 2**n_totx2*
         Coupterm = np.matmul(CoupMat_n, CoupMat_nplus1)
     return Coupterm #returns hilbert space matrix of dimension 2**n_tot
 
-def CouplingAlt(n_tot, n, Coupmat, h_c): #alternative way to write coupling for comparison
-    d_pxp = 2 ** n
-    d_TI = 2 ** np.subtract(n_tot, n)
-    d_TOT = 2 ** n_tot
-    Couplmat = (h_c) * np.kron(Coupmat,Coupmat)
-    if np.subtract(n_tot,n) == 0 or np.subtract(n_tot,n) == n_tot or h_c == 0:
-        Coupterm = np.zeros((d_TOT,d_TOT))
-    else:
-        Coupterm = np.kron(np.kron(np.identity(2 ** (n - 1)), Couplmat), np.identity(2 ** (np.subtract(n_tot, n)-1)))
-    return Coupterm
 
     #TODO think if I need this:
 # def PXPBathHamUncoup(n_tot, n, Coupmat, h_x, h_z,h_c):  # PXP+Bath UNCOUPLED!!!!
@@ -184,7 +193,16 @@ def CouplingAlt(n_tot, n, Coupmat, h_c): #alternative way to write coupling for 
 #     ####TotHam= np.add(HamNoCoup,Coupling(n_tot,n ,Coupmat))####
 #     return HamNoCoup
 
-def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c): # FULL COUPLED HAMILTONIAN
+def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c): # FULL COUPLED HAMILTONIAN Builder
+    """
+    :param n_tot: Total atom number
+    :param n: PXP Atom number
+    :param Coupmat: 2x2 matrix of coupling nature
+    :param h_x: transverse field strength
+    :param h_z: Z field strength
+    :param h_c: coupling strength
+    :return: Full Hamiltonian
+    """
     d_pxp = 2 ** n
     d_TI = 2 ** np.subtract(n_tot, n)
     # d_tot = 2 ** n_tot
@@ -204,7 +222,18 @@ def EvecEval(Mat):  # calculates eigenvalues and eigenstates of HERMITIAN matrix
     return np.real(np.round(eval, 4)), np.round(evec, 4)
 
 def EigenSpan(Mat,
-              VecState):  # outputs weights (inner product) of Neel state spanned in eigenstate basis (subspace dim)
+              VecState):  # outputs vector of weights (inner product) of Neel state spanned in eigenstate basis (subspace dim)
+    """
+    :param Mat: Input matrix for eigenstate decomposition
+    :param VecState: Some vector state (initial state usually) that we want to span in eigenstate basis
+    :return: vector of weights
+    """
+    Eval, Evec = EvecEval(Mat)
+    w = np.dot(np.transpose(Evec),VecState)
+    return w
+
+def EigenSpanAlt(Mat,
+              VecState):  # alternative way to define the Eigenspan function (slower!!, the older one)
     """
     :param Mat: Input matrix for eigenstate decomposition
     :param VecState: Some vector state (initial state usually) that we want to span in eigenstate basis
@@ -218,7 +247,6 @@ def EigenSpan(Mat,
     # print("\n array of <Z_2|EigenVec(j)>:", np.real(y))
     return y
 
-
 def normconst(Mat,VecState):  # sum of the inner products for normalization
     y = EigenSpan(Mat,VecState)
     # print("\n sum \n", np.round(np.real(sum),3))
@@ -227,9 +255,8 @@ def normconst(Mat,VecState):  # sum of the inner products for normalization
 def normconst2(Mat,VecState): # sum of the inner products for normalization different technique for comparison
     return la.norm(EigenSpan(Mat,VecState))
 
-
 def TimeProp(Mat, n_tot, VecState,
-             T_max, Color, marker):  # time propagation of initial state by decomposing to eigenvectors and propagating with respect to corresponding eigenenergy
+             T_max, T_int, Color, marker):  # time propagation of initial state by decomposing in eigenvectors basis & propagating w/ respect to corresponding eigenenergy
     """
     :param Mat: Hamiltonian for propagation
     :param n_tot: Size of dimension *(size of Hamiltonian)
@@ -240,34 +267,34 @@ def TimeProp(Mat, n_tot, VecState,
     :return:
     """
     Eval, Evec = EvecEval(Mat)
-    w = (EigenSpan(Mat, VecState))
-    t = np.arange(1, T_max, 0.05)
-    for t in np.nditer(t):
-        Z_2_new = np.dot(w) #needs to be the same weight here, Evec)
-        Z_2 = np.zeros(2 ** n_tot)
+    w = EigenSpan(Mat, VecState) #weights vector of projection of Vecstate onto Eigenbasis
+    t = np.arange(1, T_max, T_int)
+    for t in np.nditer(t): # builds Z_2t from scratch for every time t in the total time interval
         Z_2t = np.zeros(2 ** n_tot)
-        for j in range(0, np.size(Eval)):  # alternative way- just multiply evecs as orthogonal ones (easier)
-            Z_2 = Z_2 + np.dot(w[j], Evec[:, j])  # Z_2 spanned in eigenstate basis as Cols of a matrix
+        for j in range(0, np.size(Eval)):
             Z_2t = Z_2t + np.dot(np.dot((np.exp(-1j * Eval[j] * t)), w[j]),
                                  Evec[:, j])  # Z_2(t) spanned in eigenstate basis as Cols of a matrix
-        y = (np.absolute(np.dot(np.conjugate((Z_2)), (Z_2t)))) ** 2
-        plt.plot(t, np.round(y, 4), marker=marker, markersize=3, color=Color)
-    #plt.show()
-#TODO FIX NORMALIZATION????
+        Fidel = np.absolute(np.vdot(VecState,(Z_2t)))**2
+        plt.plot(t, np.round(Fidel, 4), marker=marker, markersize=3, color=Color)
+    # plt.show()
 
-def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# 1 Time propagation of PXP TI COUPLED
+def RunTimeProp(n_tot, n, Vecstate, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20, T_int=0.05):# 1 Time propagation of PXP TI COUPLED
     """
     Runs TimeProp
     """
-    H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c)
+    H= PXPOBCNew(n_tot)
+    # H = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c)
     # H= PXPBathHamUncoup(n_tot, n, Coupl, h_x, h_z) # Uncoupled version
-    EV = EvecEval(H)
-    Neel = Neelstate(n_tot)
+    InitVecstate = Vecstate(n_tot)
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
     markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
-    TimeProp(EV, n_tot, Neel, T_max, Color, markers)
-#### OLD RUN ######
+    TimeProp(H, n_tot, InitVecstate, T_max, T_int, Color, markers)
 
+# TODO Up until here Everything is fixed
+
+# TODO Left to fix these two below, fix the scripts that run functions from here
+# TODO check that h_c=0 is equal to Coupmat=([0,0],[0,0])
+# TODO Continue!
 
 def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
     S = np.diff(EV)  # returns an array of n-1 (NonNegative)
@@ -287,5 +314,4 @@ def RunRmetric(n_TI, h_x, h_z, Hamiltonian): #running the metric for average r p
     EV = la.eigvalsh(H)
     # print(EV)
     return RMeanMetric(EV)
-
 

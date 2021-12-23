@@ -5,7 +5,8 @@ import itertools
 import timeit
 from scipy import integrate
 from PXP_TI_Bath import *
-
+from Coupling_To_Bath import *
+#TODO don't forget to get rid of one of them
 def plotFig2A(m,n,p,Hamiltonian,Op): #plotting for 3 atom sizes
     Eval1, Evec1 = EvecEval(SubspaceMat(m,Hamiltonian(m)))
     Eval2, Evec2 = EvecEval(SubspaceMat(n,Hamiltonian(n)))

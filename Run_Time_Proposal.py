@@ -6,8 +6,9 @@ import timeit
 from scipy import integrate
 from matplotlib.lines import Line2D
 from PXP_TI_Bath import *
+from Coupling_To_Bath import *
 
-def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, T_max=20):
+def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, T_max=20, T_int=0.05):
     """
     time propagation of 4 different PXP atom sizes (total N conserved)
     :param n_tot:
@@ -28,7 +29,7 @@ def RunTimeProp4(n_tot, n_Array, Coupl=Z_i, h_x=np.sin(0.485*np.pi), h_z=np.cos(
         NeelHaarstate = NeelHaar(n_tot, n_Array)
         Color = colors[n-n_start]
         marker = markers[n-n_start]
-        TimeProp(EV, n_tot, NeelHaarstate, T_max, Color, marker)
+        TimeProp(EV, n_tot, NeelHaarstate, T_max, T_int, Color, marker)
     custom_lines = [Line2D([0], [0], color=colors[0], marker=markers[0]),
                     Line2D([0], [0], color=colors[1], marker=markers[1]),
                     Line2D([0], [0], color=colors[2], marker=markers[2]),
