@@ -31,11 +31,16 @@ def Z_1(n):
     return Z_1
 # print(Z_1(3))
 
-def O_z(n):
+def Z_generali(n,i): # calculates Z for general i
+    Z_geni = np.kron(np.identity(2**(i-1)),np.kron(Z_i, np.identity(2**(n-i))))
+    return Z_geni
+# print(Z_1(3))
+
+def O_z(n): #mean of Z_i's
     d = 2 ** n
     O_zsum = np.zeros((d,d))
-    for i in range(0,n):
-        z_i= np.kron(np.kron(np.identity(2**i),Z_i), np.identity(2**(n-(i+1))))
+    for j in range(0,n):
+        z_i= np.kron(np.kron(np.identity(2**j),Z_i), np.identity(2**(n-(j+1))))
         O_zsum= np.add(O_zsum, z_i)
     O_zop= (1/n) * O_zsum
     return O_zop
@@ -63,13 +68,13 @@ def Haarstate(n): # GENERAL HAAR STATE
         HaarVec= np.divide(v, la.norm(v))
     return HaarVec
 
-def NeelHaar(n_tot, n): #Combination of the Neel and Haar states
+def NeelHaar(n_tot, n_pxp): #Combination of the Neel and Haar states
     """
     :param n_tot: Total Number of chain atoms
     :param n: number of PXP atoms
     :return:
     """
-    NeelHaarstate = np.kron(Neelstate(n), Haarstate(n_tot - n))
+    NeelHaarstate = np.kron(Neelstate(n_pxp), Haarstate(n_tot - n_pxp))
     return NeelHaarstate
 
 
@@ -214,8 +219,19 @@ def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c, h_i): # FULL COUPLED HAMILTONIA
 #TODO check why Coupling parameter= 0 does not equal coupling matrix = 0 matrix
 
 
-# =========================== Declarations of functions  ==========================================
+# ============================== Declarations of metrics- functions to check quantities  ==========================================
 
+def Fig3B(EigenEnVecs, Nstate):  # ONLY EVEN NUM OF ATOMS
+    Eval, Evec = EigenEnVecs
+    for j in range(0, np.size(Eval)):
+        # print("\n <Operator(", Eval[j], ")>:", np.log10((np.absolute(np.dot(Nstate,Evec[:,j])))**2))
+        plt.plot(Eval[j], np.log10((np.absolute(np.dot(Nstate, Evec[:, j]))) ** 2), marker='.', color='C2')
+    plt.xlabel('$E$')
+    plt.ylabel(r'$log_{10}(|\langle\mathbb{Z}_{2}|\psi\rangle|)^{2}$')
+    # plt.title('Overlap of Neel State with Eigenstates vs. Eigenstate Energy')
+    plt.savefig('Overlap_12_atoms.pdf')
+    return plt.show()
+#TODO will need this later
 
 def EvecEval(Mat):  # calculates eigenvalues and eigenstates of HERMITIAN matrix
     eval, evec = la.eigh(Mat)
@@ -255,7 +271,7 @@ def normconst(Mat,VecState):  # sum of the inner products for normalization
 def normconst2(Mat,VecState): # sum of the inner products for normalization different technique for comparison
     return la.norm(EigenSpan(Mat,VecState))
 
-def TimeProp(Mat, n_tot, VecState,
+def TimeProp(Ham, n_tot, VecState,
              T_max, T_int, Color, marker):  # time propagation of initial state by decomposing in eigenvectors basis & propagating w/ respect to corresponding eigenenergy
     """
     :param Mat: Hamiltonian for propagation
@@ -266,14 +282,14 @@ def TimeProp(Mat, n_tot, VecState,
     :param marker:
     :return:
     """
-    Eval, Evec = EvecEval(Mat)
-    w = EigenSpan(Mat, VecState) #weights vector of projection of Vecstate onto Eigenbasis
+    Eval, Evec = EvecEval(Ham)
+    w = EigenSpan(Ham, VecState) #weights vector of projection of Vecstate onto Eigenbasis
     t = np.arange(1, T_max, T_int)
     for t in np.nditer(t): # builds Z_2t from scratch for every time t in the total time interval
         Z_2t = np.zeros(2 ** n_tot)
         for j in range(0, np.size(Eval)):
             Z_2t = Z_2t + np.dot(np.dot((np.exp(-1j * Eval[j] * t)), w[j]),
-                                 Evec[:, j])  # Z_2(t) spanned in eigenstate basis as Cols of a matrix
+                                 np.transpose(Evec)[j, :])  # Z_2(t) spanned in eigenstate basis as Cols of a matrix
         Fidel = np.absolute(np.vdot(VecState,(Z_2t)))**2
         plt.plot(t, np.round(Fidel, 4), marker=marker, markersize=3, color=Color)
     # plt.show()
@@ -293,10 +309,6 @@ def RunTimeProp(n_tot, n, Vecstate, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20, T_
 
 
 
-# TODO fix the different scripts that run functions from here
-#TODO organize files in venv folder so it's not in such a balagan
-
-# TODO Continue!
 
 
 def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
@@ -316,9 +328,47 @@ def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
     #TODO check if there are r=-inf that we need to deal with??
     #TODO think about the problem with the values for different Impurity strength and different atom chain sizes
 
-def RunRmetric(n_TI, h_x, h_z, h_i, Hamiltonian): #Run the RMeanMetric function om  Tilted Ising model
-    H = Hamiltonian(n_TI, h_x, h_z, h_i)
+def RunRmetric(n_TI, h_x, h_z, h_i, Ham): #Run the RMeanMetric function om  Tilted Ising model
+    H = Ham(n_TI, h_x, h_z, h_i)
     EV = la.eigvalsh(H) #outputs vector of eigenvalues, from smallest to biggest
     # print(EV)
     return RMeanMetric(EV)
+
+
+def Sandwichcheck(Op, VecState, n_tot, n_pxp, T_max, Coupmat=Z_i, h_x=1, h_z=1, h_c=0, h_i=0):
+    Eval, Evec = EvecEval(PXPBathHam(n_tot, n_pxp, Coupmat, h_x, h_z, h_c, h_i))
+    w = EigenSpan(PXPBathHam(n_tot, n_pxp, Coupmat, h_x, h_z, h_c, h_i), VecState(n_tot,n_pxp)) #weights vector of projection of Vecstate onto Eigenbasis
+    t = T_max
+    Z_2t = np.zeros(2 ** n_tot)
+    for j in range(0, np.size(Eval)):
+        Z_2t = Z_2t + np.dot(np.dot((np.exp(-1j * Eval[j] * t)), w[j]),
+                             np.transpose(Evec)[j, :])  # Z_2(t) calculated from spanning in eigenstate basis and propagating in time
+    Sandwich= np.dot(np.dot(np.conjugate(Z_2t),Op(n_tot, 2)),Z_2t)
+    return Sandwich
+
+
+def Sandwichcheckpxp(Op, VecState, n_pxp, T_max):
+    Eval, Evec = EvecEval(PXPOBCNew(n_pxp))
+    w = EigenSpan(PXPOBCNew(n_pxp), VecState(n_pxp)) #weights vector of projection of Vecstate onto Eigenbasis
+    t = T_max
+    Z_2t = np.zeros(2 ** n_pxp)
+    for j in range(0, np.size(Eval)):
+        Z_2t = Z_2t + np.dot(np.dot((np.exp(-1j * Eval[j] * t)), w[j]),
+                             np.transpose(Evec)[j, :])  # Z_2(t) calculated from spanning in eigenstate basis and propagating in time
+    Sandwich= np.dot(np.dot(np.conjugate(Z_2t),Op(n_pxp, 2)),Z_2t)
+    return Sandwich
+
+# TODO fix the different scripts that run functions from here
+
+#TODO organize files in venv folder so it's not in such a balagan
+
+#TODO write the <Neel(t)|Z|Neel(t)> as a function of t.
+
+#TODO move to different time propagation through Guy's methods
+
+#TODO breakthrough in how to write functions inside functions with vectors
+
+#TODO move to new Hamiltonian and change everything
+
+# TODO Continue!
 
