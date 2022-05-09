@@ -81,7 +81,12 @@ def NeelHaar(n_tot, n_pxp): #Combination of the Neel and Haar states
 # ===========================   Declarations of the separate Hamiltonians, coupling, and full coupled hamiltonian (basis of 2**ntot) ==========================================
 
 
-def PXPOBCNew(n):  # OBC PXP HAMILTONIAN
+def PXPOBCNew(n):
+    '''
+    OBC PXP HAMILTONIAN
+    :param n: number of atoms
+    :return: PXP model hamiltonian OBC
+    '''
     d = 2 ** n
     pxp_fin = np.zeros((d, d))
     for i in range(0, n):  # goes over all atoms (i [from 0 to n-1]= the atom) for total sum in the end
@@ -90,27 +95,78 @@ def PXPOBCNew(n):  # OBC PXP HAMILTONIAN
         piplus1 = P_i  # initial declaration
         if i == 0:
             piminus1 = np.identity(d)  # boundary (X_1*P_2)
+            piplus1 = np.kron(np.identity(2 ** (i + 1)),
+                              np.kron(piplus1, np.identity(2 ** (n - (i + 2)))))  # general P_i+1 term
+        elif i == n - 1:
+            piplus1 = np.identity(d)  # boundary (P_N-1*X_N)
+            piminus1 = np.kron(np.identity(2 ** (i - 1)),
+                               np.kron(piminus1, np.identity(2 ** (n - i))))  # general P_i-1 term
         else:
             piminus1 = np.kron(np.identity(2 ** (i - 1)),
                                np.kron(piminus1, np.identity(2 ** (n - i))))  # general P_i-1 term
-        xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n - (i + 1)))))  # general X_i term
-        if i == n - 1:
-            piplus1 = np.identity(d)  # boundary (P_N-1*X_N)
-        else:
             piplus1 = np.kron(np.identity(2 ** (i + 1)),
-                              np.kron(piplus1, np.identity(2 ** (n - (i + 2)))))  # general P_i+1 term
+                          np.kron(piplus1, np.identity(2 ** (n - (i + 2)))))  # general P_i+1 term
+        xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n - (i + 1)))))  # general X_i term
         pxp_ar = np.matmul(piminus1, np.matmul(xi, piplus1))  # calculates hamiltonian PER i
         pxp_fin = np.add(pxp_fin, pxp_ar)  # cumulative sum over i
+    return pxp_fin
+
+def PXPOBCNew2(n):
+    '''
+    Faster way of PXP
+    :param n: number of atoms
+    :return: PXP model hamiltonian OBC
+    '''
+    d = 2 ** n # full dimension
+    Pi_minus1 = P_i  # notation convenience
+    Xi = X_i  # notation convenience
+    Pi_plus1 = P_i  # notation convenience
+    pxp_fin = np.empty((d, d))
+    PXPleftbound = np.zeros((d, d))
+    PXPrightbound = np.zeros((d, d))
+    PXPnobound = np.zeros((d, d))
+    for i in range(1, n+1):  # i marks the number of atom from 1 to n
+        if i == 1:
+            PXPleftbound = np.kron(Xi,np.kron(Pi_plus1,np.identity(2**(n-2))))
+        elif i == n:
+            PXPrightbound = np.kron(np.identity(2**(n-2)),np.kron(Pi_minus1,Xi))
+        else:
+            PXPnobound = PXPnobound + np.kron(np.identity(2**(i-2)),np.kron(Pi_minus1,np.kron(Xi,np.kron(Pi_plus1,np.identity(2**(n-1-i))))))
+    pxp_fin = PXPleftbound + PXPnobound + PXPrightbound
     return pxp_fin
 
 def TIOBCNew(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n must be =>2)
     """
     :param n_TI: No of Tilted ising atoms MUST BE =>2
-    :param h_x: transverse field
-    :param h_z: Z field
-    :return:
+    :param h_x: transverse field strength
+    :param h_z: Z field (parallel) strength
+    :return: Tilted Ising Hamiltonian (for i=>2)
     """
-    d = 2 ** n_TI
+    d = 2 ** n_TI #dimesion
+    TI_fin = np.zeros((d, d))
+    for i in range(0, n_TI):
+        zi = Z_i  # inital declaration
+        ziplus1 = Z_i  # inital declaration
+        xi = X_i  # inital declaration
+        zi = np.kron(np.identity(2 ** i), np.kron(zi, np.identity(2 ** (n_TI - (i + 1)))))  # Z_i term
+        if i == n_TI - 1:
+            ziplus1 = np.zeros((d, d))  # Z_i+1 boundary (kills boundary)
+        else:
+            ziplus1 = np.kron(np.identity(2 ** (i + 1)),
+                              np.kron(ziplus1, np.identity(2 ** (n_TI - (i + 2)))))  # Z_i+1 term
+        xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
+        TI_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
+        TI_fin = np.add(TI_fin, TI_ar)
+    return TI_fin
+
+def TIOBCNew2(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n must be =>2)
+    """
+    :param n_TI: No of Tilted ising atoms MUST BE =>2
+    :param h_x: transverse field strength
+    :param h_z: Z field (parallel) strength
+    :return: Tilted Ising Hamiltonian (for i=>2)
+    """
+    d = 2 ** n_TI #dimesion
     TI_fin = np.zeros((d, d))
     for i in range(0, n_TI):
         zi = Z_i  # inital declaration
@@ -328,7 +384,7 @@ def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
     #TODO check if there are r=-inf that we need to deal with??
     #TODO think about the problem with the values for different Impurity strength and different atom chain sizes
 
-def RunRmetric(n_TI, h_x, h_z, h_i, Ham): #Run the RMeanMetric function om  Tilted Ising model
+def RunRmetric(n_TI, h_x, h_z, h_i, Ham): #Run the RMeanMetric function on Tilted Ising model
     H = Ham(n_TI, h_x, h_z, h_i)
     EV = la.eigvalsh(H) #outputs vector of eigenvalues, from smallest to biggest
     # print(EV)
