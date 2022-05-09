@@ -111,9 +111,9 @@ def PXPOBCNew(n):
         pxp_fin = np.add(pxp_fin, pxp_ar)  # cumulative sum over i
     return pxp_fin
 
-def PXPOBCNew2(n):
+def PXPOBCNew2(n): # faster method
     '''
-    Faster way of PXP
+    Faster way of PXP OBC
     :param n: number of atoms
     :return: PXP model hamiltonian OBC
     '''
@@ -121,7 +121,6 @@ def PXPOBCNew2(n):
     Pi_minus1 = P_i  # notation convenience
     Xi = X_i  # notation convenience
     Pi_plus1 = P_i  # notation convenience
-    pxp_fin = np.empty((d, d))
     PXPleftbound = np.zeros((d, d))
     PXPrightbound = np.zeros((d, d))
     PXPnobound = np.zeros((d, d))
@@ -135,8 +134,9 @@ def PXPOBCNew2(n):
     pxp_fin = PXPleftbound + PXPnobound + PXPrightbound
     return pxp_fin
 
-def TIOBCNew(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n must be =>2)
+def TIOBCNew(n_TI, h_x, h_z):
     """
+    Tilted Ising Hamiltonian OBC n= no of atoms (n must be =>2)
     :param n_TI: No of Tilted ising atoms MUST BE =>2
     :param h_x: transverse field strength
     :param h_z: Z field (parallel) strength
@@ -159,29 +159,30 @@ def TIOBCNew(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n m
         TI_fin = np.add(TI_fin, TI_ar)
     return TI_fin
 
-def TIOBCNew2(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n must be =>2)
+def TIOBCNew2(n_TI, J, h_x, h_z): # faster method
     """
+    Tilted Ising Hamiltonian OBC, faster method
     :param n_TI: No of Tilted ising atoms MUST BE =>2
+    :param J: Ising coupling parameter
     :param h_x: transverse field strength
-    :param h_z: Z field (parallel) strength
+    :param h_z: Z field (Longtitudinal) strength
     :return: Tilted Ising Hamiltonian (for i=>2)
     """
-    d = 2 ** n_TI #dimesion
-    TI_fin = np.zeros((d, d))
-    for i in range(0, n_TI):
-        zi = Z_i  # inital declaration
-        ziplus1 = Z_i  # inital declaration
-        xi = X_i  # inital declaration
-        zi = np.kron(np.identity(2 ** i), np.kron(zi, np.identity(2 ** (n_TI - (i + 1)))))  # Z_i term
-        if i == n_TI - 1:
-            ziplus1 = np.zeros((d, d))  # Z_i+1 boundary (kills boundary)
-        else:
-            ziplus1 = np.kron(np.identity(2 ** (i + 1)),
-                              np.kron(ziplus1, np.identity(2 ** (n_TI - (i + 2)))))  # Z_i+1 term
-        xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
-        TI_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
-        TI_fin = np.add(TI_fin, TI_ar)
+    d = 2 ** n_TI # dimesion
+    Zi = Z_i # Notation convenience
+    Zi_plus1 = Z_i # Notation convenience
+    Xi = X_i  # Notation convenience
+    Ising_part = np.zeros((d, d))
+    Transverse = np.zeros((d, d))
+    Longtitude = np.zeros((d, d))
+    for i in range(1, n_TI+1): # i = atom number
+        Transverse= Transverse + np.kron(np.identity(2 ** (i-1)),np.kron(Xi,np.identity(2 ** (n_TI-i))))
+        Longtitude= Longtitude + np.kron(np.identity(2 ** (i-1)),np.kron(Zi,np.identity(2 ** (n_TI-i))))
+        if i != n_TI:
+            Ising_part= Ising_part + np.kron(np.identity(2 ** (i-1)),np.kron(Zi,np.kron(Zi_plus1, np.identity(2 ** (n_TI-1-i)))))
+    TI_fin = ((h_x) * Transverse) + ((h_z) * Longtitude) + ((J) * Ising_part)
     return TI_fin
+
 
 def TIOBCNewImpure(n_TI, h_x, h_z, h_i): #same Tilted Ising only with impurity at the Z_1 site!!
     d = 2 ** n_TI
