@@ -200,25 +200,43 @@ def TIOBCNewImpure(n_TI, h_x, h_z, h_i): #same Tilted Ising only with impurity a
         xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
         TI_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
         TI_fin = np.add(TI_fin, TI_ar)
-    TI_fin_impure= np.add(TI_fin, h_i*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
+    TI_fin_impure = np.add(TI_fin, h_i*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
     return TI_fin_impure
+
+def TIOBCNewImpure2(n, J, h_x, h_z, h_imp, m): # faster method
+    """
+    Tilted Ising Hamiltonian OBC with impurity on the m'th site
+    :param n: No of Tilted ising atoms MUST BE =>2
+    :param J: Ising coupling parameter
+    :param h_x: transverse field strength
+    :param h_z: Z field (Longtitudinal) strength
+    :param h_imp: impurity strength
+    :param m: impurity site! (from 1 to n_TI)
+    :return: Tilted Ising Hamiltonian WITH IMPURITY (for i=>2)
+    """
+    d = 2 ** n #dimension
+    TI = TIOBCNew2(n, J, h_x, h_z)
+    Z_impure= (h_imp) * np.kron(np.identity(2**(m-1)),np.kron(Z_i, np.identity(2**(n - m))))
+    TI_impure = np.add(TI, Z_impure)
+    return TI_impure
 
 def Coupling(n_tot, n, Coupmat, h_c): # 2 site coupling matrix in TOTAL Hamiltonian size (2**n_totx2**n_tot )
     """
     :param n_tot: Total number of atoms in hamiltonian (PXP+ TI)
     :param n: Number of PXP atoms
-    :param Coupmat: Coupling 2x2 matrix ( one site matrix)
-    :param h_c: strength parameter
+    :param Coupmat: Coupling 2x2 base matrix ( one site matrix)
+    :param h_c: coupling strength parameter
     :return:
     """
-    d_pxp = 2 ** n
-    d_TI = 2 ** np.subtract(n_tot, n)
-    d_TOT = 2 ** n_tot
-    Couplmat = (h_c) * np.kron(Coupmat,Coupmat)
-    if np.subtract(n_tot,n) == 0 or np.subtract(n_tot,n) == n_tot or h_c == 0:
+    d_pxp = 2 ** n #dimension of PXP
+    d_TI = 2 ** np.subtract(n_tot, n) #dimension of TI
+    n_TI = np.subtract(n_tot, n)
+    d_TOT = 2 ** n_tot  #Total dimension
+    Coupling = (h_c) * np.kron(Coupmat, Coupmat)
+    if np.subtract(n_tot, n) == 0 or np.subtract(n_tot, n) == n_tot or h_c == 0:
         Coupterm = np.zeros((d_TOT,d_TOT))
     else:
-        Coupterm = np.kron(np.kron(np.identity(2 ** (n - 1)), Couplmat), np.identity(2 ** (np.subtract(n_tot, n)-1)))
+        Coupterm = np.kron(np.kron(np.identity(2 ** (n - 1)), Coupling), np.identity(2 ** (n_TI-1)))
     return Coupterm
 
 
@@ -245,18 +263,32 @@ def Couplingalt(n_tot, n, Coupmat, h_c): #alternative way to write coupling (slo
 
 
     #TODO think if I need this:
-# def PXPBathHamUncoup(n_tot, n, Coupmat, h_x, h_z,h_c):  # PXP+Bath UNCOUPLED!!!!
-#     d_pxp = 2 ** n
-#     d_TI = 2 ** np.subtract(n_tot, n)
-#     # d_tot = 2 ** n_tot
-#     PXP = PXPOBCNew(n)
-#     TI = TIOBCNew(np.subtract(n_tot, n), h_x, h_z)
-#     HamNoCoup = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_pxp), TI))
-#     ####TotHam= np.add(HamNoCoup,Coupling(n_tot,n ,Coupmat))####
-#     return HamNoCoup
 
-def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c, h_i): # FULL COUPLED HAMILTONIAN Builder
+
+def Coupling2(n_PXP, n_TI , Coupmat, h_c): #faster way
     """
+    faster way of
+    2 site coupling matrix in TOTAL Hamiltonian dimension (2**(n_PXP + n_TI))
+    :param n_PXP: Number of PXP atoms (0 to whatever)
+    :param n_TI: Number of TI atoms (0 to whatever)
+    :param Coupmat: Coupling 2x2 base matrix ( one site matrix)
+    :param h_c: coupling strength parameter
+    :return:
+    """
+    n_tot = np.add(n_PXP, n_TI)  # Total number of atoms
+    d_pxp = 2 ** n_PXP #dimension of PXP
+    d_TI = 2 ** n_TI #dimension of TI
+    d_TOT = 2 ** n_tot  #Total dimension
+    Coupling = (h_c) * np.kron(Coupmat, Coupmat)
+    if n_TI == 0 or n_PXP == 0 or h_c == 0:
+        Coupterm = np.zeros((d_TOT,d_TOT))
+    else:
+        Coupterm = np.kron(np.kron(np.identity(2 ** (n_PXP - 1)), Coupling), np.identity(2 ** (n_TI-1)))
+    return Coupterm
+
+def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c, h_i):
+    """
+    FULL 2**(n_tot) dimension COUPLED PXP and TI hamiltonian Builder
     :param n_tot: Total atom number
     :param n: PXP Atom number
     :param Coupmat: 2x2 matrix of coupling nature
@@ -275,7 +307,61 @@ def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c, h_i): # FULL COUPLED HAMILTONIA
     return TotHam
 #TODO check why Coupling parameter= 0 does not equal coupling matrix = 0 matrix
 
+def PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1):
+    """
+    FULL 2**(n_tot) dimension COUPLED PXP and TI hamiltonian Builder
+    :param n_PXP: PXP Atom number
+    :param n_TI: TI Atom number
+    :param Coupmat: 2x2 base matrix of coupling
+    :param h_x: transverse field strength
+    :param h_z: Z field strength
+    :param h_c: coupling strength
+    :param h_imp: impurity strength
+    :param m: impurity site (default is 1)
+    :return: Full coupled Hamiltonian
+    """
+    n_tot= np.add(n_PXP,n_TI)
+    d_PXP = 2 ** n_PXP
+    d_TI = 2 ** n_TI
+    d_tot= 2 ** n_tot
+    PXP = PXPOBCNew2(n_PXP)
+    TI = TIOBCNewImpure2(n_TI, J, h_x, h_z, h_imp, m)
+    HamNoCoupl = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_PXP), TI))
+    TotalHam = np.add(HamNoCoupl, Coupling2(n_PXP, n_TI, Coupmat, h_c))
+    return TotalHam
 
+def PXPBathHam3(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1):
+    """
+    FULL 2**(n_tot) dimension COUPLED PXP and TI hamiltonian Builder
+    :param n_PXP: PXP Atom number
+    :param n_TI: TI Atom number
+    :param Coupmat: 2x2 base matrix of coupling
+    :param h_x: transverse field strength
+    :param h_z: Z field strength
+    :param h_c: coupling strength
+    :param h_imp: impurity strength
+    :param m: impurity site (default is 1)
+    :return: Full coupled Hamiltonian
+    """
+    n_tot= np.add(n_PXP,n_TI)
+    d_PXP = 2 ** n_PXP
+    d_TI = 2 ** n_TI
+    d_tot= 2 ** n_tot
+    PXP = PXPOBCNew2(n_PXP)
+    TI = TIOBCNewImpure2(n_TI, J, h_x, h_z, h_imp, m)
+    HamNoCoupl = np.kron(PXP, TI)
+    TotalHam = np.add(HamNoCoupl, Coupling2(n_PXP, n_TI, Coupmat, h_c))
+    return TotalHam
+
+def PXPBathHamUncoupled(n_tot, n, Coupmat, h_x, h_z,h_c):  # PXP+Bath UNCOUPLED!!!!
+    d_pxp = 2 ** n
+    d_TI = 2 ** np.subtract(n_tot, n)
+    # d_tot = 2 ** n_tot
+    PXP = PXPOBCNew(n)
+    TI = TIOBCNew(np.subtract(n_tot, n), h_x, h_z)
+    HamNoCoup = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_pxp), TI))
+    ####TotHam= np.add(HamNoCoup,Coupling(n_tot,n ,Coupmat))####
+    return HamNoCoup
 # ============================== Declarations of metrics- functions to check quantities  ==========================================
 
 def Fig3B(EigenEnVecs, Nstate):  # ONLY EVEN NUM OF ATOMS
