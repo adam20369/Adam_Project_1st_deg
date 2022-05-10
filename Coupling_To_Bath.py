@@ -608,6 +608,47 @@ def RunRmetric(n_TI, h_x, h_z, h_i, Ham): #Run the RMeanMetric function on Tilte
     # print(EV)
     return RMeanMetric(EV)
 
+def RNewMeanMetricTI(eval):
+    """
+    mean R metric calculation
+    :param eval: EigenValues (size-ordered: smallest to biggest)
+    :return: r mean value - r= 0.39 poisson, r=0.536 W-D
+    """
+    S = np.diff(eval)  # returns  array of n-1 (Non-Negative) differences
+    r = np.zeros([S.shape[0] - 1])
+    for i in range(1, S.shape[0]):
+        r[i - 1] = np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1]))
+    R = np.around(r, 5)
+    N = np.count_nonzero(R)
+    Rmean = np.divide(np.sum(R), N)  # Averaging over No. of non-zero R contributions
+    return Rmean
+
+def RunRNewMeanMetricTI(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric function on Tilted Ising model
+    eval, evec =EvecEval(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
+    return RNewMeanMetricTI(eval)
+
+# RunRNewMeanMetricTI(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
+
+
+def RNewMeanMetricTICUT(eval):
+    """
+    Cut version of 1/8 of eigenvalues on every side of the spectrum
+    :param eval: EigenValues (size-ordered: smallest to biggest)
+    :return: r mean value - r= 0.39 poisson, r=0.536 W-D
+    """
+    S = np.diff(eval)  # returns  array of n-1 (Non-Negative) differences
+    r = np.zeros([S.shape[0] - 1])
+    for i in range(int(np.divide(S.shape[0],8)), int(7*np.divide(S.shape[0],8))):
+        r[i - 1] = np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1]))
+    R = np.around(r, 5)
+    N = np.count_nonzero(R)
+    Rmean = np.divide(np.sum(R), N)  # Averaging over No. of non-zero R contributions
+    return Rmean
+
+def RunRNewMeanMetricTICUT(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric function on Tilted Ising model
+    eval, evec =EvecEval(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
+    return RNewMeanMetricTICUT(eval)
+#RunRNewMeanMetricTICUT(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
 
 
 
