@@ -651,7 +651,6 @@ def RunRNewMeanMetricTICUT(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric f
 #RunRNewMeanMetricTICUT(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
 
 
-
 # TODO fix the different scripts that run functions from here
 
 #TODO organize files in venv folder so it's not in such a balagan
