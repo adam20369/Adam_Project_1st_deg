@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import itertools
 import timeit
 from scipy import integrate
+from scipy.linalg import expm
+from matplotlib.lines import Line2D
+
 
 # ========================== definitions Dim=1 ======================
 g = np.array([0, 1])  # ground state
@@ -32,17 +35,20 @@ def Z_1(n):
 # print(Z_1(3))
 
 def Z_generali(n,i): # calculates Z for general i
-    Z_geni = np.kron(np.identity(2**(i-1)),np.kron(Z_i, np.identity(2**(n-i))))
+    if i <= n:
+        Z_geni = np.kron(np.identity(2**(i-1)),np.kron(Z_i, np.identity(2**(n-i))))
+    else:
+        Z_geni= np.identity(2**n)
     return Z_geni
 # print(Z_1(3))
 
+
 def O_z(n): #mean of Z_i's
     d = 2 ** n
-    O_zsum = np.zeros((d,d))
+    Zi_sum = np.zeros((d,d))
     for j in range(0,n):
-        z_i= np.kron(np.kron(np.identity(2**j),Z_i), np.identity(2**(n-(j+1))))
-        O_zsum= np.add(O_zsum, z_i)
-    O_zop= (1/n) * O_zsum
+        Zi_sum= Zi_sum + np.kron(np.kron(np.identity(2**j),Z_i), np.identity(2**(n-(j+1))))
+    O_zop= (1/n) * Zi_sum
     return O_zop
 
 def Neelstate(n): # GENERAL NEELSTATE
@@ -58,23 +64,30 @@ def Neelstate(n): # GENERAL NEELSTATE
     return Neel
 
 def Haarstate(n): # GENERAL HAAR STATE
+    '''
+    General Haar state, A Haar state is a state that simulates an average eigenstate of the system,
+    since it replaces an arithmetic mean over all eigenstates of an observable
+    :param n:  number of atoms
+    :return: Haar Vector
+    '''
     if n == 0:
          HaarVec= np.array(1)
     else:
         d = 2 ** n
-        alpha= np.random.normal(0, 1, 2**n)
+        alpha= np.random.normal(0, 1, 2 ** n)
         betta= np.random.normal(0, 1, 2 ** n)
         v= alpha + 1j*betta
         HaarVec= np.divide(v, la.norm(v))
     return HaarVec
 
-def NeelHaar(n_tot, n_pxp): #Combination of the Neel and Haar states
+def NeelHaar(n_PXP, n_TI):
     """
-    :param n_tot: Total Number of chain atoms
-    :param n: number of PXP atoms
-    :return:
+    Combination of the Neel and Haar states
+    :param n_PXP:  Number of PXP chain atoms
+    :param n_TI: number of TI chain atoms
+    :return: Neel-Haar combined state
     """
-    NeelHaarstate = np.kron(Neelstate(n_pxp), Haarstate(n_tot - n_pxp))
+    NeelHaarstate = np.kron(Neelstate(n_PXP), Haarstate(n_TI))
     return NeelHaarstate
 
 
@@ -203,6 +216,8 @@ def TIOBCNewImpure(n_TI, h_x, h_z, h_i): #same Tilted Ising only with impurity a
     TI_fin_impure = np.add(TI_fin, h_i*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
     return TI_fin_impure
 
+
+
 def TIOBCNewImpure2(n, J, h_x, h_z, h_imp, m): # faster method
     """
     Tilted Ising Hamiltonian OBC with impurity on the m'th site
@@ -216,7 +231,7 @@ def TIOBCNewImpure2(n, J, h_x, h_z, h_imp, m): # faster method
     """
     d = 2 ** n #dimension
     TI = TIOBCNew2(n, J, h_x, h_z)
-    Z_impure= (h_imp) * np.kron(np.identity(2**(m-1)),np.kron(Z_i, np.identity(2**(n - m))))
+    Z_impure= (h_imp) * Z_generali(n,m)
     TI_impure = np.add(TI, Z_impure)
     return TI_impure
 
@@ -305,7 +320,6 @@ def PXPBathHam(n_tot, n, Coupmat, h_x, h_z, h_c, h_i):
     HamNoCoup = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_pxp), TI))
     TotHam = np.add(HamNoCoup, Coupling(n_tot, n, Coupmat, h_c))
     return TotHam
-#TODO check why Coupling parameter= 0 does not equal coupling matrix = 0 matrix
 
 def PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1):
     """
@@ -330,6 +344,26 @@ def PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1):
     TotalHam = np.add(HamNoCoupl, Coupling2(n_PXP, n_TI, Coupmat, h_c))
     return TotalHam
 
+def PXPBathHamNoCoupl2(n_PXP, n_TI, J, h_x, h_z, h_imp, m=1):
+    """
+    FULL 2**(n_tot) dimension COUPLED PXP and TI hamiltonian Builder
+    :param n_PXP: PXP Atom number
+    :param n_TI: TI Atom number
+    :param h_x: transverse field strength
+    :param h_z: Z field strength
+    :param h_imp: impurity strength
+    :param m: impurity site (default is 1)
+    :return: Full coupled Hamiltonian
+    """
+    n_tot= np.add(n_PXP,n_TI)
+    d_PXP = 2 ** n_PXP
+    d_TI = 2 ** n_TI
+    d_tot= 2 ** n_tot
+    PXP = PXPOBCNew2(n_PXP)
+    TI = TIOBCNewImpure2(n_TI, J, h_x, h_z, h_imp, m)
+    HamNoCoupl = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_PXP), TI))
+    return HamNoCoupl
+
 
 # ============================== Declarations of metrics- functions to check quantities  ==========================================
 
@@ -343,22 +377,30 @@ def Fig3B(EigenEnVecs, Nstate):  # ONLY EVEN NUM OF ATOMS
     # plt.title('Overlap of Neel State with Eigenstates vs. Eigenstate Energy')
     plt.savefig('Overlap_12_atoms.pdf')
     return plt.show()
-#TODO will need this later
+#TODO will need this later?
 
 def EvecEval(Mat):  # calculates eigenvalues and eigenstates of HERMITIAN matrix
     eval, evec = la.eigh(Mat)
-    return np.real(np.round(eval, 4)), np.round(evec, 4)
+    return np.real(np.round(eval, 5)), np.round(evec, 5)
 
 def EigenSpan(Mat,
-              VecState):  # outputs vector of weights (inner product) of Neel state spanned in eigenstate basis (subspace dim)
+              VecState):
     """
+    Spans some vector (VecState) in the eigenbasis of a matrix.
     :param Mat: Input matrix for eigenstate decomposition
     :param VecState: Some vector state (initial state usually) that we want to span in eigenstate basis
-    :return: vector of weights
+    :return: vector of weights (in Eigenstate basis)
     """
     Eval, Evec = EvecEval(Mat)
-    w = np.dot(np.transpose(Evec),VecState)
-    return w
+    W = np.dot(np.transpose(Evec),VecState)
+    return W
+
+def EigenCombine(Mat,VecState):
+    '''checks tat multiplying the weights back with the eigenstates gives the original vector'''
+    W = EigenSpan(Mat,VecState)
+    Eval, Evec = EvecEval(Mat)
+    Recombine= np.round(np.dot(Evec,W),4)
+    return Recombine
 
 def EigenSpanAlt(Mat,
               VecState):  # alternative way to define the Eigenspan function (slower!!, the older one)
@@ -375,18 +417,18 @@ def EigenSpanAlt(Mat,
     # print("\n array of <Z_2|EigenVec(j)>:", np.real(y))
     return y
 
-def normconst(Mat,VecState):  # sum of the inner products for normalization
-    y = EigenSpan(Mat,VecState)
-    # print("\n sum \n", np.round(np.real(sum),3))
-    return np.round(np.vdot(y, y), 5)
-
-def normconst2(Mat,VecState): # sum of the inner products for normalization different technique for comparison
-    return la.norm(EigenSpan(Mat,VecState))
+# def normconst(Mat,VecState):  # sum of the inner products for normalization
+#     y = EigenSpan(Mat,VecState)
+#     # print("\n sum \n", np.round(np.real(sum),3))
+#     return np.round(np.vdot(y, y), 5)
+#
+# def normconst2(Mat,VecState): # sum of the inner products for normalization different technique for comparison
+#     return la.norm(EigenSpan(Mat,VecState))
 
 def TimeProp(Ham, n_tot, VecState,
-             T_max, T_int, Color, marker):  # time propagation of initial state by decomposing in eigenvectors basis & propagating w/ respect to corresponding eigenenergy
+             T_max, T_step, Color, marker):  # time propagation of initial state by decomposing in eigenvectors basis & propagating w/ respect to corresponding eigenenergy
     """
-    :param Mat: Hamiltonian for propagation
+    :param Ham: Hamiltonian for propagation
     :param n_tot: Size of dimension *(size of Hamiltonian)
     :param VecState: Initial Vector state we would like to propagate
     :param T_max: Time of propagation
@@ -396,7 +438,7 @@ def TimeProp(Ham, n_tot, VecState,
     """
     Eval, Evec = EvecEval(Ham)
     w = EigenSpan(Ham, VecState) #weights vector of projection of Vecstate onto Eigenbasis
-    t = np.arange(1, T_max, T_int)
+    t = np.arange(1, T_max, T_step)
     for t in np.nditer(t): # builds Z_2t from scratch for every time t in the total time interval
         Z_2t = np.zeros(2 ** n_tot)
         for j in range(0, np.size(Eval)):
@@ -411,41 +453,79 @@ def RunTimeProp(n_tot, n, Vecstate, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20, T_
     Runs TimeProp
     """
     H_pxp= PXPOBCNew(n_tot)
-    H_tot = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c, h_i=0.4)
+    #H_tot = PXPBathHam(n_tot, n, Coupl, h_x, h_z, h_c, h_i=0.4)
     # H= PXPBathHamUncoup(n_tot, n, Coupl, h_x, h_z) # Uncoupled version
     InitVecstate = Vecstate(n_tot)
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
     markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
     #TimeProp(H_pxp, n_tot, InitVecstate, T_max, T_int, Color, markers)
-    TimeProp(H_tot, n_tot, InitVecstate, T_max, T_int, Color, markers)
+    TimeProp(H_pxp, n_tot, InitVecstate, T_max, T_int, Color, markers)
 
 
+def NewTimeProp2(Ham, n_PXP, n_TI,  Initialstate,
+             T_max, T_step, Color, Marker):
+    '''
+    NEW METHOD 10.5.22
+    :param Ham: Hamiltonian for propagation
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param Color:
+    :param Marker:
+    :return: plot of |<Z_2|Z_2(t)>|^2 as a func of time t
+    '''
+    U= expm(-1j*Ham*T_step)
+    U_dag= expm(1j*Ham*T_step)
+    v= Initialstate
+    t = np.arange(1, T_max, T_step)
+    for t in np.nditer(t):
+        v = np.dot(U,v)
+        plt.plot(t, np.round(np.vdot(Initialstate,v)**2,4), marker=Marker, markersize=3, color=Color)
 
-
-
-def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
+def RunNewTimeProp2(n_PXP, n_TI, Coupl=Z_i, J=1 ,h_x=1, h_z=1, h_c=1, T_max=20, T_step=0.05, h_imp=0.01, m=1):# 1 Time propagation of PXP TI COUPLED
     """
-    :param EV: EigenValues (size-ordered: smallest to biggest)
-    :return: r mean value
+    Runs NewTimeProp2
     """
-    S = np.diff(EV)  # returns  array of n-1 (Non-Negative) differences between Eigenvalues
-    r = 0
-    #c = 0  #counts the r's that don't contribute
-    for i in range(1, S.shape[0]):
-        r = r + np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1])) #???out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
-        #print(max(S[i], S[i - 1]))
-        # c = c + np.array((0,1))[int(max(S[i], S[i - 1]) == 0)]  # counts the r's that don't contribute
-    r = r / (S.shape[0] - 1)  # n-1 minus c+1 more (n-2-c total)
-    return r
-    #TODO check if there are r=-inf that we need to deal with??
-    #TODO think about the problem with the values for different Impurity strength and different atom chain sizes
+    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+    InitVecstate = NeelHaar(n_PXP,n_TI)
+    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
+    markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
+    NewTimeProp2(H_full, n_PXP, n_TI, InitVecstate, T_max, T_step, Color, markers)
 
-def RunRmetric(n_TI, h_x, h_z, h_i, Ham): #Run the RMeanMetric function on Tilted Ising model
-    H = Ham(n_TI, h_x, h_z, h_i)
-    EV = la.eigvalsh(H) #outputs vector of eigenvalues, from smallest to biggest
-    # print(EV)
-    return RMeanMetric(EV)
-
+def Run4TimePropPxpConserve2(n_totArray, n_PXP, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, h_imp=0.01, m=1, T_max=20, T_step=0.05):
+    """
+    time propagation of 4 different TOTAL atom sizes, PXP number conserved
+    :param n_totArray: Array of 4 different TOTAL atom numbers
+    :param n_PXP: number of PXP atoms
+    :param Coupl: Nature of coupling (2x2 matrix)
+    :param h_x: transverse field strength
+    :param h_z: Z field strength
+    :param h_c: coupling strength
+    :param T_max: max time
+    :param T_step: step size (between steps)
+    :return: Timeprop graph x4
+    """
+    markers = np.array(('s', '^', 'o', 'd'))
+    colors = np.array(('b','r','y','k'))
+    n_TIarray = n_totArray - n_PXP # Vector!
+    n_start = n_TIarray[0]
+    for n_TI in n_TIarray: #running over n_tots
+        H = PXPBathHam2(n_PXP,n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+        Initialstate = NeelHaar(n_PXP, n_TI)
+        Color = colors[n_TI-n_start]
+        marker = markers[n_TI-n_start]
+        NewTimeProp2(H, n_PXP, n_TI, Initialstate, T_max, T_step, Color, marker)
+    custom_lines = [Line2D([0], [0], color=colors[0], marker=markers[0]),
+                    Line2D([0], [0], color=colors[1], marker=markers[1]),
+                    Line2D([0], [0], color=colors[2], marker=markers[2]),
+                    Line2D([0], [0], color=colors[3], marker=markers[3])] #LEGEND DEFINITIONS
+    plt.legend(custom_lines, ['{} total atoms'.format(n_totArray[0]), '{} total atoms'.format(n_totArray[1]), '{} total atoms'.format(n_totArray[2]),'{} total atoms'.format(n_totArray[3])])
+    plt.xlabel('$t$')
+    plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
+    #plt.savefig('new_fidelity_for_different_numbers_of_total_atoms.pdf')
+    plt.title('Quantum Fidelity of {}-PXP Neel State with coupling strength {}'.format(n_PXP,h_c))
 
 def Sandwichcheck(Op, VecState, n_tot, n_pxp, T_max, Coupmat=Z_i, h_x=1, h_z=1, h_c=0, h_i=0):
     Eval, Evec = EvecEval(PXPBathHam(n_tot, n_pxp, Coupmat, h_x, h_z, h_c, h_i))
@@ -470,17 +550,70 @@ def Sandwichcheckpxp(Op, VecState, n_pxp, T_max):
     Sandwich= np.dot(np.dot(np.conjugate(Z_2t),Op(n_pxp, 2)),Z_2t)
     return Sandwich
 
+def Z1SandwichCheck(Ham, n_PXP, n_TI,  Initialstate,
+             T_max, T_step, Color, Marker):
+    '''
+    NEW METHOD 10.5.22
+    :param Ham: Hamiltonian for propagation
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param Color:
+    :param Marker:
+    :return: plot of |<Z_2|Z_2(t)>|^2 as a func of time t
+    '''
+    U= expm(-1j*Ham*T_step)
+    U_dag= expm(1j*Ham*T_step)
+    v_ket= Initialstate
+    v_bra= Initialstate
+    t = np.arange(1, T_max, T_step)
+    for t in np.nditer(t):
+        v_ket = np.dot(U,v_ket)
+        v_bra = np.dot(U,v_bra)
+        plt.plot(t, np.round(np.vdot(v_bra,np.dot(Z_1(n_PXP+n_TI),v_ket)),4), marker=Marker, markersize=3, color=Color)
+ #TODO change to Zgenerali?
+ #TODO WORKS!
+
+def RunZ1SandwichCheck(n_PXP, n_TI, Coupl=Z_i, J=1 ,h_x=1, h_z=1, h_c=0, T_max=20, T_step=0.05, h_imp=0.01, m=1):# 1 Time propagation of PXP TI COUPLED
+    """
+    Runs Z1SandwichCheck
+    """
+    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+    InitVecstate = NeelHaar(n_PXP,n_TI)
+    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
+    markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
+    Z1SandwichCheck(H_full, n_PXP, n_TI, InitVecstate, T_max, T_step, Color, markers)
+
+def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
+    """
+    :param EV: EigenValues (size-ordered: smallest to biggest)
+    :return: r mean value
+    """
+    S = np.diff(EV)  # returns  array of n-1 (Non-Negative) differences between Eigenvalues
+    r = 0
+    #c = 0  #counts the r's that don't contribute
+    for i in range(1, S.shape[0]):
+        r = r + np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1])) #???out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
+        #print(max(S[i], S[i - 1]))
+        # c = c + np.array((0,1))[int(max(S[i], S[i - 1]) == 0)]  # counts the r's that don't contribute
+    r = r / (S.shape[0] - 1)  # n-1 minus c+1 more (n-2-c total)
+    return r
+    #TODO think about the problem with the values for different Impurity strength and different atom chain sizes
+
+def RunRmetric(n_TI, h_x, h_z, h_i, Ham): #Run the RMeanMetric function on Tilted Ising model
+    H = Ham(n_TI, h_x, h_z, h_i)
+    EV = la.eigvalsh(H) #outputs vector of eigenvalues, from smallest to biggest
+    # print(EV)
+    return RMeanMetric(EV)
+
+
+
+
 # TODO fix the different scripts that run functions from here
 
 #TODO organize files in venv folder so it's not in such a balagan
 
-#TODO write the <Neel(t)|Z|Neel(t)> as a function of t.
-
-#TODO move to different time propagation through Guy's methods
-
 #TODO breakthrough in how to write functions inside functions with vectors
-
-#TODO move to new Hamiltonian and change everything
-
-# TODO Continue!
 
