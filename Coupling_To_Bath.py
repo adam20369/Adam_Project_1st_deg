@@ -217,7 +217,6 @@ def TIOBCNewImpure(n_TI, h_x, h_z, h_i): #same Tilted Ising only with impurity a
     return TI_fin_impure
 
 
-
 def TIOBCNewImpure2(n, J, h_x, h_z, h_imp, m): # faster method
     """
     Tilted Ising Hamiltonian OBC with impurity on the m'th site
@@ -550,8 +549,8 @@ def Sandwichcheckpxp(Op, VecState, n_pxp, T_max):
     Sandwich= np.dot(np.dot(np.conjugate(Z_2t),Op(n_pxp, 2)),Z_2t)
     return Sandwich
 
-def Z1SandwichCheck(Ham, n_PXP, n_TI,  Initialstate,
-             T_max, T_step, Color, Marker):
+def ZiSandwichCheck(Ham, n_PXP, n_TI,  Initialstate,
+             T_max, T_step, i, Color, Marker):
     '''
     NEW METHOD 10.5.22
     :param Ham: Hamiltonian for propagation
@@ -560,6 +559,7 @@ def Z1SandwichCheck(Ham, n_PXP, n_TI,  Initialstate,
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_max: Max Time of propagation
     :param T_step: time step (interval)
+    :param i: Z_i site choice
     :param Color:
     :param Marker:
     :return: plot of |<Z_2|Z_2(t)>|^2 as a func of time t
@@ -572,11 +572,9 @@ def Z1SandwichCheck(Ham, n_PXP, n_TI,  Initialstate,
     for t in np.nditer(t):
         v_ket = np.dot(U,v_ket)
         v_bra = np.dot(U,v_bra)
-        plt.plot(t, np.round(np.vdot(v_bra,np.dot(Z_1(n_PXP+n_TI),v_ket)),4), marker=Marker, markersize=3, color=Color)
- #TODO change to Zgenerali?
- #TODO WORKS!
+        plt.plot(t, np.round(np.vdot(v_bra,np.dot(Z_generali(n_PXP+n_TI,i),v_ket)),4), marker=Marker, markersize=3, color=Color)
 
-def RunZ1SandwichCheck(n_PXP, n_TI, Coupl=Z_i, J=1 ,h_x=1, h_z=1, h_c=0, T_max=20, T_step=0.05, h_imp=0.01, m=1):# 1 Time propagation of PXP TI COUPLED
+def RunZiSandwichCheck(n_PXP, n_TI, i, Coupl=Z_i, J=1 ,h_x=1, h_z=1, h_c=0, T_max=20, T_step=0.05, h_imp=0.01, m=1 ):# 1 Time propagation of PXP TI COUPLED
     """
     Runs Z1SandwichCheck
     """
@@ -584,7 +582,7 @@ def RunZ1SandwichCheck(n_PXP, n_TI, Coupl=Z_i, J=1 ,h_x=1, h_z=1, h_c=0, T_max=2
     InitVecstate = NeelHaar(n_PXP,n_TI)
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
     markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
-    Z1SandwichCheck(H_full, n_PXP, n_TI, InitVecstate, T_max, T_step, Color, markers)
+    ZiSandwichCheck(H_full, n_PXP, n_TI, InitVecstate, T_max, T_step, i, Color, markers)
 
 def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
     """
@@ -651,9 +649,8 @@ def RunRNewMeanMetricTICUT(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric f
 #RunRNewMeanMetricTICUT(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
 
 
-# TODO fix the different scripts that run functions from here
+# TODO fix the different scripts that run functions from here????
 
 #TODO organize files in venv folder so it's not in such a balagan
 
-#TODO breakthrough in how to write functions inside functions with vectors
 
