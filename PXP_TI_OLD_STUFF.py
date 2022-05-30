@@ -7,7 +7,7 @@ from scipy import integrate
 from scipy.linalg import expm
 from matplotlib.lines import Line2D
 
-#================-------------------------------------------
+#================-------------------------------------------Declarations (only to avoid errors)
 
 g = np.array([0, 1])  # ground state
 # print("ground=\n", g)
