@@ -103,8 +103,25 @@ def NeelHaar(n_PXP, n_TI):
 
 # ===========================   Declarations of the separate Hamiltonians, coupling, and full coupled hamiltonian (basis of 2**ntot) ==========================================
 
-
 def PXPOBCNew2(n): # faster method
+    '''
+    Faster way of PXP OBC
+    :param n: number of atoms
+    :return: PXP model hamiltonian OBC
+    '''
+    d = 2 ** n # full dimension
+    Pi_minus1 = P_i  # notation convenience
+    Xi = X_i  # notation convenience
+    Pi_plus1 = P_i  # notation convenience
+    PXPleftbound = np.kron(Xi, np.kron(Pi_plus1, np.identity(2 ** (n - 2))))
+    PXPrightbound = np.kron(np.identity(2 ** (n - 2)), np.kron(Pi_minus1, Xi))
+    PXPnobound = np.zeros((d, d))
+    for i in range(2, n): #i marks the number of the atom that Xi sits on
+        PXPnobound = PXPnobound + np.kron(np.identity(2**(i-2)),np.kron(Pi_minus1,np.kron(Xi,np.kron(Pi_plus1,np.identity(2**(n-1-i))))))
+    pxp_fin = PXPleftbound + PXPnobound + PXPrightbound
+    return pxp_fin
+
+def PXPOBCNew2old(n): # faster method
     '''
     Faster way of PXP OBC
     :param n: number of atoms
@@ -164,7 +181,10 @@ def TIOBCNewImpure2(n, J, h_x, h_z, h_imp, m): # faster method
     """
     d = 2 ** n #dimension
     TI = TIOBCNew2(n, J, h_x, h_z)
-    Z_impure= (h_imp) * Z_generali(n,m)
+    if n==0:
+        Z_impure = np.array(0)
+    else:
+        Z_impure = (h_imp) * Z_generali(n, m)
     TI_impure = np.add(TI, Z_impure)
     return TI_impure
 
@@ -246,6 +266,8 @@ def EvecEval(Mat):
     '''
     eval, evec = la.eigh(Mat)
     return np.real(np.round(eval, 5)), np.round(evec, 5)
+EvecEval(PXPBathHam2(7,3,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi),h_c=0,h_imp=0.01,m=1))
+EvecEval(PXPOBCNew2(7))
 
 def EigenSpan(Mat,
               VecState):
@@ -337,43 +359,6 @@ def Run4TimePropPxpConserve2(n_totArray, n_PXP, Coupl=Z_i, J=1 , h_x=np.sin(0.48
     plt.title('Quantum Fidelity of {}-PXP Neel State with coupling strength {}'.format(n_PXP,h_c))
 
 
-def ZiSandwichCheck(Ham, n_PXP, n_TI,  Initialstate,
-             T_max, T_step, i, Color, Marker):
-    '''
-    NEW METHOD 10.5.22
-    :param Ham: Hamiltonian for propagation
-    :param n_PXP: Size of PXP chain (atoms)
-    :param n_TI: Size of TI chain (atoms)
-    :param Initialstate:  Initial Vector state we would like to propagate
-    :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
-    :param i: Z_i site choice
-    :param Color:
-    :param Marker:
-    :return: plot of |<Z_2|Z_2(t)>|^2 as a func of time t
-    '''
-    U= expm(-1j*Ham*T_step)
-    U_dag= expm(1j*Ham*T_step)
-    v_ket= Initialstate
-    v_bra= Initialstate
-    t = np.arange(1, T_max, T_step)
-    for t in np.nditer(t):
-        v_ket = np.dot(U,v_ket)
-        v_bra = np.dot(U,v_bra)
-        plt.plot(t, np.round(np.vdot(v_bra,np.dot(Z_generali(n_PXP+n_TI,i),v_ket)),4), marker=Marker, markersize=3, color=Color)
-    return
-
-def RunZiSandwichCheck(n_PXP, n_TI, i, Coupl=Z_i, J=1 ,h_x=1, h_z=1, h_c=0, T_max=20, T_step=0.05, h_imp=0.01, m=1 ):# 1 Time propagation of PXP TI COUPLED
-    """
-    Runs Z1SandwichCheck
-    """
-    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
-    InitVecstate = NeelHaar(n_PXP,n_TI)
-    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
-    ZiSandwichCheck(H_full, n_PXP, n_TI, InitVecstate, T_max, T_step, i, Color, markers)
-
-# TODO think about the problem with the values for different Impurity strength and different atom chain sizes?
 
 def RNewMeanMetricTI(eval):
     """
@@ -439,7 +424,307 @@ def RunRNewMeanMetricTICUT(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric f
 # TODO fix the different scripts that run functions from here?
 
 
-#-------------------------- NEW REGIME----------------------------
+#-------------------------- Damping Length with bath checks----------------------------#
 
-def Findpeaksosc():
-    find_peaks()
+def ZiSandwichCheck2(Ham, n_PXP, n_TI,  Initialstate,
+             T_start, T_max, T_step, i, Color, Marker):
+    '''
+    returns 2x 1D arrays: time propagated output for every delta_t, and the corresponding vector of t we defined
+    :param Ham: Hamiltonian for propagation
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param i: Z_i site choice
+    :param Color:
+    :param Marker:
+    :return: vector of V (time propagated output for every delta t) and the corresponding vector of t we defined
+    '''
+    U= expm(-1j*Ham*T_step)
+    U_dag= expm(1j*Ham*T_step)
+    v_ket= Initialstate
+    v_bra= Initialstate
+    t = np.arange(T_start, T_max, T_step)
+    VecProp=np.zeros((np.size(t)))
+    for ti in np.nditer(t):
+        v_ket = np.dot(U,v_ket) # propagation in iterations from here
+        v_bra = np.dot(U,v_bra) # propagation in iterations from here
+        VecProp[np.argwhere(t == ti)] = np.round(np.vdot(v_bra,np.dot(Z_generali(n_PXP+n_TI,i),v_ket)),4)
+    return t, VecProp
+
+def RunZiSandwichCheck(n_PXP, n_TI, i, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=0, T_start=0, T_max=100, T_step=0.05, h_imp=0.01, m=1 ):# 1 Time propagation of PXP TI COUPLED
+    """
+    Runs Z1SandwichCheck
+    """
+    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+    InitVecstate = NeelHaar(n_PXP,n_TI)
+    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
+    markers = np.array(('s', '^', 'o', 'd'))
+    return ZiSandwichCheck2(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, i, Color, np.random.choice(markers))
+
+# TODO think about the problem with the values for different Impurity strength and different atom chain sizes?
+
+def ZiSandwichCheckplt(Ham, n_PXP, n_TI,  Initialstate,
+             T_start, T_max, T_step, i, Color, Marker):
+    '''
+    plots <Neel|Z_i(t)|Neel> with respect to time and returns 2x 1D arrays
+    :param Ham: Hamiltonian for propagation
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param i: Z_i site choice
+    :param Color:
+    :param Marker:
+    :return: plot and vector of V (time propagated output for every delta t) + the corresponding vector of t we defined
+    '''
+    U= expm(-1j*Ham*T_step)
+    U_dag= expm(1j*Ham*T_step)
+    v_ket= Initialstate
+    v_bra= Initialstate
+    t = np.arange(T_start, T_max, T_step)
+    VecProp=np.zeros((np.size(t)))
+    for ti in np.nditer(t):
+        v_ket = np.dot(U,v_ket) # propagation in iterations from here
+        v_bra = np.dot(U,v_bra) # propagation in iterations from here
+        VecProp[np.argwhere(t == ti)] = np.round(np.vdot(v_bra,np.dot(Z_generali(n_PXP+n_TI,i),v_ket)),4)
+    plt.plot(t, VecProp, marker=Marker, markersize=3,
+             color=Color)
+    return t, VecProp, Color
+
+def RunZiSandwichCheckplt(n_PXP, n_TI, i, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=0, T_start=0, T_max=100, T_step=0.05, h_imp=0.01, m=1 ):# 1 Time propagation of PXP TI COUPLED
+    """
+    Runs Z1SandwichCheck plotter!
+    """
+    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+    InitVecstate = NeelHaar(n_PXP,n_TI)
+    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
+    markers = np.array(('s', '^', 'o', 'd'))
+    return ZiSandwichCheckplt(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, i, Color, np.random.choice(markers))
+
+def Peakfinder(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
+    '''
+    Finding peak (maximum) indeces of <Z_i(t)> graph
+    :param n_PXP:number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param i: index of Z_i
+    :return: peak indeces of a vector V (which is a vector of Z_i(t) in our case)
+    '''
+    t, VecProp = RunZiSandwichCheck(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=60, T_step=0.05,
+                       h_imp=0.01, m=1)
+    Peakindeces, list = find_peaks(VecProp, height= 0)
+    t_allpeaks = np.take(t,Peakindeces)
+    Vecprop_allpeaks = np.take(VecProp,Peakindeces)
+    return t_allpeaks, Vecprop_allpeaks
+
+def Peakfinderplt(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
+    '''
+    Finding peak (maximum) indeces of <Z_i(t)> graph
+    :param n_PXP:number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param i: index of Z_i
+    :return: peak indeces of a vector V (which is a vector of Z_i(t) in our case)
+    '''
+    t, VecProp, Color = RunZiSandwichCheckplt(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=100, T_step=0.05,
+                       h_imp=0.01, m=1)
+    Peakindeces, list = find_peaks(VecProp, height= 0)
+    t_allpeaks = np.take(t,Peakindeces)
+    Vecprop_allpeaks = np.take(VecProp,Peakindeces)
+    plt.plot(t_allpeaks, Vecprop_allpeaks, color=Color, marker='o')
+    return plt.show()
+
+#TODO: fix this!
+
+def Peaktreshold(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
+    '''
+    finds the height value of the last peak beyond a set threshold, and the t value of peak's location
+    :param n_PXP:number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param i: index of Z_i
+    :return: height value of the last peak beyond a set threshold, and the t value of peak's location)
+    '''
+    t, VecProp = RunZiSandwichCheck(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=100, T_step=0.05,
+                       h_imp=0.01, m=1)
+    Peakindeces, list = find_peaks(VecProp, height= 0) # all peaks
+    Peakindecesaboveh, listheight = find_peaks(VecProp, height=0.25) #peaks beyond a threshold
+    t_allpeaks = np.take(t,Peakindeces)
+    Vecprop_allpeaks = np.take(VecProp,Peakindeces)
+    t_abovehpeaks= np.take(t,Peakindecesaboveh)
+    Vecprop_abovehpeaks = np.take(VecProp,Peakindecesaboveh)
+    tresholdind= np.where(t_allpeaks != t_abovehpeaks)
+    # taking interval of
+    return print(t_allpeaks, t_abovehpeaks,tresholdind)
+
+# taking X first peaks (0 isn't a peak in Z_1). X can be equal 5-6 OR thresholding
+
+def Averagesig(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
+    '''
+    Arithmetic mean signal amplitude
+    :return:
+    '''
+    t, VecProp = RunZiSandwichCheck(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=60, T_step=0.05,
+                                    h_imp=0.01, m=1)
+    return np.average(VecProp)
+
+def Dampinglength(n_PXP, n_TI, Cap, h_c, i=1):
+    '''
+    calculate damping length by setting a threshold peak
+    :param n_PXP: PXP atom No
+    :param n_TI: TI atom No
+    :param Cap: integer, cap peak (from 1)
+    :param i: Z_i index
+    :return: interval of t from beginning to final peak
+    '''
+    t_peaks, Vecprop_peaks = Peakfinder(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi))
+    t_length = t_peaks[Cap-1]
+    return t_length
+
+#TODO problem with counting length from peak that is not on t=0 ?? ask Yevgeni
+
+def ScaledDampinglength(n_PXP, n_TI, h_c, Cap=5, i=1):
+    '''
+    Scaled damping length (can be used for comparing different TI atom numbers/ different coupling strength)
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Cap: peak cap for taking length interval
+    :param i: Z_i site
+    :return: Scalar from 0 to 1 (indicating the relative damping length to the pure PXP one)
+    '''
+    PurePXPlength = Dampinglength(n_PXP, 0, Cap, 0, i)
+    Damplength = Dampinglength(n_PXP, n_TI, Cap, h_c, i)
+    Scaledlength= np.divide(Damplength,PurePXPlength)
+    return Scaledlength
+
+def PlotDampinglengthTIno(n_PXP, n_TI, h_c, Cap=5, i=1):
+    '''
+
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Cap: peak cap for taking length interval
+    :param i: Z_i site
+    :return: Plot
+
+    '''
+    for n in np.nditer(n_TI):
+        Scaledlength= ScaledDampinglength(n_PXP, n, h_c, Cap, i)
+        plt.plot(n,Scaledlength, color='black', marker='o')
+        plt.xlabel('No. of TI atoms')
+        plt.ylabel('Damping Length')
+    plt.show()
+    return
+
+def PlotDampinglengthCoupstr(n_PXP, n_TI, h_c, Cap=5, i=1):
+    '''
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Cap: peak cap for taking length interval
+    :param i: Z_i site
+    :return:
+    '''
+    for h in np.nditer(h_c):
+        Scaledlength= ScaledDampinglength(n_PXP, n_TI, h, Cap, i)
+        plt.plot(h ,Scaledlength, color='blue', marker='o')
+        plt.xlabel('No. of TI atoms')
+        plt.ylabel('Damping Length')
+    plt.show()
+    return
+
+def infinitetempaverageZ(n_pxp, n_TI, i, h_c, Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
+    '''
+    calculates "microcanonical" (of all energies) average of an operator
+    :param n_PXP: PXP Atom number
+    :param n_TI: TI Atom number
+    :param i: site of magnetization operator (i<=n_pxp)
+    :param h_c: coupling strength
+    :param Coupmat: 2x2 base matrix of coupling
+    :param J: Ising expression strength TI
+    :param h_x: transverse field strength TI
+    :param h_z: Z field strength TI
+    :param h_imp: impurity strength TI
+    :param m: impurity site (default is 1) TI
+    :return: Scalar, average infinite temperature of the operator Z_i (for given site)
+    '''
+    Z_toti = Z_generali(n_pxp+n_TI,i)
+    Eval, Evec = EvecEval(PXPBathHam2(n_pxp,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp, m=1))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_toti,Evec))) # outputs an array of <n|Z_toti|n>'s
+    InfTempAverage = np.divide(1,np.size(Eval))*np.sum(ExpectationArray)
+    return InfTempAverage
+
+def fig2APXP_TI(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
+    '''
+    Figure 2 plot of Pxp TI TOTAL Ham
+    :param n_PXP: number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param h_c: coupling strength
+    :param i: index of Z_i
+    :param Coupmat: Coupling nature
+    :param J: Ising strength
+    :param h_x: X direction strength
+    :param h_z: Z direction strength
+    :param h_imp: TI Impurity strength
+    :return: plot
+    '''
+    Eval, Evec = EvecEval(PXPBathHam2(n_PXP,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp,m=1))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(np.add(n_PXP,n_TI),i),Evec))) # outputs an array of <n|Z|n>'s
+    plt.scatter(Eval,ExpectationArray, color='b',marker='o')
+    plt.show()
+    return
+
+def fig2APXP_Only(n_PXP,i=1):
+    '''
+     Figure 2 plot of Pxp TI TOTAL Ham
+    :param n_PXP: number of PXP atoms
+    :param i: index of Z_i
+    :return: plot
+    '''
+    Eval, Evec = EvecEval(PXPOBCNew2(n_PXP))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(n_PXP,i),Evec))) # outputs an array of <n|Z|n>'s
+    plt.scatter(Eval,ExpectationArray, color='b',marker='o')
+    plt.show()
+    return
+
+def fig2Check(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
+    '''
+    check if the two graphs (PXP only and PXP TI) coincide
+    :param n_PXP: number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param h_c: coupling strength
+    :param i: index of Z_i
+    :param Coupmat: Coupling nature
+    :param J: Ising strength
+    :param h_x: X direction strength
+    :param h_z: Z direction strength
+    :param h_imp: TI Impurity strength
+    :return: boolean
+    '''
+    EvalPXP_TI, EvecPXP_TI = EvecEval(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1))
+    EvalPXP, EvecPXP = EvecEval(PXPOBCNew2(n_PXP))
+    ExpectationArrayPXP_TI= np.diag(np.matmul(np.conjugate(np.transpose(EvecPXP_TI)),np.matmul(Z_generali(np.add(n_PXP,n_TI),i),EvecPXP_TI)))
+    ExpectationArrayPXP = np.diag(np.matmul(np.conjugate(np.transpose(EvalPXP)),np.matmul(Z_generali(n_PXP,i),EvalPXP))) # outputs an array of <n|Z_toti|n>'s
+    return np.allclose(ExpectationArrayPXP_TI,ExpectationArrayPXP)
+
+def GroundstateCheck(n_PXP, n_TI, h_c=0 ,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
+    '''
+    Checks ground state and anti ground state of PXP-TI Vs PXP and TI seperately
+    :param n_PXP: number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param h_c: coupling strength
+    :param Coupmat: Coupling nature
+    :param J: Ising strength
+    :param h_x: X direction strength
+    :param h_z: Z direction strength
+    :param h_imp: TI Impurity strength
+    :return: boolean for ground state and boolean for Anti ground state
+    '''
+    d_pxp=2**(n_PXP)
+    d_TI=2**(n_TI)
+    d_tot=2**(n_TI+n_PXP)
+    EvalPXP, EvecPXP = EvecEval(PXPOBCNew2(n_PXP))
+    EvalTI, EvecTI = EvecEval(TIOBCNewImpure2(n_TI,J, h_x, h_z, h_imp, m=1))
+    EvalPXP_TI, EvecPXP_TI = EvecEval(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1))
+    print(np.allclose(EvalPXP[0]+EvalTI[0],EvalPXP_TI[0]))
+    return np.allclose(EvalPXP[d_pxp-1]+EvalTI[d_TI-1],EvalPXP_TI[d_tot-1])

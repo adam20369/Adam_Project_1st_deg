@@ -280,6 +280,34 @@ def Sandwichcheckpxp(Op, VecState, n_pxp, T_max):
     Sandwich= np.dot(np.dot(np.conjugate(Z_2t),Op(n_pxp, 2)),Z_2t)
     return Sandwich
 
+def ZiSandwichCheck(Ham, n_PXP, n_TI,  Initialstate,
+             T_start, T_max, T_step, i, Color, Marker):
+    '''
+    Newer version of code (10.5.22)
+    plotting <Neel|Z_i(t)|Neel> with respect to time
+    :param Ham: Hamiltonian for propagation
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param i: Z_i site choice
+    :param Color:
+    :param Marker:
+    :return: plot of V=<Neel|Z_i(t)|Neel> with respect to time
+    '''
+    U= expm(-1j*Ham*T_step)
+    U_dag= expm(1j*Ham*T_step)
+    v_ket= Initialstate
+    v_bra= Initialstate
+    t = np.arange(T_start, T_max, T_step)
+    for t in np.nditer(t):
+        v_ket = np.dot(U,v_ket)
+        v_bra = np.dot(U,v_bra)
+        plt.plot(t, np.round(np.vdot(v_bra,np.dot(Z_generali(n_PXP+n_TI,i),v_ket)),4), marker=Marker, markersize=3, color=Color)
+    return
+
 def RMeanMetric(EV):  #Mean R metric, r= 0.39 poisson, r=0.536 W-D
     """
     :param EV: EigenValues (size-ordered: smallest to biggest)
