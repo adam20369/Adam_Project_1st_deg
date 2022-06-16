@@ -726,5 +726,6 @@ def GroundstateCheck(n_PXP, n_TI, h_c=0 ,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi
     EvalPXP, EvecPXP = EvecEval(PXPOBCNew2(n_PXP))
     EvalTI, EvecTI = EvecEval(TIOBCNewImpure2(n_TI,J, h_x, h_z, h_imp, m=1))
     EvalPXP_TI, EvecPXP_TI = EvecEval(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1))
-    print(np.allclose(EvalPXP[0]+EvalTI[0],EvalPXP_TI[0]))
-    return np.allclose(EvalPXP[d_pxp-1]+EvalTI[d_TI-1],EvalPXP_TI[d_tot-1])
+    print('ground state=', np.allclose(EvalPXP[0]+EvalTI[0],EvalPXP_TI[0]))
+    print('anti ground state=', np.allclose(EvalPXP[d_pxp-1]+EvalTI[d_TI-1],EvalPXP_TI[d_tot-1]))
+    return
