@@ -451,8 +451,6 @@ def PXPOnlyDampingStr(n_PXP, T_start, T_max, T_step, T_cap):
     '''
     Calculates damping between t=0 and t=x (fixed interval) as Height differences (absolute value)
     :param n_PXP:number of PXP atoms
-    :param n_TI: number of TI atoms
-    :param h_c: coupling strength
     :param T_start: start time
     :param T_max: end time
     :param T_step: step interval
@@ -490,7 +488,7 @@ def ThresholdPeak(n_PXP, n_TI, h_c, T_start, T_max, T_step, Threshold=-0.3):
     :param T_start: start time
     :param T_max: end time
     :param T_step: step interval
-    :param Treshold: Threshold setting
+    :param Threshold: Threshold setting
     :return: Array of times of peaks and of peak heights, and Treshold peak index
     '''
     Time_peaks, Height_array = Peakfinder(n_PXP, n_TI, h_c, T_start, T_max, T_step)
@@ -595,3 +593,68 @@ def ScaledDampingLength(n_PXP, n_TI, h_c, T_start, T_max, T_step,Threshold=-0.3)
 #     return
 
 ############################## END OF OSCILLATIONS FINDING SECTION #################################
+
+##############################OLD STUFF- CHECK IF USEFUL ############################################################
+def NewTimeProp2(Ham,  Initialstate,
+             T_max, T_step, Color, Marker):
+    '''
+    NEW METHOD 10.5.22
+    :param Ham: Hamiltonian for propagation
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param Color:
+    :param Marker:
+    :return: plot of |<N_2|N_2(t)>|^2 as a func of time t
+    '''
+    U= expm(-1j*Ham*T_step)
+    U_dag= expm(1j*Ham*T_step)
+    v= Initialstate
+    t = np.arange(1, T_max, T_step)
+    for t in np.nditer(t):
+        v = np.dot(U,v)
+        plt.plot(t, np.round(np.vdot(Initialstate,v)**2,4), marker=Marker, markersize=3, color=Color)
+
+def RunNewTimeProp2(n_PXP, n_TI, Coupl=Z_i, J=1 ,h_x=1, h_z=1, h_c=1, T_max=20, T_step=0.05, h_imp=0.01, m=1):# 1 Time propagation of PXP TI COUPLED
+    """
+    Runs NewTimeProp2
+    """
+    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+    InitVecstate = NeelHaar(n_PXP,n_TI)
+    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
+    markers = np.random.choice(np.array(('s', '^', 'o', 'X')))
+    NewTimeProp2(H_full, InitVecstate, T_max, T_step, Color, markers)
+
+def Run4TimePropPxpConserve2(n_totArray, n_PXP, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=1, h_imp=0.01, m=1, T_max=20, T_step=0.05):
+    """
+    time propagation of 4 different TOTAL atom sizes, PXP number conserved
+    :param n_totArray: Array of 4 different TOTAL atom numbers
+    :param n_PXP: number of PXP atoms
+    :param Coupl: Nature of coupling (2x2 matrix)
+    :param h_x: transverse field strength
+    :param h_z: Z field strength
+    :param h_c: coupling strength
+    :param T_max: max time
+    :param T_step: step size (between steps)
+    :return: Timeprop graph x4
+    """
+    markers = np.array(('s', '^', 'o', 'd'))
+    colors = np.array(('b','r','y','k'))
+    n_TIarray = n_totArray - n_PXP # Vector!
+    n_start = n_TIarray[0]
+    for n_TI in n_TIarray: #running over n_tots
+        H = PXPBathHam2(n_PXP,n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+        Initialstate = NeelHaar(n_PXP, n_TI)
+        Color = colors[n_TI-n_start]
+        marker = markers[n_TI-n_start]
+        NewTimeProp2(H, Initialstate, T_max, T_step, Color, marker)
+    custom_lines = [Line2D([0], [0], color=colors[0], marker=markers[0]),
+                    Line2D([0], [0], color=colors[1], marker=markers[1]),
+                    Line2D([0], [0], color=colors[2], marker=markers[2]),
+                    Line2D([0], [0], color=colors[3], marker=markers[3])] #LEGEND DEFINITIONS
+    plt.legend(custom_lines, ['{} total atoms'.format(n_totArray[0]), '{} total atoms'.format(n_totArray[1]), '{} total atoms'.format(n_totArray[2]),'{} total atoms'.format(n_totArray[3])])
+    plt.xlabel('$t$')
+    plt.ylabel(r'$|\langle\mathbb{Z}_{2}|\mathbb{Z}_{2}(t)\rangle|^{2}$')
+    #plt.savefig('new_fidelity_for_different_numbers_of_total_atoms.pdf')
+    plt.title('Quantum Fidelity of {}-PXP Neel State with coupling strength {}'.format(n_PXP,h_c))
+
