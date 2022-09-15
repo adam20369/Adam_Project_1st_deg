@@ -1,12 +1,19 @@
+import os
+os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
+import pickle
 import itertools
-import timeit
+import timeit as tit
 from scipy import integrate
 from scipy.linalg import expm
 from matplotlib.lines import Line2D
 from scipy.signal import find_peaks
+from scipy.linalg import expm
+from scipy.signal import find_peaks
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import connected_components
 
 
 # ========================== definitions Dim=1 ======================
@@ -115,10 +122,31 @@ def PXPOBCNew2(n): # faster method
     Pi_plus1 = P_i  # notation convenience
     PXPleftbound = np.kron(Xi, np.kron(Pi_plus1, np.identity(2 ** (n - 2))))
     PXPrightbound = np.kron(np.identity(2 ** (n - 2)), np.kron(Pi_minus1, Xi))
-    PXPnobound = np.zeros((d, d))
+    PXPnobound = np.zeros([d, d])
     for i in range(2, n): #i marks the number of the atom that Xi sits on
         PXPnobound = PXPnobound + np.kron(np.identity(2**(i-2)),np.kron(Pi_minus1,np.kron(Xi,np.kron(Pi_plus1,np.identity(2**(n-1-i))))))
     pxp_fin = PXPleftbound + PXPnobound + PXPrightbound
+    return pxp_fin
+
+def PXPOBCNew2_Impure(n,j,st): # faster method
+    '''
+    Faster way of PXP OBC
+    :param n: number of atoms
+    :param j: impurity site number
+    :param st: impurity site number
+
+    :return: PXP model hamiltonian OBC
+    '''
+    d = 2 ** n # full dimension
+    Pi_minus1 = P_i  # notation convenience
+    Xi = X_i  # notation convenience
+    Pi_plus1 = P_i  # notation convenience
+    PXPleftbound = np.kron(Xi, np.kron(Pi_plus1, np.identity(2 ** (n - 2))))
+    PXPrightbound = np.kron(np.identity(2 ** (n - 2)), np.kron(Pi_minus1, Xi))
+    PXPnobound = np.zeros([d, d])
+    for i in range(2, n): #i marks the number of the atom that Xi sits on
+        PXPnobound = PXPnobound + np.kron(np.identity(2**(i-2)),np.kron(Pi_minus1,np.kron(Xi,np.kron(Pi_plus1,np.identity(2**(n-1-i))))))
+    pxp_fin = PXPleftbound + PXPnobound + PXPrightbound + (st * np.kron(np.identity(2**(j-1)),np.kron(X_i,np.identity(2**(n-j)))))
     return pxp_fin
 
 def PXPOBCNew2old(n): # faster method
@@ -236,7 +264,7 @@ def PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1):
 
 def PXPBathHamNoCoupl2(n_PXP, n_TI, J, h_x, h_z, h_imp, m=1):
     """
-    FULL 2**(n_tot) dimension COUPLED PXP and TI hamiltonian Builder
+    Just for checks - FULL 2**(n_tot) dimension UNCOUPLED PXP and TI hamiltonian Builder
     :param n_PXP: PXP Atom number
     :param n_TI: TI Atom number
     :param h_x: transverse field strength
@@ -258,7 +286,7 @@ def PXPBathHamNoCoupl2(n_PXP, n_TI, J, h_x, h_z, h_imp, m=1):
 # ============================== Declarations of metrics- functions to check quantities  ==========================================
 
 
-def EvecEval(Mat):
+def Diagonalize(Mat):
     '''
     calculates eigenvalues and eigenstates of a HERMITIAN matrix
     :param Mat: Any Hermitian matrix
@@ -266,8 +294,8 @@ def EvecEval(Mat):
     '''
     eval, evec = la.eigh(Mat)
     return np.real(np.round(eval, 5)), np.round(evec, 5)
-EvecEval(PXPBathHam2(7,3,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi),h_c=0,h_imp=0.01,m=1))
-EvecEval(PXPOBCNew2(7))
+#Diagonalize(PXPBathHam2(7,3,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi),h_c=0,h_imp=0.01,m=1))
+#Diagonalize(PXPOBCNew2(7))
 
 def EigenSpan(Mat,
               VecState):
@@ -277,7 +305,7 @@ def EigenSpan(Mat,
     :param VecState: Some vector state (initial state usually) that we want to span in eigenstate basis
     :return: vector of weights (in Eigenstate basis)
     """
-    Eval, Evec = EvecEval(Mat)
+    Eval, Evec = Diagonalize(Mat)
     W = np.dot(np.transpose(Evec),VecState)
     return W
 
@@ -289,17 +317,15 @@ def EigenCombine(Mat,VecState):
     :return: recombined vector
     '''
     W = EigenSpan(Mat,VecState)
-    Eval, Evec = EvecEval(Mat) #Evec is matrix!
+    Eval, Evec = Diagonalize(Mat) #Evec is matrix!
     Recombine= np.round(np.dot(Evec,W),4)
     return Recombine
 
-def NewTimeProp2(Ham, n_PXP, n_TI,  Initialstate,
+def NewTimeProp2(Ham,  Initialstate,
              T_max, T_step, Color, Marker):
     '''
     NEW METHOD 10.5.22
     :param Ham: Hamiltonian for propagation
-    :param n_PXP: Size of PXP chain (atoms)
-    :param n_TI: Size of TI chain (atoms)
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_max: Max Time of propagation
     :param T_step: time step (interval)
@@ -359,7 +385,6 @@ def Run4TimePropPxpConserve2(n_totArray, n_PXP, Coupl=Z_i, J=1 , h_x=np.sin(0.48
     plt.title('Quantum Fidelity of {}-PXP Neel State with coupling strength {}'.format(n_PXP,h_c))
 
 
-
 def RNewMeanMetricTI(eval):
     """
     mean R metric calculation
@@ -385,7 +410,7 @@ def RunRNewMeanMetricTI(n_TI, h_x, h_z, h_imp, m = 1):
     :param m:
     :return: Runs the RMeanMetric function on Tilted Ising model
     '''
-    eval, evec = EvecEval(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
+    eval, evec = Diagonalize(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
     return RNewMeanMetricTI(eval)
 
 # RunRNewMeanMetricTI(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
@@ -415,228 +440,17 @@ def RunRNewMeanMetricTICUT(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric f
     :param m:
     :return: Runs the cut version of RMeanMetric function on Tilted Ising model
     '''
-    eval, evec =EvecEval(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
+    eval, evec =Diagonalize(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
     return RNewMeanMetricTICUT(eval)
 
 #RunRNewMeanMetricTICUT(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
 
 
-# TODO fix the different scripts that run functions from here?
-
-
-#-------------------------- Damping Length with bath checks----------------------------#
-
-def ZiSandwichCheck2(Ham, n_PXP, n_TI,  Initialstate,
-             T_start, T_max, T_step, i, Color, Marker):
-    '''
-    returns 2x 1D arrays: time propagated output for every delta_t, and the corresponding vector of t we defined
-    :param Ham: Hamiltonian for propagation
-    :param n_PXP: Size of PXP chain (atoms)
-    :param n_TI: Size of TI chain (atoms)
-    :param Initialstate:  Initial Vector state we would like to propagate
-    :param T_start: Start Time of propagation
-    :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
-    :param i: Z_i site choice
-    :param Color:
-    :param Marker:
-    :return: vector of V (time propagated output for every delta t) and the corresponding vector of t we defined
-    '''
-    U= expm(-1j*Ham*T_step)
-    U_dag= expm(1j*Ham*T_step)
-    v_ket= Initialstate
-    v_bra= Initialstate
-    t = np.arange(T_start, T_max, T_step)
-    VecProp=np.zeros((np.size(t)))
-    for ti in np.nditer(t):
-        v_ket = np.dot(U,v_ket) # propagation in iterations from here
-        v_bra = np.dot(U,v_bra) # propagation in iterations from here
-        VecProp[np.argwhere(t == ti)] = np.round(np.vdot(v_bra,np.dot(Z_generali(n_PXP+n_TI,i),v_ket)),4)
-    return t, VecProp
-
-def RunZiSandwichCheck(n_PXP, n_TI, i, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=0, T_start=0, T_max=100, T_step=0.05, h_imp=0.01, m=1 ):# 1 Time propagation of PXP TI COUPLED
-    """
-    Runs Z1SandwichCheck
-    """
-    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
-    InitVecstate = NeelHaar(n_PXP,n_TI)
-    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    markers = np.array(('s', '^', 'o', 'd'))
-    return ZiSandwichCheck2(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, i, Color, np.random.choice(markers))
-
-# TODO think about the problem with the values for different Impurity strength and different atom chain sizes?
-
-def ZiSandwichCheckplt(Ham, n_PXP, n_TI,  Initialstate,
-             T_start, T_max, T_step, i, Color, Marker):
-    '''
-    plots <Neel|Z_i(t)|Neel> with respect to time and returns 2x 1D arrays
-    :param Ham: Hamiltonian for propagation
-    :param n_PXP: Size of PXP chain (atoms)
-    :param n_TI: Size of TI chain (atoms)
-    :param Initialstate:  Initial Vector state we would like to propagate
-    :param T_start: Start Time of propagation
-    :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
-    :param i: Z_i site choice
-    :param Color:
-    :param Marker:
-    :return: plot and vector of V (time propagated output for every delta t) + the corresponding vector of t we defined
-    '''
-    U= expm(-1j*Ham*T_step)
-    U_dag= expm(1j*Ham*T_step)
-    v_ket= Initialstate
-    v_bra= Initialstate
-    t = np.arange(T_start, T_max, T_step)
-    VecProp=np.zeros((np.size(t)))
-    for ti in np.nditer(t):
-        v_ket = np.dot(U,v_ket) # propagation in iterations from here
-        v_bra = np.dot(U,v_bra) # propagation in iterations from here
-        VecProp[np.argwhere(t == ti)] = np.round(np.vdot(v_bra,np.dot(Z_generali(n_PXP+n_TI,i),v_ket)),4)
-    plt.plot(t, VecProp, marker=Marker, markersize=3,
-             color=Color)
-    return t, VecProp, Color
-
-def RunZiSandwichCheckplt(n_PXP, n_TI, i, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_c=0, T_start=0, T_max=100, T_step=0.05, h_imp=0.01, m=1 ):# 1 Time propagation of PXP TI COUPLED
-    """
-    Runs Z1SandwichCheck plotter!
-    """
-    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
-    InitVecstate = NeelHaar(n_PXP,n_TI)
-    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    markers = np.array(('s', '^', 'o', 'd'))
-    return ZiSandwichCheckplt(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, i, Color, np.random.choice(markers))
-
-def Peakfinder(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
-    '''
-    Finding peak (maximum) indeces of <Z_i(t)> graph
-    :param n_PXP:number of PXP atoms
-    :param n_TI: number of TI atoms
-    :param i: index of Z_i
-    :return: peak indeces of a vector V (which is a vector of Z_i(t) in our case)
-    '''
-    t, VecProp = RunZiSandwichCheck(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=60, T_step=0.05,
-                       h_imp=0.01, m=1)
-    Peakindeces, list = find_peaks(VecProp, height= 0)
-    t_allpeaks = np.take(t,Peakindeces)
-    Vecprop_allpeaks = np.take(VecProp,Peakindeces)
-    return t_allpeaks, Vecprop_allpeaks
-
-def Peakfinderplt(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
-    '''
-    Finding peak (maximum) indeces of <Z_i(t)> graph
-    :param n_PXP:number of PXP atoms
-    :param n_TI: number of TI atoms
-    :param i: index of Z_i
-    :return: peak indeces of a vector V (which is a vector of Z_i(t) in our case)
-    '''
-    t, VecProp, Color = RunZiSandwichCheckplt(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=100, T_step=0.05,
-                       h_imp=0.01, m=1)
-    Peakindeces, list = find_peaks(VecProp, height= 0)
-    t_allpeaks = np.take(t,Peakindeces)
-    Vecprop_allpeaks = np.take(VecProp,Peakindeces)
-    plt.plot(t_allpeaks, Vecprop_allpeaks, color=Color, marker='o')
-    return plt.show()
-
-#TODO: fix this!
-
-def Peaktreshold(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
-    '''
-    finds the height value of the last peak beyond a set threshold, and the t value of peak's location
-    :param n_PXP:number of PXP atoms
-    :param n_TI: number of TI atoms
-    :param i: index of Z_i
-    :return: height value of the last peak beyond a set threshold, and the t value of peak's location)
-    '''
-    t, VecProp = RunZiSandwichCheck(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=100, T_step=0.05,
-                       h_imp=0.01, m=1)
-    Peakindeces, list = find_peaks(VecProp, height= 0) # all peaks
-    Peakindecesaboveh, listheight = find_peaks(VecProp, height=0.25) #peaks beyond a threshold
-    t_allpeaks = np.take(t,Peakindeces)
-    Vecprop_allpeaks = np.take(VecProp,Peakindeces)
-    t_abovehpeaks= np.take(t,Peakindecesaboveh)
-    Vecprop_abovehpeaks = np.take(VecProp,Peakindecesaboveh)
-    tresholdind= np.where(t_allpeaks != t_abovehpeaks)
-    # taking interval of
-    return print(t_allpeaks, t_abovehpeaks,tresholdind)
-
-# taking X first peaks (0 isn't a peak in Z_1). X can be equal 5-6 OR thresholding
-
-def Averagesig(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi)):
-    '''
-    Arithmetic mean signal amplitude
-    :return:
-    '''
-    t, VecProp = RunZiSandwichCheck(n_PXP, n_TI, i, Coupl, J, h_x, h_z, h_c, T_start=0, T_max=60, T_step=0.05,
-                                    h_imp=0.01, m=1)
-    return np.average(VecProp)
-
-def Dampinglength(n_PXP, n_TI, Cap, h_c, i=1):
-    '''
-    calculate damping length by setting a threshold peak
-    :param n_PXP: PXP atom No
-    :param n_TI: TI atom No
-    :param Cap: integer, cap peak (from 1)
-    :param i: Z_i index
-    :return: interval of t from beginning to final peak
-    '''
-    t_peaks, Vecprop_peaks = Peakfinder(n_PXP, n_TI, i, h_c, Coupl=Z_i, J=1,  h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi))
-    t_length = t_peaks[Cap-1]
-    return t_length
-
-#TODO problem with counting length from peak that is not on t=0 ?? ask Yevgeni
-
-def ScaledDampinglength(n_PXP, n_TI, h_c, Cap=5, i=1):
-    '''
-    Scaled damping length (can be used for comparing different TI atom numbers/ different coupling strength)
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param Cap: peak cap for taking length interval
-    :param i: Z_i site
-    :return: Scalar from 0 to 1 (indicating the relative damping length to the pure PXP one)
-    '''
-    PurePXPlength = Dampinglength(n_PXP, 0, Cap, 0, i)
-    Damplength = Dampinglength(n_PXP, n_TI, Cap, h_c, i)
-    Scaledlength= np.divide(Damplength,PurePXPlength)
-    return Scaledlength
-
-def PlotDampinglengthTIno(n_PXP, n_TI, h_c, Cap=5, i=1):
-    '''
-
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param Cap: peak cap for taking length interval
-    :param i: Z_i site
-    :return: Plot
-
-    '''
-    for n in np.nditer(n_TI):
-        Scaledlength= ScaledDampinglength(n_PXP, n, h_c, Cap, i)
-        plt.plot(n,Scaledlength, color='black', marker='o')
-        plt.xlabel('No. of TI atoms')
-        plt.ylabel('Damping Length')
-    plt.show()
-    return
-
-def PlotDampinglengthCoupstr(n_PXP, n_TI, h_c, Cap=5, i=1):
-    '''
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param Cap: peak cap for taking length interval
-    :param i: Z_i site
-    :return:
-    '''
-    for h in np.nditer(h_c):
-        Scaledlength= ScaledDampinglength(n_PXP, n_TI, h, Cap, i)
-        plt.plot(h ,Scaledlength, color='blue', marker='o')
-        plt.xlabel('No. of TI atoms')
-        plt.ylabel('Damping Length')
-    plt.show()
-    return
 
 def infinitetempaverageZ(n_pxp, n_TI, i, h_c, Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
     '''
     calculates "microcanonical" (of all energies) average of an operator
-    :param n_PXP: PXP Atom number
+    :param n_pxp: PXP Atom number
     :param n_TI: TI Atom number
     :param i: site of magnetization operator (i<=n_pxp)
     :param h_c: coupling strength
@@ -649,10 +463,11 @@ def infinitetempaverageZ(n_pxp, n_TI, i, h_c, Coupmat=Z_i, J=1,h_x=np.sin(0.485*
     :return: Scalar, average infinite temperature of the operator Z_i (for given site)
     '''
     Z_toti = Z_generali(n_pxp+n_TI,i)
-    Eval, Evec = EvecEval(PXPBathHam2(n_pxp,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp, m=1))
+    Eval, Evec = Diagonalize(PXPBathHam2(n_pxp,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp, m=1))
     ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_toti,Evec))) # outputs an array of <n|Z_toti|n>'s
     InfTempAverage = np.divide(1,np.size(Eval))*np.sum(ExpectationArray)
     return InfTempAverage
+
 
 def fig2APXP_TI(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
     '''
@@ -668,7 +483,7 @@ def fig2APXP_TI(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), 
     :param h_imp: TI Impurity strength
     :return: plot
     '''
-    Eval, Evec = EvecEval(PXPBathHam2(n_PXP,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp,m=1))
+    Eval, Evec = Diagonalize(PXPBathHam2(n_PXP,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp,m=1))
     ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(np.add(n_PXP,n_TI),i),Evec))) # outputs an array of <n|Z|n>'s
     plt.scatter(Eval,ExpectationArray, color='b',marker='o')
     plt.show()
@@ -681,7 +496,22 @@ def fig2APXP_Only(n_PXP,i=1):
     :param i: index of Z_i
     :return: plot
     '''
-    Eval, Evec = EvecEval(PXPOBCNew2(n_PXP))
+    Eval, Evec = Diagonalize(PXPOBCNew2(n_PXP))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(n_PXP,i),Evec))) # outputs an array of <n|Z|n>'s
+    plt.scatter(Eval,ExpectationArray, color='b',marker='o')
+    plt.show()
+    return
+
+def fig2APXP_Impure_Only(n_PXP,j,st,i=1):
+    '''
+     Figure 2 plot of Pxp TI TOTAL Ham
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :param i: index of Z_i
+    :return: plot
+    '''
+    Eval, Evec = Diagonalize(PXPOBCNew2_Impure(n_PXP,j,st))
     ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(n_PXP,i),Evec))) # outputs an array of <n|Z|n>'s
     plt.scatter(Eval,ExpectationArray, color='b',marker='o')
     plt.show()
@@ -701,8 +531,8 @@ def fig2Check(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_
     :param h_imp: TI Impurity strength
     :return: boolean
     '''
-    EvalPXP_TI, EvecPXP_TI = EvecEval(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1))
-    EvalPXP, EvecPXP = EvecEval(PXPOBCNew2(n_PXP))
+    EvalPXP_TI, EvecPXP_TI = Diagonalize(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1))
+    EvalPXP, EvecPXP = Diagonalize(PXPOBCNew2(n_PXP))
     ExpectationArrayPXP_TI= np.diag(np.matmul(np.conjugate(np.transpose(EvecPXP_TI)),np.matmul(Z_generali(np.add(n_PXP,n_TI),i),EvecPXP_TI)))
     ExpectationArrayPXP = np.diag(np.matmul(np.conjugate(np.transpose(EvalPXP)),np.matmul(Z_generali(n_PXP,i),EvalPXP))) # outputs an array of <n|Z_toti|n>'s
     return np.allclose(ExpectationArrayPXP_TI,ExpectationArrayPXP)
@@ -723,9 +553,244 @@ def GroundstateCheck(n_PXP, n_TI, h_c=0 ,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi
     d_pxp=2**(n_PXP)
     d_TI=2**(n_TI)
     d_tot=2**(n_TI+n_PXP)
-    EvalPXP, EvecPXP = EvecEval(PXPOBCNew2(n_PXP))
-    EvalTI, EvecTI = EvecEval(TIOBCNewImpure2(n_TI,J, h_x, h_z, h_imp, m=1))
-    EvalPXP_TI, EvecPXP_TI = EvecEval(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1))
+
+    EvalPXP, EvecPXP = Diagonalize(PXPOBCNew2(n_PXP))
+    EvalTI, EvecTI = Diagonalize(TIOBCNewImpure2(n_TI,J, h_x, h_z, h_imp, m=2))
+    EvalPXP_TI, EvecPXP_TI = Diagonalize(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=2))
     print('ground state=', np.allclose(EvalPXP[0]+EvalTI[0],EvalPXP_TI[0]))
     print('anti ground state=', np.allclose(EvalPXP[d_pxp-1]+EvalTI[d_TI-1],EvalPXP_TI[d_tot-1]))
     return
+
+
+def SubspcConnect(n_PXP,j,st):
+    '''
+    Maps the connected basis vectors of PXP OBC with impurity
+    :param n_PXP: No. of PXP OBC atoms
+    :param j: impurity site
+    :param st: impurity strength
+    :return: No. of components connected (No. of different blocks existing)
+                & labeling of the vectors to corresponding blocks (which vector belongs to which block, numbering the blocks from 0..)
+    '''
+    sparse= csr_matrix(PXPOBCNew2_Impure(n_PXP,j,st))
+    n_components, labels =connected_components(sparse)
+    return n_components, labels
+
+def Block_find(n_PXP,j,st):
+    '''
+    Finds largest connected block, and outputs indeces of vectors that belong to that block
+    :param n_PXP: No. of PXP OBC atoms
+    :param j: impurity site
+    :param st: impurity strength
+    :return: indeces (row/col numbers) of vectors of largest block
+    '''
+    n_components, labels= SubspcConnect(n_PXP, j, st)
+    reoccur = np.bincount(labels).argmax() #block number that reoccurs the most
+    vec_indeces = np.argwhere(labels==reoccur) #indeces of vectors of block
+    return vec_indeces
+
+def Block_dim(n_PXP,j,st):
+    '''
+    finds dimension  of largest connected block
+    :param n_PXP: No. of PXP OBC atoms
+    :param j: impurity site
+    :param st: impurity strength
+    :return: dimension of largest connected block
+    '''
+    n_components, labels= SubspcConnect(n_PXP, j, st)
+    dim = np.bincount(labels)[np.bincount(labels).argmax()]
+    return dim
+
+def Subspc_Proj(n_PXP,j,st):
+    '''
+    Creates a projector of the relevant subspace
+    :param n_PXP: No. of PXP OBC atoms (general)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: Subspace projector of PXP, containing only largest connected block
+    '''
+    vec_indeces= Block_find(n_PXP,j,st)
+    block_array= np.zeros(2**(n_PXP))
+    block_array[vec_indeces]=1
+    proj = np.diag(block_array)
+    return proj
+
+def Subspace_PXP(n_PXP,j,st):
+    '''
+    Creates a subspace Impurity PXP Hamiltonian OF THE SAME DIMENSION, of the largest connected block
+    :param n_PXP: No. of PXP OBC atoms (general)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: Subspace matrix of PXP, containing only largest connected block
+    '''
+    proj = Subspc_Proj(n_PXP,j,st)
+    PXP_block_impure = np.matmul(proj,np.matmul(PXPOBCNew2_Impure(n_PXP,j,st),proj))
+    return PXP_block_impure
+
+def Subspace_reduced_PXP(n_PXP,j,st):
+    '''
+    reducing the PXP matrix by removing rows/cols with only zeros
+    :param n_PXP: No. of PXP OBC atoms (general)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: reduced PXP matrix, without rows/cols with only zeros
+
+    '''
+    full_dim_proj_PXP= Subspace_PXP(n_PXP,j,st)
+    red_dim_proj_PXP=full_dim_proj_PXP[:,~np.all(full_dim_proj_PXP==0,axis=1)]
+    red_dim_proj_PXP=red_dim_proj_PXP[~np.all(full_dim_proj_PXP==0,axis=1),:]
+    return red_dim_proj_PXP
+
+def Subspace_reduced_Zi(n_PXP,j,st,i):
+    '''
+    reducing the Zi matrix by removing rows/cols with only zeros
+    :param n_PXP: No. of PXP OBC atoms (general)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: reduced Zi matrix, without rows/cols with only zeros
+    '''
+    full_dim_proj_PXP= Subspace_PXP(n_PXP,j,st)
+    red_dim_proj_Zi=Z_generali(n_PXP,i)[:,~np.all(full_dim_proj_PXP==0,axis=1)]
+    red_dim_proj_Zi=red_dim_proj_Zi[~np.all(full_dim_proj_PXP==0,axis=1),:]
+    return red_dim_proj_Zi
+
+def Subspace_reduced_O_z(n_PXP,j,st):
+    '''
+    reducing the Zi matrix by removing rows/cols with only zeros
+    :param n_PXP: No. of PXP OBC atoms (general)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: reduced Zi matrix, without rows/cols with only zeros
+    '''
+    full_dim_proj_PXP= Subspace_PXP(n_PXP,j,st)
+    red_dim_proj_O_z=O_znew(n_PXP)[:,~np.all(full_dim_proj_PXP==0,axis=1)]
+    red_dim_proj_O_z=red_dim_proj_O_z[~np.all(full_dim_proj_PXP==0,axis=1),:]
+    return red_dim_proj_O_z
+
+def fig2ASubspc_PXP_Impure_Z_i(n_PXP,j,st,i=1):
+    '''
+     Figure 2 plot of Pxp TI TOTAL Ham
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :param i: index of Z_i
+    :return: plot
+    '''
+    Eval, Evec = Diagonalize(Subspace_reduced_PXP(n_PXP,j,st))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Subspace_reduced_Zi(n_PXP,j,st,i),Evec))) # outputs an array of <n|Z|n>'s
+    plt.scatter(Eval, ExpectationArray, color='r',marker='o', s=5)
+    plt.title(r"$\langle Z${}$\rangle$ Vs. Energy for {} atoms, PXP OBC impure (impurity in {}th site) ".format(i,n_PXP,j))
+    plt.xlabel("Energy")
+    plt.ylabel(r"$\langle Z${}$\rangle$".format(i))
+    plt.show()
+    return
+
+def fig2ASubspc_PXP_Impure_O_z(n_PXP,j,st):
+    '''
+     Figure 2 plot of Pxp TI TOTAL Ham
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :return: plot
+    '''
+    Eval, Evec = Diagonalize(Subspace_reduced_PXP(n_PXP,j,st))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Subspace_reduced_O_z(n_PXP,j,st),Evec))) # outputs an array of <n|Z|n>'s
+    plt.scatter(Eval, ExpectationArray, color='r',marker='o', s=5)
+    plt.title(r"$\langle O_z\rangle$ Vs. Energy for {} atoms, PXP OBC " .format(n_PXP,j))
+    plt.xlabel("Energy")
+    plt.ylabel(r"$\langle  O_z\rangle$")
+    plt.show()
+    return
+
+def EigenvalueUniqueness(n,j,st):
+    eval, evec = Diagonalize(Subspace_reduced_PXP(n,j,st))
+    Unique= np.unique(eval,False,False,True)
+    return Unique
+
+
+def Binary_State_Mapping(state): #TODO check for some more cases
+    '''
+    maps some basis state of PXP model to binary basis (N X 2**N in size),
+            where the first state [0,0...,1] (2**N) maps to [0,0,..,0] (N)
+    :param state: a state in PXP model basis
+    :return: vector in binary basis (N X 2**N in size)
+    '''
+    dim_size = np.size(state)
+    atom_chain_size = np.log2(dim_size)
+    index = int(dim_size - (np.flatnonzero(state)+1)) # Index is the number # to be converted to binary
+    binary_representation = np.binary_repr(index) # number
+    binary_array= list(map(int, str(binary_representation))) #array
+    if atom_chain_size-np.size(binary_array) !=0 : # appending zeros in front of array to match size N
+        zeros_missing= int(atom_chain_size-np.size(binary_array))
+        for i in range(0,zeros_missing):
+            binary_array=np.insert(binary_array,i,0)
+    return binary_array
+
+def Binary_Basis_Mapping(n_PXP,j=2,st=0):
+    '''
+    maps PXP subspace basis states to binary basis states matrix (Subspace_dim X N in size), Binary states as rows.
+    :param n_PXP: no of PXP atoms
+    :param j: impurity site
+    :param st: impurity strength
+    :return: matrix of binary basis states (of the reduced Subspace!) as Row vectors
+    '''
+    Subspc_Indeces = np.squeeze(Block_find(n_PXP,j,st))
+    binary_basis= np.empty([0,n_PXP])
+    index_array = 2**n_PXP - (Subspc_Indeces+1) # Indeces inverted to fit counting from end to start of vectors
+    for k in index_array:
+        binary_representation = np.binary_repr(k) # number
+        binary_array= list(map(int, str(binary_representation))) #array
+        if n_PXP-np.size(binary_array) != 0 : # appending zeros in front of array to match size N
+            zeros_missing= int(n_PXP-np.size(binary_array))
+            for i in range(0,zeros_missing):
+                 binary_array=np.insert(binary_array,i,0)
+        binary_basis=np.append(binary_basis,[binary_array], axis=0)
+    return binary_basis
+
+def Reverse_Mapping(binary_array):
+#
+    return
+
+def Bipartition_Basis(n_PXP,j=2,st=0):
+    '''
+    Bipartition basis state subspace (does not take into account combinations that aren't allowed) - EVEN PXP number!!
+    :param n_PXP: number of total atoms we want to bipartite (in middle)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: Basis of subsystem (when system is cut in half)
+    '''
+    sub_system_size = int(n_PXP / 2)
+    sub_system_basis = Binary_Basis_Mapping(sub_system_size, j, st)
+    return sub_system_basis
+
+
+def Decompose_Eigenstates(n_PXP,j=2,st=0):
+    '''
+    Decompose each eigenstate to it's Schmitt's form
+    :param n_PXP:
+    :param j:
+    :param st:
+    :return:
+    '''
+    eval, evec = Diagonalize(Subspace_PXP(n_PXP,j=2,st=0))
+    return eval, evec
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

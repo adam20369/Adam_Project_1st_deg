@@ -330,3 +330,67 @@ def RunRmetric(n_TI, h_x, h_z, h_i, Ham): #Run the RMeanMetric function on Tilte
     return RMeanMetric(EV)
 
 
+########EE_part###################
+def Densitymat(n_PXP, j, st): #todo CHECK
+    '''
+    calculates all rho's of eigenstates
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :return: 3D array where every rho[:,:,i] is the density matrix of i'th eigenstate
+    '''
+    eval, evec = Diagonalize(Subspace_reduced_PXP(n_PXP,j,st))
+    rho_tot=np.zeros([Block_dim(n_PXP,j,st),Block_dim(n_PXP,j,st),Block_dim(n_PXP,j,st)])
+    for i in range(Block_dim(n_PXP,j,st)):
+        rho_tot[:,:,i]=np.outer(evec[:,i],evec[:,i])
+    return rho_tot
+
+def Partition(n_PXP, j, st):
+    '''
+    Subspace dimensions for bipartition  dim(A)*dim(B)=Tot_dim
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :return: 2 scalars of dimensions  of reduced subspaces
+    '''
+    dim = Block_dim(n_PXP, j, st)
+    partition = (int(dim / 2)) #half of log2 (int) of Hilbert dimension
+    complement = dim - partition #complement of the partition (due to it being int)
+    SubspcA= 2**partition
+    SubspcB= 2**complement
+    return SubspcA, SubspcB
+
+
+def Partialtrace(n_PXP, j, st):
+    '''
+    taking partial trace and getting reduced density matrix by partition defined before
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :return: 3D array of subspace A partition reduced density matrices (ordered by eigenstates)
+    '''
+    rho_tot= Densitymat(n_PXP, j, st)
+    tot_dim= Block_dim(n_PXP,j,st)                 #DO I NEED THIS?
+    dim_A, dim_B= Partition(n_PXP, j, st) #reduced partition dimensions (base of 2)
+    identity_dim_A= np.identity(dim_A)
+    basis_vec_B = np.zeros([dim_B])
+    Reduced_rho_A = np.zeros([dim_B,dim_B,tot_dim])
+    for j in range(tot_dim):
+        for i in range(dim_B):
+            Traceterm=np.kron(identity_dim_A,basis_vec_B[i])
+            Reduced_rho_A[:,:,j]= np.dot(np.dot(np.conjugate(Traceterm),rho_tot[:,:,j]),Traceterm)
+    return Reduced_rho_A
+
+def EntanglementEntropy(n_PXP, j, st):
+    '''
+    Calculating Entanglement entropy per eigenstate
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :return:
+    '''
+    reduced_rho_A=Partialtrace(n_PXP, j, st)
+    dim_A, dim_B= Partition(n_PXP, j, st) #reduced partition dimensions (base of 2)
+    basis_vec = np.zeros([dim_B])
+
+
