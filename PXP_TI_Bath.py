@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import itertools
 import timeit
 from scipy import integrate
-
+########################### OLD THINGS! ######################################
 # ========================== definitions Dim=1 ======================
 g = np.array([0, 1])  # ground state
 # print("ground=\n", g)

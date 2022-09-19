@@ -283,9 +283,6 @@ def PXPBathHamNoCoupl2(n_PXP, n_TI, J, h_x, h_z, h_imp, m=1):
     return HamNoCoupl
 
 
-# ============================== Declarations of metrics- functions to check quantities  ==========================================
-
-
 def Diagonalize(Mat):
     '''
     calculates eigenvalues and eigenstates of a HERMITIAN matrix
@@ -321,7 +318,7 @@ def EigenCombine(Mat,VecState):
     Recombine= np.round(np.dot(Evec,W),4)
     return Recombine
 
-
+###################### R-Metric Check for Tilted-Ising ################################
 def RNewMeanMetricTI(eval):
     """
     mean R metric calculation
@@ -382,7 +379,7 @@ def RunRNewMeanMetricTICUT(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric f
 
 #RunRNewMeanMetricTICUT(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
 
-
+################################CONNECTED SUBSPACE & FIG 2 ####################################
 
 def infinitetempaverageZ(n_pxp, n_TI, i, h_c, Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
     '''
@@ -710,24 +707,3 @@ def Decompose_Eigenstates(n_PXP,j=2,st=0):
     '''
     eval, evec = Diagonalize(Subspace_PXP(n_PXP,j=2,st=0))
     return eval, evec
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
