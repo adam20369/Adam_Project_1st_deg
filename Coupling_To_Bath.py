@@ -282,6 +282,7 @@ def PXPBathHamNoCoupl2(n_PXP, n_TI, J, h_x, h_z, h_imp, m=1):
     HamNoCoupl = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_PXP), TI))
     return HamNoCoupl
 
+########## DIAGONALIZATION AND EIGENSTATE SPAN / RECOMBINE OF A GENERAL VECTOR STATE #############
 
 def Diagonalize(Mat):
     '''
@@ -318,158 +319,7 @@ def EigenCombine(Mat,VecState):
     Recombine= np.round(np.dot(Evec,W),4)
     return Recombine
 
-###################### R-Metric Check for Tilted-Ising ################################
-def RNewMeanMetricTI(eval):
-    """
-    mean R metric calculation
-    :param eval: EigenValues (size-ordered: smallest to biggest)
-    :return: r mean value - r= 0.39 poisson, r=0.536 W-D
-    """
-    S = np.diff(eval)  # returns  array of n-1 (Non-Negative) differences
-    r = np.zeros([S.shape[0] - 1])
-    for i in range(1, S.shape[0]):
-        r[i - 1] = np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1]))
-    R = np.around(r, 5)
-    N = np.count_nonzero(R)
-    Rmean = np.divide(np.sum(R), N)  # Averaging over No. of non-zero R contributions
-    return Rmean
-
-def RunRNewMeanMetricTI(n_TI, h_x, h_z, h_imp, m = 1):
-    '''
-    Runs the RMeanMetric function on Tilted Ising model
-    :param n_TI:
-    :param h_x:
-    :param h_z:
-    :param h_imp:
-    :param m:
-    :return: Runs the RMeanMetric function on Tilted Ising model
-    '''
-    eval, evec = Diagonalize(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
-    return RNewMeanMetricTI(eval)
-
-# RunRNewMeanMetricTI(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
-
-def RNewMeanMetricTICUT(eval):
-    """
-    Cut version of 1/8 of eigenvalues on every side of the spectrum
-    :param eval: EigenValues (size-ordered: smallest to biggest)
-    :return: r mean value - r= 0.39 poisson, r=0.536 W-D
-    """
-    S = np.diff(eval)  # returns  array of n-1 (Non-Negative) differences
-    r = np.zeros([S.shape[0] - 1])
-    for i in range(int(np.divide(S.shape[0],8)), int(7*np.divide(S.shape[0],8))):
-        r[i - 1] = np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1]))
-    R = np.around(r, 5)
-    N = np.count_nonzero(R)
-    Rmean = np.divide(np.sum(R), N)  # Averaging over No. of non-zero R contributions
-    return Rmean
-
-def RunRNewMeanMetricTICUT(n_TI, h_x, h_z, h_imp, m = 1): #Run the RMeanMetric function on Tilted Ising model
-    '''
-    Runs the cut version of RMeanMetric function on Tilted Ising model
-    :param n_TI:
-    :param h_x:
-    :param h_z:
-    :param h_imp:
-    :param m:
-    :return: Runs the cut version of RMeanMetric function on Tilted Ising model
-    '''
-    eval, evec =Diagonalize(TIOBCNewImpure2(n_TI, 1, h_x, h_z, h_imp, m))
-    return RNewMeanMetricTICUT(eval)
-
-#RunRNewMeanMetricTICUT(9, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0.1)
-
-################################CONNECTED SUBSPACE & FIG 2 ####################################
-
-def infinitetempaverageZ(n_pxp, n_TI, i, h_c, Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
-    '''
-    calculates "microcanonical" (of all energies) average of an operator
-    :param n_pxp: PXP Atom number
-    :param n_TI: TI Atom number
-    :param i: site of magnetization operator (i<=n_pxp)
-    :param h_c: coupling strength
-    :param Coupmat: 2x2 base matrix of coupling
-    :param J: Ising expression strength TI
-    :param h_x: transverse field strength TI
-    :param h_z: Z field strength TI
-    :param h_imp: impurity strength TI
-    :param m: impurity site (default is 1) TI
-    :return: Scalar, average infinite temperature of the operator Z_i (for given site)
-    '''
-    Z_toti = Z_generali(n_pxp+n_TI,i)
-    Eval, Evec = Diagonalize(PXPBathHam2(n_pxp,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp, m=1))
-    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_toti,Evec))) # outputs an array of <n|Z_toti|n>'s
-    InfTempAverage = np.divide(1,np.size(Eval))*np.sum(ExpectationArray)
-    return InfTempAverage
-
-
-def fig2APXP_TI(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
-    '''
-    Figure 2 plot of Pxp TI TOTAL Ham
-    :param n_PXP: number of PXP atoms
-    :param n_TI: number of TI atoms
-    :param h_c: coupling strength
-    :param i: index of Z_i
-    :param Coupmat: Coupling nature
-    :param J: Ising strength
-    :param h_x: X direction strength
-    :param h_z: Z direction strength
-    :param h_imp: TI Impurity strength
-    :return: plot
-    '''
-    Eval, Evec = Diagonalize(PXPBathHam2(n_PXP,n_TI,Coupmat,J,h_x,h_z,h_c,h_imp,m=1))
-    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(np.add(n_PXP,n_TI),i),Evec))) # outputs an array of <n|Z|n>'s
-    plt.scatter(Eval,ExpectationArray, color='b',marker='o')
-    plt.show()
-    return
-
-def fig2APXP_Only(n_PXP,i=1):
-    '''
-     Figure 2 plot of Pxp TI TOTAL Ham
-    :param n_PXP: number of PXP atoms
-    :param i: index of Z_i
-    :return: plot
-    '''
-    Eval, Evec = Diagonalize(PXPOBCNew2(n_PXP))
-    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(n_PXP,i),Evec))) # outputs an array of <n|Z|n>'s
-    plt.scatter(Eval,ExpectationArray, color='b',marker='o')
-    plt.show()
-    return
-
-def fig2APXP_Impure_Only(n_PXP,j,st,i=1):
-    '''
-     Figure 2 plot of Pxp TI TOTAL Ham
-    :param n_PXP: number of PXP atoms
-    :param j: site of impurity
-    :param st: strength of impurity
-    :param i: index of Z_i
-    :return: plot
-    '''
-    Eval, Evec = Diagonalize(PXPOBCNew2_Impure(n_PXP,j,st))
-    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Z_generali(n_PXP,i),Evec))) # outputs an array of <n|Z|n>'s
-    plt.scatter(Eval,ExpectationArray, color='b',marker='o')
-    plt.show()
-    return
-
-def fig2Check(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
-    '''
-    check if the two graphs (PXP only and PXP TI) coincide
-    :param n_PXP: number of PXP atoms
-    :param n_TI: number of TI atoms
-    :param h_c: coupling strength
-    :param i: index of Z_i
-    :param Coupmat: Coupling nature
-    :param J: Ising strength
-    :param h_x: X direction strength
-    :param h_z: Z direction strength
-    :param h_imp: TI Impurity strength
-    :return: boolean
-    '''
-    EvalPXP_TI, EvecPXP_TI = Diagonalize(PXPBathHam2(n_PXP, n_TI, Coupmat, J, h_x, h_z, h_c, h_imp, m=1))
-    EvalPXP, EvecPXP = Diagonalize(PXPOBCNew2(n_PXP))
-    ExpectationArrayPXP_TI= np.diag(np.matmul(np.conjugate(np.transpose(EvecPXP_TI)),np.matmul(Z_generali(np.add(n_PXP,n_TI),i),EvecPXP_TI)))
-    ExpectationArrayPXP = np.diag(np.matmul(np.conjugate(np.transpose(EvalPXP)),np.matmul(Z_generali(n_PXP,i),EvalPXP))) # outputs an array of <n|Z_toti|n>'s
-    return np.allclose(ExpectationArrayPXP_TI,ExpectationArrayPXP)
+################################ CONNECTED SUBSPACE REDUCTION OF PXP OBC ####################################
 
 def GroundstateCheck(n_PXP, n_TI, h_c=0 ,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
     '''
@@ -574,73 +424,19 @@ def Subspace_reduced_PXP(n_PXP,j,st):
     red_dim_proj_PXP=red_dim_proj_PXP[~np.all(full_dim_proj_PXP==0,axis=1),:]
     return red_dim_proj_PXP
 
-def Subspace_reduced_Zi(n_PXP,j,st,i):
-    '''
-    reducing the Zi matrix by removing rows/cols with only zeros
-    :param n_PXP: No. of PXP OBC atoms (general)
-    :param j: impurity site
-    :param st: impurity strength
-    :return: reduced Zi matrix, without rows/cols with only zeros
-    '''
-    full_dim_proj_PXP= Subspace_PXP(n_PXP,j,st)
-    red_dim_proj_Zi=Z_generali(n_PXP,i)[:,~np.all(full_dim_proj_PXP==0,axis=1)]
-    red_dim_proj_Zi=red_dim_proj_Zi[~np.all(full_dim_proj_PXP==0,axis=1),:]
-    return red_dim_proj_Zi
-
-def Subspace_reduced_O_z(n_PXP,j,st):
-    '''
-    reducing the Zi matrix by removing rows/cols with only zeros
-    :param n_PXP: No. of PXP OBC atoms (general)
-    :param j: impurity site
-    :param st: impurity strength
-    :return: reduced Zi matrix, without rows/cols with only zeros
-    '''
-    full_dim_proj_PXP= Subspace_PXP(n_PXP,j,st)
-    red_dim_proj_O_z=O_znew(n_PXP)[:,~np.all(full_dim_proj_PXP==0,axis=1)]
-    red_dim_proj_O_z=red_dim_proj_O_z[~np.all(full_dim_proj_PXP==0,axis=1),:]
-    return red_dim_proj_O_z
-
-def fig2ASubspc_PXP_Impure_Z_i(n_PXP,j,st,i=1):
-    '''
-     Figure 2 plot of Pxp TI TOTAL Ham
-    :param n_PXP: number of PXP atoms
-    :param j: site of impurity
-    :param st: strength of impurity
-    :param i: index of Z_i
-    :return: plot
-    '''
-    Eval, Evec = Diagonalize(Subspace_reduced_PXP(n_PXP,j,st))
-    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Subspace_reduced_Zi(n_PXP,j,st,i),Evec))) # outputs an array of <n|Z|n>'s
-    plt.scatter(Eval, ExpectationArray, color='r',marker='o', s=5)
-    plt.title(r"$\langle Z${}$\rangle$ Vs. Energy for {} atoms, PXP OBC impure (impurity in {}th site) ".format(i,n_PXP,j))
-    plt.xlabel("Energy")
-    plt.ylabel(r"$\langle Z${}$\rangle$".format(i))
-    plt.show()
-    return
-
-def fig2ASubspc_PXP_Impure_O_z(n_PXP,j,st):
-    '''
-     Figure 2 plot of Pxp TI TOTAL Ham
-    :param n_PXP: number of PXP atoms
-    :param j: site of impurity
-    :param st: strength of impurity
-    :return: plot
-    '''
-    Eval, Evec = Diagonalize(Subspace_reduced_PXP(n_PXP,j,st))
-    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(Subspace_reduced_O_z(n_PXP,j,st),Evec))) # outputs an array of <n|Z|n>'s
-    plt.scatter(Eval, ExpectationArray, color='r',marker='o', s=5)
-    plt.title(r"$\langle O_z\rangle$ Vs. Energy for {} atoms, PXP OBC " .format(n_PXP,j))
-    plt.xlabel("Energy")
-    plt.ylabel(r"$\langle  O_z\rangle$")
-    plt.show()
-    return
-
 def EigenvalueUniqueness(n,j,st):
+    '''
+    Checks repetitivity of eigenvalues in PXP model, i.e, the degeneracy.
+    :param n: no of atoms
+    :param j: impurity site
+    :param st: impurity strength
+    :return: array of the number of repititions of each eigenstate
+    '''
     eval, evec = Diagonalize(Subspace_reduced_PXP(n,j,st))
     Unique= np.unique(eval,False,False,True)
     return Unique
 
-########################START OF EE CALCULATION#############################
+######################## EE CALCULATION#############################
 
 def Binary_State_Mapping(state): #TODO check for some more cases
     '''

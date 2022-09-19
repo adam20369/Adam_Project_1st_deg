@@ -30,5 +30,5 @@ def PXP(n):
                 vecj=Base[j].copy()
                 vecj[i]=1
             vecj
-            Ham[masheu,masheu]=1
-        if Base[j, i] and Base[j + 1, i]:
+#      Ham[masheu,masheu]=1
+#      if Base[j, i] and Base[j + 1, i]:
