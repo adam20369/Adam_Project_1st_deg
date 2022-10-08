@@ -2,6 +2,7 @@ import os
 os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 import numpy.linalg as la
+from time import time
 import matplotlib.pyplot as plt
 import pickle
 import itertools
@@ -437,6 +438,8 @@ def EigenvalueUniqueness(n,j,st):
     Unique= np.unique(eval,False,False,True)
     return Unique
 
+######################## EE CALCULATION#############################
+######################## EE CALCULATION#############################
 ######################## EE CALCULATION#############################
 
 def Binary_State_Mapping(state): #TODO check for some more cases

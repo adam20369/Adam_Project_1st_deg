@@ -5,7 +5,7 @@ import numpy.linalg as la
 import matplotlib.pyplot as plt
 import pickle
 import itertools
-import timeit as tit
+from time import time
 from scipy import integrate
 from scipy.linalg import expm
 from matplotlib.lines import Line2D
@@ -15,6 +15,7 @@ from scipy.signal import find_peaks
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from Coupling_To_Bath import *
+from PXP_Entry_By_Entry import *
 
 
 def Subspace_reduced_Zi(n_PXP,j,st,i):
@@ -78,6 +79,22 @@ def fig2ASubspc_PXP_Impure_O_z(n_PXP,j,st):
     plt.show()
     return
 
+def fig2ASubspc_PXP_Entrybyentry_O_z(n_PXP):
+    '''
+     Figure 2 plot of Pxp TI TOTAL Ham
+    :param n_PXP: number of PXP atoms
+    :param j: site of impurity
+    :param st: strength of impurity
+    :return: plot
+    '''
+    Eval, Evec = Diagonalize(PXP_Ham_OBC_Entrybyentry(n_PXP))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(O_z_PXP_Entry_basis(n_PXP),Evec))) # outputs an array of <n|Z|n>'s
+    plt.scatter(Eval, ExpectationArray, color='r',marker='o', s=5)
+    plt.title(r"$\langle O_z\rangle$ Vs. Energy for {} atoms, PXP OBC " .format(n_PXP))
+    plt.xlabel("Energy")
+    plt.ylabel(r"$\langle  O_z\rangle$")
+    plt.show()
+    return
 def fig2APXP_TI(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
     '''
     OLD Figure 2 plot of Pxp TI TOTAL Ham, needs rebuilding!!!!!
