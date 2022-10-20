@@ -79,22 +79,23 @@ def fig2ASubspc_PXP_Impure_O_z(n_PXP,j,st):
     plt.show()
     return
 
-def fig2ASubspc_PXP_Entrybyentry_O_z(n_PXP):
+def fig2ASubspc_PXP_Entrybyentry_O_z(n_PXP,Subspace):
     '''
-     Figure 2 plot of Pxp TI TOTAL Ham
+     Figure 2 plot of Pxp TI TOTAL Ham NEW!!!@!!
     :param n_PXP: number of PXP atoms
     :param j: site of impurity
     :param st: strength of impurity
     :return: plot
     '''
-    Eval, Evec = Diagonalize(PXP_Ham_OBC_Entrybyentry(n_PXP))
-    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(O_z_PXP_Entry_basis(n_PXP),Evec))) # outputs an array of <n|Z|n>'s
+    Eval, Evec = Diagonalize(PXP_Ham_OBC_Entrybyentry(n_PXP, Subspace))
+    ExpectationArray = np.diag(np.matmul(np.conjugate(np.transpose(Evec)),np.matmul(O_z_PXP_Entry_basis(n_PXP, Subspace),Evec))) # outputs an array of <n|Z|n>'s
     plt.scatter(Eval, ExpectationArray, color='r',marker='o', s=5)
     plt.title(r"$\langle O_z\rangle$ Vs. Energy for {} atoms, PXP OBC " .format(n_PXP))
     plt.xlabel("Energy")
     plt.ylabel(r"$\langle  O_z\rangle$")
     plt.show()
     return
+
 def fig2APXP_TI(n_PXP, n_TI, h_c, i=1,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
     '''
     OLD Figure 2 plot of Pxp TI TOTAL Ham, needs rebuilding!!!!!
