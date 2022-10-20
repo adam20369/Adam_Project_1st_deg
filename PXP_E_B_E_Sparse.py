@@ -9,6 +9,7 @@ from time import time
 from scipy import integrate
 from sympy.utilities.iterables import multiset_permutations
 import scipy.sparse as sp
+import scipy.sparse.linalg as spla
 from scipy.special import comb
 
 
@@ -187,7 +188,7 @@ def Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
     return Coupterm
 
 
-def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, Subspace, m):
+def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     '''
     Full coupled Hamiltonian with PXP Subspace Entry by entry code, sparse!!
     :param n_PXP:
@@ -197,20 +198,21 @@ def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, Subspace, m):
     :param h_z:
     :param h_c:
     :param h_imp:
-    :param Subspace:
     :param m:
     :return: Matrix (full Hamiltonian), Sparse
     '''
-    n_tot= n_PXP + n_TI
-    d_PXP = 2 ** n_PXP
-    d_TI = 2 ** n_TI
-    PXP = PXP_Ham_OBC_Sparse(n_PXP, Subspace)
+    #n_tot= n_PXP + n_TI
+    PXP = PXP_Ham_OBC_Sparse(n_PXP, PXP_Subspace_Algo)
     TI = TIOBCNewImpure_sparse(n_TI, J, h_x, h_z, h_imp, m)
+    d_PXP = Subspace_basis_count_faster(n_PXP) #TODO Think if there's a better way
+    d_TI = 2 ** n_TI
     HamNoCoupl = sp.kron(PXP, sp.identity(d_TI))+sp.kron(sp.identity(d_PXP), TI)
-    TotalHam = HamNoCoupl + Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP,n_TI, h_c)
+    TotalHam = HamNoCoupl + Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c)
     return TotalHam
 
+def Sparse_Diagonalization(Ham):
+    eval, evec = spla.eigsh(Ham)
+    return eval, evec
 
-#TODO think how the coupling looks on PXP model
-#TODO TI_Impure_sparse
-
+#TODO Checks on new PXP TI Ham in sparse and in regular EbE new method
+#TODO Time propagation

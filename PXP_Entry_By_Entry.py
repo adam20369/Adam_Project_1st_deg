@@ -382,16 +382,14 @@ def PXP_EBE_BathHam(n_PXP, n_TI, Subspace, J, h_x, h_z, h_c, h_imp, m): #Needs f
     :param m: impurity site (default is 1)
     :return: Full coupled Hamiltonian
     """
-    n_tot= np.add(n_PXP,n_TI)
-    d_PXP = 2 ** n_PXP
-    d_TI = 2 ** n_TI
-    d_tot= 2 ** n_tot
     PXP = PXP_Ham_OBC_Entrybyentry(n_PXP, Subspace)
     TI = TIOBCNewImpure2(n_TI, J, h_x, h_z, h_imp, m)
+    d_TI = 2 ** n_TI
+    d_PXP = len(PXP)
     HamNoCoupl = np.add(np.kron(PXP, np.identity(d_TI)), np.kron(np.identity(d_PXP), TI))
     TotalHam = np.add(HamNoCoupl, Z_i_Coupling_PXP_Entry_to_TI(n_PXP, n_TI, h_c))
     return TotalHam
 
 #TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT
 #TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT
-
+#TODO Check where I put Subspace_basis_count_faster in code and switch to len()
