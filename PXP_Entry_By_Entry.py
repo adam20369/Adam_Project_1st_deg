@@ -359,7 +359,6 @@ def Z_i_Coupling_PXP_Entry_to_TI(n_PXP, n_TI, h_c):
         :param h_c: coupling strength parameter
         :return: matrix in (full) Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI) dimension
         """
-        n_tot = n_PXP + n_TI  # Total number of atoms
         d_TOT = Subspace_basis_count_faster(n_PXP)+2 ** n_TI   # Total dimension
         Coupling = (h_c) * np.kron(Z_i_PXP_Entry_basis(n_PXP, n_PXP, PXP_Subspace_Algo), Z_generali(n_TI,1))
         if n_TI == 0 or n_PXP == 0 or h_c == 0:
@@ -390,6 +389,39 @@ def PXP_EBE_BathHam(n_PXP, n_TI, Subspace, J, h_x, h_z, h_c, h_imp, m): #Needs f
     TotalHam = np.add(HamNoCoupl, Z_i_Coupling_PXP_Entry_to_TI(n_PXP, n_TI, h_c))
     return TotalHam
 
-#TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT
-#TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT
-#TODO Check where I put Subspace_basis_count_faster in code and switch to len()
+def Neelstate_spin_base_faster(n_PXP):
+    '''
+    faster method Generates Neelstate in spin basis (1 in the first site)
+    :param n_PXP: No. of atoms
+    :return: Vector (Neelstate)
+    '''
+    Neel = np.zeros((n_PXP))
+    Even = np.arange(0,n_PXP,2)
+    Neel[Even]=1
+    return Neel
+
+def Neel_Subspace_Basis(n_PXP): #TODO with pickle when saving subspace basis!
+    '''
+    Finds Neelstate in Subspace (PXP) Basis
+    :param n_PXP: Number of PXP atoms
+    :return: vector of Neelstate in Subspace Basis of PXP
+    '''
+    Neel = Neelstate_spin_base_faster(n_PXP)
+    Subspace = PXP_Subspace_Algo(n_PXP)
+    Neel_index = np.where(np.all(Subspace==Neel,axis=1))
+    Subs_Base_Neel = np.zeros((Subspace_basis_count_faster(n_PXP)))
+    Subs_Base_Neel[Neel_index] = 1
+    return Subs_Base_Neel
+
+def Neel_EBE_Haar(n_PXP, n_TI): #Haarstate from Coupling_To_Bath
+    """
+    Combination of the Neel EBE Subspace basis and Haar states
+    :param n_PXP:  Number of PXP chain atoms
+    :param n_TI: number of TI chain atoms
+    :return: Neel-Haar combined state
+    """
+    NeelHaarstate = np.kron(Neel_Subspace_Basis(n_PXP), Haarstate(n_TI))
+    return NeelHaarstate
+
+# TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT
+# TODO Check where I put Subspace_basis_count_faster in code and switch to len()

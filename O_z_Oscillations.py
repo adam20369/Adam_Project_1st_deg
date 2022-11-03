@@ -52,8 +52,6 @@ def RunZiSandwichCheck2(n_PXP, n_TI, i, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.pi)
     markers = np.array(('s', '^', 'o', 'd'))
     return ZiSandwichCheck2(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, i, Color, np.random.choice(markers))
 
-# TODO think about the problem with the values for different Impurity strength and different atom chain sizes?
-
 def ZiSandwichCheck2plt(Ham, n_PXP, n_TI,  Initialstate,
              T_start, T_max, T_step, i, Color, Marker):
     '''
@@ -93,60 +91,6 @@ def RunZiSandwichCheck2plt(n_PXP, n_TI, i, Coupl=Z_i, J=1 , h_x=np.sin(0.485*np.
     Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
     markers = np.array(('s', '^', 'o', 'd'))
     return ZiSandwichCheck2plt(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, i, Color, np.random.choice(markers))
-
-def OzSandwichTotHamplt(Ham, n_PXP, n_TI,  Initialstate,
-             T_start, T_max, T_step, Color, Marker, h_c):
-    '''
-    plots <Neel|O_z(t)|Neel> with respect to time
-    :param Ham: Hamiltonian for propagation
-    :param n_PXP: Size of PXP chain (atoms)
-    :param n_TI: Size of TI chain (atoms)
-    :param Initialstate:  Initial Vector state we would like to propagate
-    :param T_start: Start Time of propagation
-    :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
-    :param Color:
-    :param Marker:
-    :return: plot only
-    '''
-    U= expm(-1j*Ham*T_step)
-    U_dag= expm(1j*Ham*T_step)
-    V= Initialstate
-    t = np.arange(T_start, T_max, T_step)
-    VecProp=np.zeros((np.size(t)))
-    for ti in np.nditer(t):
-        if ti==0:
-            VecProp[np.argwhere(t == ti)] = np.round(np.vdot(V, np.dot(np.kron(O_znew(n_PXP),np.identity(2**n_TI)),V)), 4)
-        else:
-            V = np.dot(U,V) # propagation in iterations from here
-            VecProp[np.argwhere(t == ti)] = np.round(np.vdot(V,np.dot(np.kron(O_znew(n_PXP),np.identity(2**n_TI)),V)),4)
-    plt.plot(t, VecProp, marker=Marker, markersize=3,
-             color=Color)
-    plt.title('{} PXP atoms, {} TI atoms, {} Coupling strength'.format(n_PXP,n_TI, h_c))
-    return plt.show()
-
-def RunOzSandwichTotHamplt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Coupl=Z_i, J=1, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0, m=2):# Time propagation of PXP TI COUPLED
-    '''
-     Runs Z1SandwichCheck plotter!
-    :param n_PXP: No of PXP atoms
-    :param n_TI: No of TI atoms
-    :param Coupl:Coupling nature (type of matrix)
-    :param J: TI Ising part strength
-    :param h_x: Trasverse field
-    :param h_z: Longtitudinal field
-    :param h_c: Coupling strength
-    :param T_start: Start time of measurement
-    :param T_max: End time of measurement
-    :param T_step: time step interval
-    :param h_imp: Impurity strength in TI model
-    :param m: Site of impurity of TI model (should NOT be 1)
-    :return: OzSandwichCheckplt
-    '''
-    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
-    InitVecstate = NeelHaar(n_PXP,n_TI)
-    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
-    markers = np.array(('s', '^', 'o', 'd'))
-    return OzSandwichTotHamplt(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, Color, np.random.choice(markers),h_c)
 
 def OzPXPOBConlySandwichplt(Ham, n_PXP, Initialstate, T_start, T_max, T_step, Color, Marker):
     '''
@@ -332,6 +276,60 @@ def RunOzSandwichTotHam(n_PXP, n_TI, h_c, T_start, T_max, T_step, Coupl=Z_i, J=1
     InitVecstate = NeelHaar(n_PXP,n_TI)
     return OzSandwichTotHam(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step)
 
+def OzSandwichTotHamplt(Ham, n_PXP, n_TI,  Initialstate,
+             T_start, T_max, T_step, Color, Marker, h_c):
+    '''
+    plots <Neel|O_z(t)|Neel> with respect to time
+    :param Ham: Hamiltonian for propagation
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param Color:
+    :param Marker:
+    :return: plot only
+    '''
+    U= expm(-1j*Ham*T_step)
+    U_dag= expm(1j*Ham*T_step)
+    V= Initialstate
+    t = np.arange(T_start, T_max, T_step)
+    VecProp=np.zeros((np.size(t)))
+    for ti in np.nditer(t):
+        if ti==0:
+            VecProp[np.argwhere(t == ti)] = np.round(np.vdot(V, np.dot(np.kron(O_znew(n_PXP),np.identity(2**n_TI)),V)), 4)
+        else:
+            V = np.dot(U,V) # propagation in iterations from here
+            VecProp[np.argwhere(t == ti)] = np.round(np.vdot(V,np.dot(np.kron(O_znew(n_PXP),np.identity(2**n_TI)),V)),4)
+    plt.plot(t, VecProp, marker=Marker, markersize=3,
+             color=Color)
+    plt.title('{} PXP atoms, {} TI atoms, {} Coupling strength'.format(n_PXP,n_TI, h_c))
+    return plt.show()
+
+def RunOzSandwichTotHamplt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Coupl=Z_i, J=1, h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi), h_imp=0, m=2):# Time propagation of PXP TI COUPLED
+    '''
+     Runs Z1SandwichCheck plotter!
+    :param n_PXP: No of PXP atoms
+    :param n_TI: No of TI atoms
+    :param Coupl:Coupling nature (type of matrix)
+    :param J: TI Ising part strength
+    :param h_x: Trasverse field
+    :param h_z: Longtitudinal field
+    :param h_c: Coupling strength
+    :param T_start: Start time of measurement
+    :param T_max: End time of measurement
+    :param T_step: time step interval
+    :param h_imp: Impurity strength in TI model
+    :param m: Site of impurity of TI model (should NOT be 1)
+    :return: OzSandwichCheckplt
+    '''
+    H_full = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp, m)
+    InitVecstate = NeelHaar(n_PXP,n_TI)
+    Color = np.array((np.random.rand(), np.random.rand(), np.random.rand()))
+    markers = np.array(('s', '^', 'o', 'd'))
+    return OzSandwichTotHamplt(H_full, n_PXP, n_TI, InitVecstate, T_start, T_max, T_step, Color, np.random.choice(markers),h_c)
+
 ###############################################################################################################
                                 #Start of damping calculation#
 ###############################################################################################################
@@ -353,6 +351,7 @@ def FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
     Freq = rfftfreq(Sig_size, d=T_step) # Freq *maxtime = int
     return Freq, (Height_norm/Sig_size * np.abs(Fourier_components))
 
+#TODO understand FFT
 
 def Plot_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
@@ -381,7 +380,6 @@ def Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     return np.divide(amp * gamma, gamma**2 + (omega-omega_0)**2)
 
-
 def Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
     Fits lorentzian function to Fourier signal, returns gamma (damping coefficient)
@@ -398,6 +396,55 @@ def Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, S
     Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
     popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:]) # popt= parameter optimal values
     return popt
+
+def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
+    '''
+    Fits lorentzian function to Fourier signal, outputs plots of data and fit
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param h_c: coupling strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval)
+    :param Height_norm: controls the amplitude of the frequency graph (default= 1)
+    :param Start_cutoff: cutoff of lowest frequencies (they are weird)
+    :return: a plot of data (blue) and fit (red)
+    '''
+    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    plt.plot(Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:], marker='o', markersize=3,
+             color='b', label='data')
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:]) # popt= parameter optimal values
+    plt.plot(Freq[Start_cutoff:], Lorentzian_function(Freq[Start_cutoff:],*popt),'r-',
+         label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={}'.format(*np.round(popt,4)))
+    #plt.title('Frequency fit for {} PXP and {} TI atoms, Coupling strength {}'.format(n_PXP,n_TI,h_c))
+    plt.xlabel(r'Frequency [$1/t$]')
+    plt.ylabel('Amplitudes of Harmonic Functions')
+    plt.legend()
+    plt.savefig("Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(n_PXP,n_TI,h_c))
+    return plt.show()
+
+def Lorentzian_inverse_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
+    '''
+    Inverse fits lorentzian function with optimal parameters back to harmonic functions coefficients and frequencies
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param h_c: coupling strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval!!!!)
+    :param Height_norm: controls the amplitude of the frequency graph (default= 1)
+    :param Start_cutoff: cutoff of lowest frequencies (they are weird)
+    :return: a plot of data (blue) and fit (red)
+    '''
+    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    Lorentzian = Lorentzian_function(Freq,*Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff))
+    #plt.plot(Freq,Lorentzian, marker= 'x', markersize= 3, color='r')
+    #plt.show()
+    Lorentzian_FFT =  irfft(Lorentzian)
+    Time = np.arange(T_start,T_max,T_step)
+    plt.plot(Time,Lorentzian_FFT, marker= 'x', markersize= 3, color='r')
+    return plt.show()
+
 
 def Damping_coef_vs_TI_No_plt(n_PXP, n_TI_max, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
@@ -446,33 +493,6 @@ def Damping_coef_vs_Coup_Str_plt(n_PXP, n_TI, h_c_max, h_c_int, T_start, T_max, 
     plt.xlabel('Coupling Strength')
     plt.ylabel(r'$\gamma$ (Normalized Damping Coefficient)')
     plt.savefig("Gamma_vs_Coup_str_{}_PXP_{}_TI.png".format(n_PXP,n_TI))
-
-    return plt.show()
-
-def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
-    '''
-    Fits lorentzian function to Fourier signal, outputs plots of data and fit
-    :param n_PXP: Size of PXP chain (atoms)
-    :param n_TI: Size of TI chain (atoms)
-    :param h_c: coupling strength
-    :param T_start: Start Time of propagation
-    :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
-    :param Height_norm: controls the amplitude of the frequency graph (default= 1)
-    :param Start_cutoff: cutoff of lowest frequencies (they are weird)
-    :return: a plot of data (blue) and fit (red)
-    '''
-    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
-    plt.plot(Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:], marker='o', markersize=3,
-             color='b', label='data')
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:]) # popt= parameter optimal values
-    plt.plot(Freq[Start_cutoff:], Lorentzian_function(Freq[Start_cutoff:],*popt),'r-',
-         label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={}'.format(*np.round(popt,4)))
-    #plt.title('Frequency fit for {} PXP and {} TI atoms, Coupling strength {}'.format(n_PXP,n_TI,h_c))
-    plt.xlabel(r'Frequency [$1/t$]')
-    plt.ylabel('Amplitudes of Harmonic Functions')
-    plt.legend()
-    plt.savefig("Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(n_PXP,n_TI,h_c))
     return plt.show()
 
 def Residuals(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
@@ -492,7 +512,6 @@ def Residuals(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutof
     popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:])
     residuals = Inverse_sig_func - Lorentzian_function(Freq, *popt)
     return residuals[Start_cutoff:]
-
 
 def Residuals_plot(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
@@ -514,8 +533,6 @@ def Residuals_plot(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_
              color='g')
     plt.title('Residuals')
     return plt.show()
-
-
 
 def Averagesig(n_PXP, n_TI, h_c, T_start=0, T_max=100, T_step=1):
     '''
@@ -599,7 +616,10 @@ def MinimumPeak(n_PXP, n_TI, h_c, T_start, T_max, T_step):
     Minpeak = np.argmin(Height_array)
     return Time_peaks, Height_array, Minpeak
 
-############################################################### OLD METHODS ######################################################## TO BE DELETED?
+##################################################################################################################################################################################################################################
+#                                                                                                         OLD METHODS - TO BE DELETED?                                                                                           #
+##################################################################################################################################################################################################################################
+
 
 def DampingCoef(n_PXP, n_TI, h_c, T_start, T_max, T_step):
     '''

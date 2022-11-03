@@ -2,6 +2,7 @@ import os
 os.environ['OMP_NUM_THREADS'] = '1'
 #from Coupling_To_Bath import *
 from PXP_Entry_By_Entry import *
+import O_z_Oscillations as Ozosc
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
@@ -112,7 +113,6 @@ def X_i_Mat_PXP_Full_Basis_Sparse(n, i):
         X_mat[int(dict[j,0]),int(dict[j,1])] = 1
     return X_mat
 
-#TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT
 
 def PXP_Ham_OBC_Sparse(n, Subspace):
     '''
@@ -179,7 +179,7 @@ def Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
     :return: matrix in (full) Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI) dimension, sparse
     """
     n_tot = n_PXP + n_TI  # Total number of atoms
-    d_TOT = Subspace_basis_count_faster(n_PXP) + 2 ** n_TI  # Total dimension
+    d_TOT = Subspace_basis_count_faster(n_PXP) * 2 ** n_TI  # Total dimension
     Coupling = (h_c) * sp.kron(Z_i_PXP_Entry_Sparse(n_PXP, n_PXP, PXP_Subspace_Algo), Z_i_Spin_Basis_sparse(n_TI, 1))
     if n_TI == 0 or n_PXP == 0 or h_c == 0:
         Coupterm = sp.csr_matrix((d_TOT, d_TOT))
@@ -191,28 +191,80 @@ def Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
 def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     '''
     Full coupled Hamiltonian with PXP Subspace Entry by entry code, sparse!!
-    :param n_PXP:
-    :param n_TI:
-    :param J:
-    :param h_x:
-    :param h_z:
-    :param h_c:
-    :param h_imp:
-    :param m:
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
     :return: Matrix (full Hamiltonian), Sparse
     '''
     #n_tot= n_PXP + n_TI
     PXP = PXP_Ham_OBC_Sparse(n_PXP, PXP_Subspace_Algo)
     TI = TIOBCNewImpure_sparse(n_TI, J, h_x, h_z, h_imp, m)
-    d_PXP = Subspace_basis_count_faster(n_PXP) #TODO Think if there's a better way
+    d_PXP = Subspace_basis_count_faster(n_PXP)
     d_TI = 2 ** n_TI
     HamNoCoupl = sp.kron(PXP, sp.identity(d_TI))+sp.kron(sp.identity(d_PXP), TI)
     TotalHam = HamNoCoupl + Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c)
     return TotalHam
 
-def Sparse_Diagonalization(Ham):
-    eval, evec = spla.eigsh(Ham)
+def Sparse_Diagonalize(Ham, num): #TODO ????
+    '''
+    Sparse diagonalization method
+    :param Ham: Hamiltonian
+    :param num: number of desired eigenvalues\ eigenvectors (must be smaller than total dim due to algorithm)
+    :return: eigenvalues, eigenvectors (list of an array and a matrix of col. vectors)
+    '''
+    eval, evec = spla.eigsh(Ham, k = num)
     return eval, evec
 
-#TODO Checks on new PXP TI Ham in sparse and in regular EbE new method
-#TODO Time propagation
+
+def Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
+    '''
+    Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: 2 vectors -  <Neel|O_z(t)|Neel> values and corresponding time values??????
+    '''
+    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
+    O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
+    Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
+                                        start= T_start , stop=T_max ,num=T_step,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
+    Time = np.linspace(T_start,T_max,T_step,endpoint=True)
+    return Sandwich.round(4), Time
+
+def Plot_Time_prop_EBE(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step):
+    Sandwich, time= Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
+    plt.plot(time, Sandwich, marker='o', markersize=3,
+             color='b')
+    plt.title('{} PXP atoms, {} TI atoms, {} Coupling strength'.format(n_PXP, n_TI, h_c))
+    # return plt.show()
+
+def Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c,T_start, T_max, T_step):
+    Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return Plot_Time_prop_EBE(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
+
+def Compare_plot_Time_prop(n_PXP, n_TI, h_c, T_start, T_max, T_step):
+    Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c, T_start, T_max, T_step)
+    Ozosc.RunOzSandwichTotHamplt(n_PXP, n_TI, h_c, T_start, T_max, T_max/T_step)
+    return plt.show()
+
+#TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT

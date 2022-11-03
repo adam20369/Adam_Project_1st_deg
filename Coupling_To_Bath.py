@@ -97,7 +97,7 @@ def Haarstate(n): # GENERAL HAAR STATE
         betta= np.random.normal(0, 1, 2 ** n)
         v= alpha + 1j*betta
         HaarVec= np.divide(v, la.norm(v))
-    return HaarVec
+    return HaarVec.round(6)
 
 def NeelHaar(n_PXP, n_TI):
     """
@@ -225,10 +225,30 @@ def Coupling2(n_PXP, n_TI , Coupmat, h_c): #faster way
     2 site coupling matrix in TOTAL Hamiltonian dimension (2**(n_PXP + n_TI))
     :param n_PXP: Number of PXP atoms (0 to whatever)
     :param n_TI: Number of TI atoms (0 to whatever)
-    :param Coupmat: Coupling 2x2 base matrix ( one site matrix)
+    :param Coupmat: Coupling 2x2 base matrix (one-site matrix)
     :param h_c: coupling strength parameter
     :return:
     """
+    n_tot = np.add(n_PXP, n_TI)  # Total number of atoms
+    d_pxp = 2 ** n_PXP #dimension of PXP
+    d_TI = 2 ** n_TI #dimension of TI
+    d_TOT = 2 ** n_tot  #Total dimension
+    Coupling = (h_c) * np.kron(Coupmat, Coupmat)
+    if n_TI == 0 or n_PXP == 0 or h_c == 0:
+        Coupterm = np.zeros((d_TOT,d_TOT))
+    else:
+        Coupterm = np.kron(np.kron(np.identity(2 ** (n_PXP - 1)), Coupling), np.identity(2 ** (n_TI-1)))
+    return Coupterm
+
+def Coupling2Subspc(n_PXP, n_TI , Coupmat, h_c):
+    '''
+    2 site Coupling matrix in subspace basis of PXP
+    :param n_PXP: number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param Coupmat: 2x2 base one-site matrix (Nature of coupling)
+    :param h_c: Coupling strength
+    :return: coupling subspace matrix of size (fib(n_pxp-3)*n_TI x fib(n_pxp-3)*n_TI)
+    '''
     n_tot = np.add(n_PXP, n_TI)  # Total number of atoms
     d_pxp = 2 ** n_PXP #dimension of PXP
     d_TI = 2 ** n_TI #dimension of TI
@@ -426,6 +446,49 @@ def Subspace_reduced_PXP(n_PXP,j,st):
     red_dim_proj_PXP=red_dim_proj_PXP[~np.all(full_dim_proj_PXP==0,axis=1),:]
     return red_dim_proj_PXP
 
+
+def PXP_Subspace_Mat(Mat,n_PXP,j,st):
+    '''
+    projects a 2**N x 2**N matrix onto the kinetic constrained block of the PXP model
+    :param n_PXP: No. of PXP OBC atoms (general)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: Subspace matrix of PXP, containing only largest connected block
+    '''
+    proj = Subspc_Proj(n_PXP,j,st)
+    Projected_Mat = np.matmul(proj,np.matmul(Mat,proj))
+    return Projected_Mat
+
+def PXP_Subspace_mat_reduced(Mat,n_PXP,j=2,st=0):
+    '''
+    reduces the projected matrix to Fib(n_pxp+3) x Fib(n_pxp +3) dimension
+    :param n_PXP: No. of PXP OBC atoms (general)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: reduced PXP matrix, without rows/cols with only zeros
+
+    '''
+    full_dim_Projected_Mat= PXP_Subspace_Mat(Mat,n_PXP,j,st)
+    reduced_dim_proj_Mat=full_dim_Projected_Mat[:,~np.all(full_dim_Projected_Mat==0,axis=1)]
+    reduced_dim_proj_Mat=reduced_dim_proj_Mat[~np.all(reduced_dim_proj_Mat==0,axis=1),:]
+    return reduced_dim_proj_Mat
+
+def Subspace_Coupling(n_PXP,n_TI, h_c,Mat= Z_generali ,j=2,st=0):
+    '''
+    Coupling in PXP subspace basis
+    :param n_PXP: number of PXP atoms
+    :param n_TI: number of TI atoms
+    :param Mat: Coupling nature (2x2 matrix one site)
+    :param h_c: coupling strength (controlled)
+    :param j: impurity site
+    :param st: impurity strength
+    :return: coupling matrix in subspace
+    '''
+    Z_PXP_Subspace_Last = PXP_Subspace_mat_reduced(Mat(n_PXP,n_PXP),n_PXP,j,st)
+    Z_TI_First = Mat(n_TI,1)
+    Subspace_coup = h_c * np.kron(Z_PXP_Subspace_Last, Z_TI_First)
+    return Subspace_coup
+
 def EigenvalueUniqueness(n,j,st):
     '''
     Checks repetitivity of eigenvalues in PXP model, i.e, the degeneracy.
@@ -438,9 +501,11 @@ def EigenvalueUniqueness(n,j,st):
     Unique= np.unique(eval,False,False,True)
     return Unique
 
-######################## EE CALCULATION#############################
-######################## EE CALCULATION#############################
-######################## EE CALCULATION#############################
+###################################################################################
+#                                 EE CALCULATION                                  #
+###################################################################################
+#       NOT NEEDED DUE TO BUILDING NEW HAMILTONIAN ENTRY BY ENTRY                 #
+
 
 def Binary_State_Mapping(state): #TODO check for some more cases
     '''
