@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
 #from Coupling_To_Bath import *
@@ -12,6 +13,7 @@ from sympy.utilities.iterables import multiset_permutations
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 from scipy.special import comb
+import multiprocessing
 
 
 ###############################################################################
@@ -245,26 +247,201 @@ def Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max
     Propagated_ket_fin= np.transpose(Propagated_ket)
     Propagated_bra_fin = np.conjugate(Propagated_ket)
     Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
-    Time = np.linspace(T_start,T_max,T_step,endpoint=True)
-    return Sandwich.round(4), Time
+    Time = np.linspace(T_start,T_max,T_step, endpoint=True)
+    return Time, Sandwich.round(4).astype('float')
+
+def Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
+    '''
+    Runs time propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
 
 def Plot_Time_prop_EBE(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step):
-    Sandwich, time= Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
+    '''
+    Plots Time propagation of O_z in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    time, Sandwich = Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
     plt.plot(time, Sandwich, marker='o', markersize=3,
              color='b')
     plt.title('{} PXP atoms, {} TI atoms, {} Coupling strength'.format(n_PXP, n_TI, h_c))
-    # return plt.show()
+    return plt.show()
 
-def Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c,T_start, T_max, T_step):
+def Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
+    '''
+    Runs time propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
     Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
     return Plot_Time_prop_EBE(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
 
-def Compare_plot_Time_prop(n_PXP, n_TI, h_c, T_start, T_max, T_step):
-    Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c, T_start, T_max, T_step)
-    Ozosc.RunOzSandwichTotHamplt(n_PXP, n_TI, h_c, T_start, T_max, T_max/T_step)
+
+def Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples, h_imp=0, m=2):
+    '''
+    Plot averaged Sparse Time prop (no error bars) #TODO DO WE NEED THIS??
+    :param n_PXP:
+    :param n_TI:
+    :param Initialstate:
+    :param J:
+    :param h_x:
+    :param h_z:
+    :param h_c:
+    :param T_start:
+    :param T_max:
+    :param T_step:
+    :param samples:
+    :param h_imp:
+    :param m:
+    :return:
+    '''
+    Time = np.linspace(T_start,T_max,T_step,endpoint=True)
+    Sandwich = np.zeros((samples,len(Time)))
+    for i in range(0,samples):
+        Time, Time_sandwich = Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
+        Sandwich[i,:] = Time_sandwich
+    Ave_Sandwich_vec = np.divide(np.sum(Sandwich,axis=0),samples)
+    plt.plot(Time, Ave_Sandwich_vec, marker='o', markersize=3,
+             color= np.array((np.random.rand(), np.random.rand(), np.random.rand())))
+    plt.title('{} PXP atoms, {} TI atoms, {} Coupling strength'.format(n_PXP, n_TI, h_c))
+    return #plt.show()
+
+def Run_Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step, samples):
+    '''
+    Runs time AVERAGE propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples)
+
+
+def Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples, h_imp=0, m=2):
+    '''
+    *run in cluster* averaged Sparse Time prop (no error bars)
+    :param n_PXP:
+    :param n_TI:
+    :param Initialstate:
+    :param J:
+    :param h_x:
+    :param h_z:
+    :param h_c:
+    :param T_start:
+    :param T_max:
+    :param T_step:
+    :param samples:
+    :param h_imp:
+    :param m:
+    :return:
+    '''
+    Time = np.linspace(T_start,T_max,T_step,endpoint=True)
+    with multiprocessing.Pool(processes = samples) as pool:
+        Rows = pool.starmap(Sparse_Time_prop,[(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp,m) for i in range(samples)])
+    Ave_Sandwich_vec = np.divide(np.sum(Rows,axis=0),samples)
+    return Time, Ave_Sandwich_vec
+
+
+def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step, samples):
+    '''
+    Runs time AVERAGE propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples)
+
+
+def Compare_plot_Time_prop_same_Haar_ARAB(n_PXP, n_TI, h_c, T_start, T_max, T_step):
+    '''
+    Compares new EBE plot with old code plot of O_z time propagation FOR THE SAME HAARSTATE!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation EBE and Old time propagation one on top of the other
+    '''
+    Haar_gen = Haarstate(n_TI)
+    Initialstate1 = np.kron(Neel_Subspace_Basis(n_PXP), Haar_gen)
+    Initialstate2 = np.kron(Neelstate(n_PXP), Haar_gen)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    Coupl = Z_i
+    Color='c'
+    Marker='o'
+    Plot_Time_prop_EBE(n_PXP, n_TI, Initialstate1, J, h_x, h_z, h_c, T_start, T_max, T_step)
+    Old_Ham = PXPBathHam2(n_PXP, n_TI, Coupl, J, h_x, h_z, h_c, h_imp=0, m=2)
+    Ozosc.OzSandwichTotHamplt(Old_Ham, n_PXP, n_TI,  Initialstate2,
+             T_start, T_max, T_max/T_step, Color, Marker, h_c)
     return plt.show()
+
+
 
 #TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT

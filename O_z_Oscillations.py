@@ -1,6 +1,7 @@
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
+import PXP_E_B_E_Sparse as Ebe
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 import pickle
@@ -336,22 +337,37 @@ def RunOzSandwichTotHamplt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Coupl=Z_i, 
 
 def FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
     '''
-    Gets positive frequency fourier components of the propagation signal and positive frequencies
+    Gets positive frequency (absolute value of) fourier components of the propagation signal and positive frequencies
     :param n_PXP: Size of PXP chain (atoms)
     :param n_TI: Size of TI chain (atoms)
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (interval!!!!!)
     :return: 2 arrays (Positive freq, positive freq fourier components)
     '''
-    time, VecProp = RunOzSandwichTotHam(n_PXP, n_TI, h_c, T_start, T_max, T_step)
+    time, VecProp = Ebe.Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, int(T_max/T_step)) #Run_Time_prop uses time division
     Fourier_components= rfft(VecProp)
-    Sig_size=np.size(VecProp)
-    Freq = rfftfreq(Sig_size, d=T_step) # Freq *maxtime = int
-    return Freq, (Height_norm/Sig_size * np.abs(Fourier_components))
+    Sig_size= np.size(VecProp)
+    Freq = rfftfreq(Sig_size, d=T_step) # Freq * T_max = integer that multiplies 2pi
+    return Freq, (Height_norm * np.abs(Fourier_components))
 
-#TODO understand FFT
+def FFT_non_abs(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
+    '''
+    Gets positive frequency fourier components (complex!!!) of the propagation signal and positive frequencies
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval!!!!!)
+    :return: 2 arrays (Positive freq, positive freq fourier components)
+    '''
+    time, VecProp = Ebe.Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, int(T_max/T_step)) #Run_Time_prop uses time division
+    Fourier_components= rfft(VecProp)
+    Sig_size= np.size(VecProp)
+    Freq = rfftfreq(Sig_size, d=T_step) # Freq * T_max = integer that multiplies 2pi
+    return Freq, (Height_norm/Sig_size * (Fourier_components))
 
 def Plot_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
@@ -362,7 +378,7 @@ def Plot_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (interval!!!)
     :return: plot
     '''
     Freq, Inverse_sig = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
@@ -393,27 +409,29 @@ def Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, S
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude)
     '''
-    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:]) # popt= parameter optimal values
+    Freq, sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
     return popt
 
 def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
+    #T_max about 100-300 and T_step 0.1-0.2ish, remember that t_max/t_step = N_tot ; N_tot/t_max = max freq
+    # (need to increas t_max and increase t_step so that number of N_tot does not !! go a lot over t_max)
     '''
-    Fits lorentzian function to Fourier signal, outputs plots of data and fit
+    Fits lorentzian function to transformed signal, outputs plots of data and fit
     :param n_PXP: Size of PXP chain (atoms)
     :param n_TI: Size of TI chain (atoms)
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
-    :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_max: Max Time of propagation; Bigger T_max - smaller frequencies!
+    :param T_step: time step (interval) Smaller T_step - bigger frequencies!
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: a plot of data (blue) and fit (red)
     '''
-    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
-    plt.plot(Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:], marker='o', markersize=3,
+    Freq, sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    plt.plot(Freq[Start_cutoff:], sig_func[Start_cutoff:], marker='o', markersize=3,
              color='b', label='data')
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:]) # popt= parameter optimal values
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
     plt.plot(Freq[Start_cutoff:], Lorentzian_function(Freq[Start_cutoff:],*popt),'r-',
          label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={}'.format(*np.round(popt,4)))
     #plt.title('Frequency fit for {} PXP and {} TI atoms, Coupling strength {}'.format(n_PXP,n_TI,h_c))
@@ -423,9 +441,9 @@ def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_nor
     plt.savefig("Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(n_PXP,n_TI,h_c))
     return plt.show()
 
-def Lorentzian_inverse_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
+def Lorentzian_inverse_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
-    Inverse fits lorentzian function with optimal parameters back to harmonic functions coefficients and frequencies
+    Inverse fits lorentzian function with optimal parameters (=fitted data) back to time domain
     :param n_PXP: Size of PXP chain (atoms)
     :param n_TI: Size of TI chain (atoms)
     :param h_c: coupling strength
@@ -434,15 +452,34 @@ def Lorentzian_inverse_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height
     :param T_step: time step (interval!!!!)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
-    :return: a plot of data (blue) and fit (red)
+    :return: a plot of the original signal
     '''
-    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    Freq = np.arange(0,((T_max/T_step)+2)/(2*T_max),1/T_max)
     Lorentzian = Lorentzian_function(Freq,*Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff))
     #plt.plot(Freq,Lorentzian, marker= 'x', markersize= 3, color='r')
     #plt.show()
-    Lorentzian_FFT =  irfft(Lorentzian)
     Time = np.arange(T_start,T_max,T_step)
-    plt.plot(Time,Lorentzian_FFT, marker= 'x', markersize= 3, color='r')
+    Lorentzian_IFFT = irfft(Lorentzian, n=len(Time))
+    plt.plot(Time,Lorentzian_IFFT, marker= 'x', markersize= 3, color='r')
+    return plt.show()
+
+def Lorentzian_inverse_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm,Start_cutoff):
+    '''
+    Inverse fits FFT Raw Data (complex numbers) back to time domain - non symmetric damping as of
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param h_c: coupling strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (interval!!!!)
+    :param Height_norm: controls the amplitude of the frequency graph (default= 1)
+    :param Start_cutoff: cutoff of lowest frequencies (they are weird)
+    :return: a plot of the original signal
+    '''
+    Freq, sig_func = FFT_non_abs(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    Time = np.arange(T_start,T_max,T_step)
+    Lorentzian_IFFT = irfft(sig_func, n=len(Time))
+    plt.plot(Time,Lorentzian_IFFT, marker= 'x', markersize= 3, color='r')
     return plt.show()
 
 
@@ -463,13 +500,10 @@ def Damping_coef_vs_TI_No_plt(n_PXP, n_TI_max, h_c, T_start, T_max, T_step, Heig
     n_TI_arr = np.arange(0,n_TI_max,1)
     for n_TI in n_TI_arr:
         omega_0, gamma[n_TI], amp = Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff)
-    plt.plot(n_TI_arr, np.divide(gamma,gamma[0]) ,marker='o', markersize=3,
-             color='c')
+    plt.plot(n_TI_arr, np.divide(gamma,gamma[0]) ,marker='o', markersize=3,color='c')
     return plt.show()
 
-# TODO implement normalized damping coefficient as gamma/(gamma(TI=0 or h_c=0)!!
-
-def Damping_coef_vs_Coup_Str_plt(n_PXP, n_TI, h_c_max, h_c_int, T_start, T_max, T_step, Height_norm, Start_cutoff):
+def Damping_coef_vs_Coup_Str_plt(n_PXP, n_TI, h_c_max, h_c_interval, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
     Plots normalized damping coefficient (damping coef divided by 0 coupling) for different coupling strengths
     :param n_PXP: Size of PXP chain (atoms)
@@ -483,16 +517,16 @@ def Damping_coef_vs_Coup_Str_plt(n_PXP, n_TI, h_c_max, h_c_int, T_start, T_max, 
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: plot of damping coefficient (gamma) Vs coupling strength
     '''
-    gamma = np.empty(int(h_c_max*np.divide(1,h_c_int)))
-    h_c_arr = np.arange(0,h_c_max,h_c_int)
+    gamma = np.empty(int(h_c_max*np.divide(1,h_c_interval)))
+    h_c_arr = np.arange(0,h_c_max,h_c_interval)
     for h_c in h_c_arr:
-        omega_0, gamma[int(h_c*np.divide(1,h_c_int))], amp = Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff)
+        omega_0, gamma[int(h_c*np.divide(1,h_c_interval))], amp = Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff)
     plt.plot(h_c_arr, np.divide(gamma,gamma[0]) ,marker='x', markersize=3,
              color='c')
     #plt.title(r'$\gamma$ Vs Coupling strength for {} PXP atoms, {} TI atoms'.format(n_PXP,n_TI))
     plt.xlabel('Coupling Strength')
     plt.ylabel(r'$\gamma$ (Normalized Damping Coefficient)')
-    plt.savefig("Gamma_vs_Coup_str_{}_PXP_{}_TI.png".format(n_PXP,n_TI))
+    #plt.savefig("Gamma_vs_Coup_str_{}_PXP_{}_TI.png".format(n_PXP,n_TI))
     return plt.show()
 
 def Residuals(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
@@ -508,9 +542,9 @@ def Residuals(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutof
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: Vector of differences
     '''
-    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:])
-    residuals = Inverse_sig_func - Lorentzian_function(Freq, *popt)
+    Freq, sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:])
+    residuals = sig_func - Lorentzian_function(Freq, *popt)
     return residuals[Start_cutoff:]
 
 def Residuals_plot(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
@@ -526,13 +560,17 @@ def Residuals_plot(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: Plot of residuals (0 means full correspondence)
     '''
-    Freq, Inverse_sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], Inverse_sig_func[Start_cutoff:])
-    residuals = Inverse_sig_func - Lorentzian_function(Freq, *popt)
+    Freq, sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:])
+    residuals = sig_func - Lorentzian_function(Freq, *popt)
     plt.scatter(Freq[Start_cutoff:], residuals[Start_cutoff:], marker='o',
              color='g')
     plt.title('Residuals')
     return plt.show()
+
+##################################################################################################################################################################################################################################
+#                                                                                                         OLD METHODS - TO BE DELETED?                                                                                           #
+##################################################################################################################################################################################################################################
 
 def Averagesig(n_PXP, n_TI, h_c, T_start=0, T_max=100, T_step=1):
     '''
@@ -616,9 +654,6 @@ def MinimumPeak(n_PXP, n_TI, h_c, T_start, T_max, T_step):
     Minpeak = np.argmin(Height_array)
     return Time_peaks, Height_array, Minpeak
 
-##################################################################################################################################################################################################################################
-#                                                                                                         OLD METHODS - TO BE DELETED?                                                                                           #
-##################################################################################################################################################################################################################################
 
 
 def DampingCoef(n_PXP, n_TI, h_c, T_start, T_max, T_step):

@@ -99,6 +99,7 @@ def Haarstate(n): # GENERAL HAAR STATE
         HaarVec= np.divide(v, la.norm(v))
     return HaarVec.round(6)
 
+
 def NeelHaar(n_PXP, n_TI):
     """
     Combination of the Neel and Haar states
