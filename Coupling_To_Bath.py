@@ -17,6 +17,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.optimize import curve_fit
 from scipy.fft import fft, ifft
+from scipy.stats import bootstrap
 
 # ========================== definitions Dim=1 ======================
 g = np.array([0, 1])  # ground state
@@ -99,7 +100,6 @@ def Haarstate(n): # GENERAL HAAR STATE
         HaarVec= np.divide(v, la.norm(v))
     return HaarVec.round(6)
 
-
 def NeelHaar(n_PXP, n_TI):
     """
     Combination of the Neel and Haar states
@@ -110,6 +110,35 @@ def NeelHaar(n_PXP, n_TI):
     NeelHaarstate = np.kron(Neelstate(n_PXP), Haarstate(n_TI))
     return NeelHaarstate
 
+# def Haarstate_seed(n,seed):
+#     '''
+#     General Haar state (seeded), A Haar state is a state that simulates an "average" thermal eigenstate of the system,
+#     since it replaces an arithmetic mean over all eigenstates of an observable
+#     :param n: number of atoms
+#     :return: Haar Vector
+#     '''
+#     if n == 0:
+#          HaarVec= np.array(1)
+#     else:
+#         d = 2 ** n
+#         alpha_betta= np.random.RandomState(seed).normal(0, 1, 2 ** (n+1))
+#         alpha_betta= alpha_betta.reshape((2,2**n)).astype('complex')
+#         alpha_betta[1,:]= 1j*(alpha_betta[1,:].copy())
+#         v = np.sum(alpha_betta,axis=0)
+#         HaarVec= np.divide(v, la.norm(v))
+#     return HaarVec.round(6)
+#
+#
+# def NeelHaar_seed(n_PXP, n_TI,seed):
+#     """
+#     Combination of the Neel and SEEDED Haar states
+#     :param n_PXP:  Number of PXP chain atoms
+#     :param n_TI: number of TI chain atoms
+#     :return: Neel-Haar combined state
+#     """
+#     NeelHaarseededstate = np.kron(Neelstate(n_PXP), Haarstate_seed(n_TI,seed))
+#     return NeelHaarseededstate
+#
 
 # ===========================   Declarations of the separate Hamiltonians, coupling, and full coupled hamiltonian (basis of 2**ntot) ==========================================
 

@@ -1,7 +1,7 @@
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
-from Coupling_To_Bath import *
 import numpy as np
+from Coupling_To_Bath import *
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from time import time
@@ -422,6 +422,18 @@ def Neel_EBE_Haar(n_PXP, n_TI): #Haarstate from Coupling_To_Bath
     """
     NeelHaarstate = np.kron(Neel_Subspace_Basis(n_PXP), Haarstate(n_TI))
     return NeelHaarstate
+
+# def Neel_EBE_Haar_seeded(n_PXP, n_TI,seed): #Haarstate from Coupling_To_Bath
+#     """
+#     Combination of the Neel EBE Subspace basis and SEEDED Haar states
+#     :param n_PXP:  Number of PXP chain atoms
+#     :param n_TI: number of TI chain atoms
+#     :return: Neel-Haar combined state
+#     """
+#     NeelHaarstate = np.kron(Neel_Subspace_Basis(n_PXP), Haarstate_seed(n_TI,seed))
+#     return NeelHaarstate
+
+
 
 
 # TODO ALGORITHM IMPROVEMENT SUGGESTION FOR EVERYTHING IN DICTIONARIES = GO ONLY UP UNTIL HALF THE DICT WITH LOOP AND THEN TRANSPOSE AND CONNECT

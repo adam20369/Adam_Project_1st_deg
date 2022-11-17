@@ -2,9 +2,9 @@ import multiprocessing
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
 #from Coupling_To_Bath import *
+import numpy as np
 from PXP_Entry_By_Entry import *
 import O_z_Oscillations as Ozosc
-import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
 from time import time
@@ -13,9 +13,17 @@ from sympy.utilities.iterables import multiset_permutations
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 from scipy.special import comb
-import multiprocessing
+from scipy.stats import bootstrap
+import sys
 
-
+n_PXP = 4 #int(sys.argv[1])
+n_TI = 4 #int(sys.argv[2])
+h_c = 0.4 #float(sys.argv[3])
+seed = 2 #int(sys.argv[4])
+T_start = 0
+T_max = 200
+T_step = 2000
+np.random.seed(seed)
 ###############################################################################
 #                       definitions for TI model for Dim = 1                  #
 ###############################################################################
@@ -238,7 +246,7 @@ def Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max
     :param T_step: time step (division)
     :param h_imp: impurity (TI) strength
     :param m: impurity site
-    :return: 2 vectors -  <Neel|O_z(t)|Neel> values and corresponding time values??????
+    :return: 2 vectors -  <NeelxHaar|O_z(t)|NeelxHaar> values and corresponding time values??????
     '''
     O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
     O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
@@ -364,33 +372,33 @@ def Run_Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step,
     h_z = np.cos(0.485 * np.pi)
     return Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples)
 
-
-def Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples, h_imp=0, m=2):
+def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
     '''
-    *run in cluster* averaged Sparse Time prop (no error bars)
-    :param n_PXP:
-    :param n_TI:
-    :param Initialstate:
-    :param J:
-    :param h_x:
-    :param h_z:
-    :param h_c:
-    :param T_start:
-    :param T_max:
-    :param T_step:
-    :param samples:
-    :param h_imp:
-    :param m:
-    :return:
+    Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: 2 vectors -  <NeelxHaar|O_z(t)|NeelxHaar> values and corresponding time values??????
     '''
-    Time = np.linspace(T_start,T_max,T_step,endpoint=True)
-    with multiprocessing.Pool(processes = samples) as pool:
-        Rows = pool.starmap(Sparse_Time_prop,[(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp,m) for i in range(samples)])
-    Ave_Sandwich_vec = np.divide(np.sum(Rows,axis=0),samples)
-    return Time, Ave_Sandwich_vec
+    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
+    O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
+    Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
+                                        start= T_start , stop=T_max ,num=T_step,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
 
-
-def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step, samples):
+def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     '''
     Runs time AVERAGE propagation plotter in EBE sparse method
     :param n_PXP: No. of PXP atoms
@@ -409,7 +417,11 @@ def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_st
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    return Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples)
+    Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
+    np.save('Sparse_time_propagation_sample_{}.npy'.format(seed), Sandwich)
+    return
+
+Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
 
 
 def Compare_plot_Time_prop_same_Haar_ARAB(n_PXP, n_TI, h_c, T_start, T_max, T_step):
