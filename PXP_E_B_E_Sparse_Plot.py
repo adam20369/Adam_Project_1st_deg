@@ -13,3 +13,6 @@ import scipy.sparse.linalg as spla
 from scipy.special import comb
 from scipy.stats import bootstrap
 import matplotlib.pyplot as plt
+
+data = np.load()
+error = bootstrap(data_ave, np.std, confidence_level=0.95, random_state=1, method='percentile')

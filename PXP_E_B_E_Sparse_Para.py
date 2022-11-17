@@ -7,3 +7,4 @@ seed = int(sys.argv[4])
 T_start = 0
 T_max = 200
 T_step = 2000
+seed_max=100

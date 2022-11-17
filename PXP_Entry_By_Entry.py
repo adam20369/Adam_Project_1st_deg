@@ -3,7 +3,6 @@ os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 from Coupling_To_Bath import *
 import numpy.linalg as la
-import matplotlib.pyplot as plt
 from time import time
 from scipy import integrate
 from sympy.utilities.iterables import multiset_permutations

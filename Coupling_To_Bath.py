@@ -3,13 +3,13 @@ os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 import numpy.linalg as la
 from time import time
-import matplotlib.pyplot as plt
 import pickle
 import itertools
 import timeit as tit
 from scipy import integrate
 from scipy.linalg import expm
-from matplotlib.lines import Line2D
+#import matplotlib.pyplot as plt
+#from matplotlib.lines import Line2D
 from scipy.signal import find_peaks
 from scipy.linalg import expm
 from scipy.signal import find_peaks
