@@ -1,12 +1,11 @@
-import multiprocessing
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
 #from Coupling_To_Bath import *
 import numpy as np
 from PXP_Entry_By_Entry import *
+from PXP_E_B_E_Sparse_Para import *
 import O_z_Oscillations as Ozosc
 import numpy.linalg as la
-import matplotlib.pyplot as plt
 from time import time
 from scipy import integrate
 from sympy.utilities.iterables import multiset_permutations
@@ -16,13 +15,7 @@ from scipy.special import comb
 from scipy.stats import bootstrap
 import sys
 
-n_PXP = 4 #int(sys.argv[1])
-n_TI = 4 #int(sys.argv[2])
-h_c = 0.4 #float(sys.argv[3])
-seed = 2 #int(sys.argv[4])
-T_start = 0
-T_max = 200
-T_step = 2000
+
 np.random.seed(seed)
 ###############################################################################
 #                       definitions for TI model for Dim = 1                  #
