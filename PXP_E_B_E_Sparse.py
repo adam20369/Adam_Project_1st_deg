@@ -417,6 +417,10 @@ def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_st
 Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
 
 
+
+
+
+
 def Compare_plot_Time_prop_same_Haar_ARAB(n_PXP, n_TI, h_c, T_start, T_max, T_step):
     '''
     Compares new EBE plot with old code plot of O_z time propagation FOR THE SAME HAARSTATE!
