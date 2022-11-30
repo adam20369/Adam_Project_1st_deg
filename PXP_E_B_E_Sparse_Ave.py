@@ -44,6 +44,6 @@ def Bootstrap(n):
         upper_mean = np.quantile(sample_ave, 0.975)
         lower_upper[0,i] = lower_mean
         lower_upper[1,i] = upper_mean
-    np.save('Sparse_time_propagation_error.npy',lower_upper)
+    np.save('Sparse_time_propagation_errors.npy',lower_upper)
 #Bootstrap(seed_max)
 

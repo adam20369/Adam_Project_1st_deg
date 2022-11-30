@@ -15,7 +15,8 @@ from scipy.special import comb
 from scipy.stats import bootstrap
 import matplotlib.pyplot as plt
 
-data = np.load('Sparse_time_propagation_ave.npy')
+data_ave = np.load('Sparse_time_propagation_ave.npy')
+data_errors = np.load('Sparse_time_propagation_errors.npy')
 Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-plt.plot(Time[:200],data[:200],color='b', marker='o')
+plt.errorbar(Time[:200], data_ave[:200], yerr= data_errors[:200], color='b', marker='o')
 #error = bootstrap(data_ave, np.std, confidence_level=0.95, random_state=1, method='percentile')
