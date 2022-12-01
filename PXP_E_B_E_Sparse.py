@@ -3,7 +3,7 @@ os.environ['OMP_NUM_THREADS'] = '1'
 #from Coupling_To_Bath import *
 import numpy as np
 from PXP_Entry_By_Entry import *
-from Cluster_PXP_E_B_E_Sparse_Para import *
+from Cluster_Sparse_Osc_Para import *
 import O_z_Oscillations as Ozosc
 import numpy.linalg as la
 from time import time
@@ -15,8 +15,8 @@ from scipy.special import comb
 from scipy.stats import bootstrap
 import sys
 
-
 np.random.seed(seed)
+
 ###############################################################################
 #                       definitions for TI model for Dim = 1                  #
 ###############################################################################
@@ -317,7 +317,7 @@ def Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
 
 def Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples, h_imp=0, m=2):
     '''
-    Plot averaged Sparse Time prop (no error bars) #TODO DO WE NEED THIS??
+    Plot averaged Sparse Time prop NOT CLUSTER VERSION (no error bars)
     :param n_PXP:
     :param n_TI:
     :param Initialstate:
@@ -346,6 +346,7 @@ def Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, 
 
 def Run_Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step, samples):
     '''
+    Plot averaged Sparse Time prop NOT CLUSTER VERSION (no error bars)
     Runs time AVERAGE propagation plotter in EBE sparse method
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI atoms
@@ -364,62 +365,6 @@ def Run_Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step,
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
     return Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples)
-
-def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
-    '''
-    Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI Atoms
-    :param J: TI ising term strength
-    :param Initialstate:  Initial Vector state we would like to propagate
-    :param h_x: longtitudinal term strength (TI)
-    :param h_z: transverse term strength
-    :param h_c: coupling term strength
-    :param T_start: Start Time of propagation
-    :param T_max: Max Time of propagation
-    :param T_step: time step (division)
-    :param h_imp: impurity (TI) strength
-    :param m: impurity site
-    :return: 2 vectors -  <NeelxHaar|O_z(t)|NeelxHaar> values and corresponding time values??????
-    '''
-    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
-    O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
-    Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
-                                        start= T_start , stop=T_max ,num=T_step,endpoint = True)
-    Propagated_ket_fin= np.transpose(Propagated_ket)
-    Propagated_bra_fin = np.conjugate(Propagated_ket)
-    Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
-    return Sandwich.round(4).astype('float')
-
-def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
-    '''
-    Runs time AVERAGE propagation plotter in EBE sparse method
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param Initialstate: NeelHaar state usually
-    :param J: Ising term strength
-    :param h_x: longtitudinal field strength
-    :param h_z: Traverse field strength
-    :param h_c: coupling strength
-    :param T_start: start time
-    :param T_max: end time
-    :param T_step: time division
-    :return: Plot of Time propagation
-    '''
-    Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
-    J = 1
-    h_x = np.sin(0.485 * np.pi)
-    h_z = np.cos(0.485 * np.pi)
-    Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
-    np.save('Sparse_time_propagation_sample_{}.npy'.format(seed), Sandwich)
-    return
-
-Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
-
-
-
-
-
 
 def Compare_plot_Time_prop_same_Haar_ARAB(n_PXP, n_TI, h_c, T_start, T_max, T_step):
     '''

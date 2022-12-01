@@ -4,7 +4,6 @@ import numpy as np
 import PXP_E_B_E_Sparse as Ebe
 import numpy.linalg as la
 import matplotlib.pyplot as plt
-import pickle
 from matplotlib.lines import Line2D
 from scipy.linalg import expm
 from scipy.signal import find_peaks

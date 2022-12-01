@@ -16,8 +16,7 @@ from scipy.signal import find_peaks
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.optimize import curve_fit
-from scipy.fft import fft, ifft
-from scipy.stats import bootstrap
+#from scipy.fft import fft, ifft
 
 # ========================== definitions Dim=1 ======================
 g = np.array([0, 1])  # ground state
