@@ -1,9 +1,9 @@
 import os
 os.environ['OMP_NUM_THREADS'] = '1'
-#from Coupling_To_Bath import *
+from Coupling_To_Bath import *
 import numpy as np
 from PXP_Entry_By_Entry import *
-from Cluster_Sparse_Osc_Para import *
+#from Cluster_Sparse_Osc_Para import *
 import O_z_Oscillations as Ozosc
 import numpy.linalg as la
 from time import time
@@ -15,11 +15,12 @@ from scipy.special import comb
 from scipy.stats import bootstrap
 import sys
 
-np.random.seed(seed)
+#np.random.seed(seed)
 
-###############################################################################
-#                       definitions for TI model for Dim = 1                  #
-###############################################################################
+###############################################################################################
+#                            definitions for TI model for Dim = 1                             #
+###############################################################################################
+
 g_Sparse = csr_matrix([0, 1])  # ground state
 # print("ground=\n", g)
 
@@ -213,6 +214,10 @@ def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     TotalHam = HamNoCoupl + Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c)
     return TotalHam
 
+######################################################################################################################################################################################333###
+#                                                                     Time Propagation of O_z Sparse EBE part                                                                              #
+#############################################################################################################################################################################################
+
 def Sparse_Diagonalize(Ham, num): #TODO ????
     '''
     Sparse diagonalization method
@@ -318,20 +323,20 @@ def Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
 def Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples, h_imp=0, m=2):
     '''
     Plot averaged Sparse Time prop NOT CLUSTER VERSION (no error bars)
-    :param n_PXP:
-    :param n_TI:
-    :param Initialstate:
-    :param J:
-    :param h_x:
-    :param h_z:
-    :param h_c:
-    :param T_start:
-    :param T_max:
-    :param T_step:
-    :param samples:
-    :param h_imp:
-    :param m:
-    :return:
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :param samples: sample number of propagation to average
+    :param h_imp: impurity strength of TI
+    :param m: impurity site of TI
+    :return: plot of averaged time propagation NO ERROR BARS!
     '''
     Time = np.linspace(T_start,T_max,T_step,endpoint=True)
     Sandwich = np.zeros((samples,len(Time)))
@@ -358,7 +363,8 @@ def Run_Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step,
     :param T_start: start time
     :param T_max: end time
     :param T_step: time division
-    :return: Plot of Time propagation
+    :param samples: sample number of propagation to average
+    :return: Plot_Averaged_Sparse_Time_prop
     '''
     Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
     J = 1

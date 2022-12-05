@@ -286,7 +286,7 @@ def OzSandwichTotHamplt(Ham, n_PXP, n_TI,  Initialstate,
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (interval!!!!!!!!!!)
     :param Color:
     :param Marker:
     :return: plot only
@@ -319,7 +319,7 @@ def RunOzSandwichTotHamplt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Coupl=Z_i, 
     :param h_c: Coupling strength
     :param T_start: Start time of measurement
     :param T_max: End time of measurement
-    :param T_step: time step interval
+    :param T_step: time step interval!!!!!!!
     :param h_imp: Impurity strength in TI model
     :param m: Site of impurity of TI model (should NOT be 1)
     :return: OzSandwichCheckplt
@@ -342,13 +342,13 @@ def FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval!!!!!)
+    :param T_step: time step (division)
     :return: 2 arrays (Positive freq, positive freq fourier components)
     '''
-    time, VecProp = Ebe.Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, int(T_max/T_step)) #Run_Time_prop uses time division
+    time, VecProp = Ebe.Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step) #Run_Time_prop uses time division
     Fourier_components= rfft(VecProp)
     Sig_size= np.size(VecProp)
-    Freq = rfftfreq(Sig_size, d=T_step) # Freq * T_max = integer that multiplies 2pi
+    Freq = rfftfreq(Sig_size, d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
     return Freq, (Height_norm * np.abs(Fourier_components))
 
 def FFT_non_abs(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
@@ -359,13 +359,13 @@ def FFT_non_abs(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval!!!!!)
+    :param T_step: time step (division)
     :return: 2 arrays (Positive freq, positive freq fourier components)
     '''
-    time, VecProp = Ebe.Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, int(T_max/T_step)) #Run_Time_prop uses time division
+    time, VecProp = Ebe.Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step) #Run_Time_prop uses time division
     Fourier_components= rfft(VecProp)
     Sig_size= np.size(VecProp)
-    Freq = rfftfreq(Sig_size, d=T_step) # Freq * T_max = integer that multiplies 2pi
+    Freq = rfftfreq(Sig_size, d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
     return Freq, (Height_norm/Sig_size * (Fourier_components))
 
 def Plot_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
@@ -377,7 +377,7 @@ def Plot_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval!!!)
+    :param T_step: time step (division)
     :return: plot
     '''
     Freq, Inverse_sig = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
@@ -391,7 +391,7 @@ def Lorentzian_function(omega, omega_0, gamma, amp):
     :param omega: Frequency variable
     :param omega_0: Frequency of oscillations = offset of delta function point
     :param gamma: damping
-    :return: Lorentzian "shpae" (scalar, just the f(x)= output of lorentzian)
+    :return: Lorentzian "shape" (scalar, just the f(x)= output of lorentzian)
     '''
     return np.divide(amp * gamma, gamma**2 + (omega-omega_0)**2)
 
@@ -403,7 +403,7 @@ def Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, S
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude)
@@ -413,7 +413,7 @@ def Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, S
     return popt
 
 def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
-    #T_max about 100-300 and T_step 0.1-0.2ish, remember that t_max/t_step = N_tot ; N_tot/t_max = max freq
+    #T_max about 100-300 and T_step 1000-2000ish, remember that t_max/t_step = N_tot ; N_tot/t_max = max freq
     # (need to increas t_max and increase t_step so that number of N_tot does not !! go a lot over t_max)
     '''
     Fits lorentzian function to transformed signal, outputs plots of data and fit
@@ -421,8 +421,8 @@ def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_nor
     :param n_TI: Size of TI chain (atoms)
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
-    :param T_max: Max Time of propagation; Bigger T_max - smaller frequencies!
-    :param T_step: time step (interval) Smaller T_step - bigger frequencies!
+    :param T_max: Max Time of propagation; Bigger T_max - smaller frequencies! (N_tot/T_max top freq)
+    :param T_step: time step (division) Bigger T_step - bigger frequencies! (N_tot=T_step, N_tot/T_max top freq)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: a plot of data (blue) and fit (red)
@@ -448,16 +448,16 @@ def Lorentzian_inverse_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, He
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval!!!!)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: a plot of the original signal
     '''
-    Freq = np.arange(0,((T_max/T_step)+2)/(2*T_max),1/T_max)
+    Freq = np.arange(0,((T_step)+2)/(2*T_max),1/T_max)
     Lorentzian = Lorentzian_function(Freq,*Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff))
     #plt.plot(Freq,Lorentzian, marker= 'x', markersize= 3, color='r')
     #plt.show()
-    Time = np.arange(T_start,T_max,T_step)
+    Time = np.linspace(T_start,T_max,T_step)
     Lorentzian_IFFT = irfft(Lorentzian, n=len(Time))
     plt.plot(Time,Lorentzian_IFFT, marker= 'x', markersize= 3, color='r')
     return plt.show()
@@ -470,13 +470,13 @@ def Lorentzian_inverse_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval!!!!)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: a plot of the original signal
     '''
     Freq, sig_func = FFT_non_abs(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
-    Time = np.arange(T_start,T_max,T_step)
+    Time = np.linspace(T_start,T_max,T_step)
     Lorentzian_IFFT = irfft(sig_func, n=len(Time))
     plt.plot(Time,Lorentzian_IFFT, marker= 'x', markersize= 3, color='r')
     return plt.show()
@@ -490,7 +490,7 @@ def Damping_coef_vs_TI_No_plt(n_PXP, n_TI_max, h_c, T_start, T_max, T_step, Heig
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: plot of damping coefficient (gamma) Vs TI atom number
@@ -511,7 +511,7 @@ def Damping_coef_vs_Coup_Str_plt(n_PXP, n_TI, h_c_max, h_c_interval, T_start, T_
     :param h_c_int: interval of coupling strength jumps
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: plot of damping coefficient (gamma) Vs coupling strength
@@ -536,7 +536,7 @@ def Residuals(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutof
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: Vector of differences
@@ -554,7 +554,7 @@ def Residuals_plot(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: Plot of residuals (0 means full correspondence)

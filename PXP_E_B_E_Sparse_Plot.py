@@ -3,6 +3,7 @@ os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 from PXP_Entry_By_Entry import *
 from PXP_E_B_E_Sparse import *
+from Cluster_Sparse_Osc_Para import *
 import O_z_Oscillations as Ozosc
 import numpy.linalg as la
 from time import time

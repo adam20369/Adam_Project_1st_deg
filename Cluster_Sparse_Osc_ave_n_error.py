@@ -5,6 +5,8 @@ from Cluster_Sparse_Osc_Para import *
 from PXP_E_B_E_Sparse import *
 import numpy.linalg as la
 
+np.random.seed(seed)
+
 def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
     '''
     Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method
@@ -51,7 +53,7 @@ def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_st
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
     Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
-    np.save('Sparse_time_propagation_sample_{}.npy'.format(seed), Sandwich)
+    np.save('Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed), Sandwich)
     return
 
 #Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
@@ -65,8 +67,8 @@ def Sparse_time_combine(seed_max):
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     data = np.empty((seed_max,len(Time)))
     for j in range(1,seed_max):
-        data[j,:]= np.load('Sparse_time_propagation_sample_{}.npy'.format(j)) #creates
-    np.save('Sparse_time_propagation_combine.npy', data)
+        data[j,:]= np.load('Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,j)) #creates
+    np.save('Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), data)
 #Sparse_time_combine(seed_max)
 
 def Sparse_time_ave():
@@ -74,7 +76,7 @@ def Sparse_time_ave():
     averages over Sparse time realizations
     :return: saves average
     '''
-    data= np.load('Sparse_time_propagation_combine.npy')
+    data= np.load('Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
     data_ave = np.mean(data,axis=0)
     np.save('Sparse_time_propagation_ave.npy', data_ave)
 #Sparse_time_ave(seed_max)
@@ -87,7 +89,7 @@ def Bootstrap(Sample_no):
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     lower_upper = np.empty((2,len(Time)))
-    data = np.load('Sparse_time_propagation_combine.npy')
+    data = np.load('Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
     for i in range(0,len(Time)):
         sample = np.random.choice(data[:,i],(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x n] matrix of randomly sampled arrays (with return) from the original
         sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
@@ -96,7 +98,6 @@ def Bootstrap(Sample_no):
         lower_upper[0,i] = lower_mean
         lower_upper[1,i] = upper_mean
     np.save('Sparse_time_propagation_errors.npy',lower_upper)
-#Bootstrap(seed_max)
 
-Sparse_time_ave()
-Bootstrap(Sample_no)
+#Sparse_time_ave()
+#Bootstrap(Sample_no)

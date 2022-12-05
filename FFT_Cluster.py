@@ -9,46 +9,45 @@ from scipy.sparse.csgraph import connected_components
 from Coupling_To_Bath import *
 from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 from scipy.optimize import curve_fit
-from O_z_Oscillations import *
+#from O_z_Oscillations import *
 from Cluster_Sparse_Osc_Para import *
 
-def FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
+
+def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1):
     '''
-    Gets positive frequency (absolute value of) fourier components of the propagation signal and positive frequencies
+    creates a matrix of (absolute values of) fourier components of the the different Haar propagation signals,
     :param n_PXP: Size of PXP chain (atoms)
     :param n_TI: Size of TI chain (atoms)
     :param Initialstate:  Initial Vector state we would like to propagate
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval!!!!!)
-    :return: 2 arrays (Positive freq, positive freq fourier components)
+    :param T_step: time step (division)
+    :return: Matrix of fourier transform components (seed_max x len(Time))
     '''
-    time = np.linspace(T_start, T_max, T_step, endpoint=True)
+    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
+    Fourier_components= np.empty((seed_max,len(Time)))
     for i in range(1,seed_max):
-        VecProp = np.load('Sparse_time_propagation_sample_{}.npy'.format(i)) #TODO
-        Fourier_components= rfft(VecProp) #TODO
-        Sig_size= np.size(VecProp) #TODO
-        Freq = rfftfreq(Sig_size, d=T_step) # Freq * T_max = integer that multiplies 2pi
-        return Freq, (Height_norm * np.abs(Fourier_components))
+        VecProp = np.load('Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i))
+        Fourier_components[i-1,:]= rfft(VecProp)
+    np.save('Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), Height_norm * np.abs(Fourier_components))
 
-# def FFT_non_abs(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
-#     '''
-#     Gets positive frequency fourier components (complex!!!) of the propagation signal and positive frequencies
-#     :param n_PXP: Size of PXP chain (atoms)
-#     :param n_TI: Size of TI chain (atoms)
-#     :param Initialstate:  Initial Vector state we would like to propagate
-#     :param T_start: Start Time of propagation
-#     :param T_max: Max Time of propagation
-#     :param T_step: time step (interval!!!!!)
-#     :return: 2 arrays (Positive freq, positive freq fourier components)
-#     '''
-#     time, VecProp = Ebe.Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, int(T_max/T_step)) #Run_Time_prop uses time division
-#     Fourier_components= rfft(VecProp)
-#     Sig_size= np.size(VecProp)
-#     Freq = rfftfreq(Sig_size, d=T_step) # Freq * T_max = integer that multiplies 2pi
-#     return Freq, (Height_norm/Sig_size * (Fourier_components))
+Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
-def Lorentzian_function(omega, omega_0, gamma, amp): #TODO Could it be on the basic
+def Cluster_FFT_Freq(T_start, T_max, T_step):
+    '''
+    Positive frequency components of Fourier transform
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :return: vector of frequency components
+    '''
+    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
+    Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
+    np.save('Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step), Freq)
+
+Cluster_FFT_Freq(T_start, T_max, T_step)
+
+def Cluster_Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     Lorentzian function shape definer (variables and parameters)
     :param omega: Frequency variable
@@ -58,20 +57,53 @@ def Lorentzian_function(omega, omega_0, gamma, amp): #TODO Could it be on the ba
     '''
     return np.divide(amp * gamma, gamma**2 + (omega-omega_0)**2)
 
-def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
+def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_cutoff): #TODO CHECK IF CURVEFIT SHOULD BE DONE PARRALELISH
     '''
-    Fits lorentzian function to Fourier signal, returns gamma (damping coefficient)
+    Fits lorentzian function to Fourier signals, returns array of gammas for different r's (damping coefficient)
     :param n_PXP: Size of PXP chain (atoms)
     :param n_TI: Size of TI chain (atoms)
     :param h_c: coupling strength
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
-    :param T_step: time step (interval)
+    :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
-    :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude)
+    :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude) matrix
     '''
-    Freq, sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
-    return popt
+    Freq= np.load('Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step))
+    sig_func = np.load('Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
+    popt_tot= np.empty(len(seed_max)-1,3)
+    for i in range(1,seed_max):
+        popt, pcov = curve_fit(Cluster_Lorentzian_function, Freq[Start_cutoff:], sig_func[i-1,Start_cutoff:]) # popt= parameter optimal values
+        popt_tot[i-1,:]=popt
+    np.save('gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), popt_tot[:,1])
+
+def Gamma_time_ave(n_PXP,n_TI,h_c):
+    '''
+    averages over Gamma's of different realizations
+    :return: saves average
+    '''
+    data= np.load('gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
+    data_ave = np.mean(data)
+    np.save('Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), data_ave)
+#Gamma_time_ave(seed_max)
+
+
+def Gamma_Bootstrap(Sample_no):
+    '''
+    Bootstrapping of Gamma samples
+    :return: 95% confidence interval upper and lower bounds for each of time steps' average of random samples
+    '''
+    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
+    lower_upper = np.empty((2,len(Time)))
+    data = np.load('gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
+    sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x Sample_no] matrix of randomly sampled arrays (with return) from the original
+    sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
+    lower_mean = np.quantile(sample_ave, 0.025)
+    upper_mean = np.quantile(sample_ave, 0.975)
+    lower_upper[0] = lower_mean
+    lower_upper[1] = upper_mean
+    np.save('Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c),lower_upper)
+#Gamma_Bootstrap(seed_max)
+
 
