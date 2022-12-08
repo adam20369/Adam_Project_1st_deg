@@ -6,5 +6,5 @@
 #$ -pe shared 10
 source /etc/profile
 module load use.own
-python3 Cluster_Sparse_Osc_ave_n_error.py $1 $2 $3 $4 $5
+python3 Cluster_Sparse_Osc_ave_n_error.py $1 $2 $3 $4 $5 $6
 

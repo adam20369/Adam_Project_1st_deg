@@ -71,6 +71,8 @@ def Sparse_time_combine(seed_max):
     np.save('Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), data)
 #Sparse_time_combine(seed_max)
 
+
+
 def Sparse_time_ave():
     '''
     averages over Sparse time realizations
@@ -78,9 +80,7 @@ def Sparse_time_ave():
     '''
     data= np.load('Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
     data_ave = np.mean(data,axis=0)
-    np.save('Sparse_time_propagation_ave.npy', data_ave)
-#Sparse_time_ave(seed_max)
-
+    np.save('Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), data_ave)
 
 def Bootstrap(Sample_no):
     '''
@@ -97,7 +97,7 @@ def Bootstrap(Sample_no):
         upper_mean = np.quantile(sample_ave, 0.975)
         lower_upper[0,i] = lower_mean
         lower_upper[1,i] = upper_mean
-    np.save('Sparse_time_propagation_errors.npy',lower_upper)
+    np.save('Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c),lower_upper)
 
 #Sparse_time_ave()
 #Bootstrap(Sample_no)
