@@ -23,7 +23,7 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
     :return: Matrix of fourier transform components (seed_max x len(Time))
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-    Fourier_components= np.empty((seed_max,len(Time)))
+    Fourier_components= np.empty((seed_max-1,len(Time)))
     for i in range(1,seed_max):
         VecProp = np.load('Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i))
         Fourier_components[i-1,:]= rfft(VecProp)
