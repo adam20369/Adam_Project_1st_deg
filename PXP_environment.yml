@@ -1,0 +1,9 @@
+name: PXP_TI
+dependencies:
+  - numpy
+  - scipy
+  - sympy
+  - os
+  - sys
+  - matplotlib
+
