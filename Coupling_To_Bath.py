@@ -8,15 +8,15 @@ import itertools
 import timeit as tit
 from scipy import integrate
 from scipy.linalg import expm
-#import matplotlib.pyplot as plt
-#from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from scipy.signal import find_peaks
 from scipy.linalg import expm
 from scipy.signal import find_peaks
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.optimize import curve_fit
-#from scipy.fft import fft, ifft
+from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 
 # ========================== definitions Dim=1 ======================
 g = np.array([0, 1])  # ground state

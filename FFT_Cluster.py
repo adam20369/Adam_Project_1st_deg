@@ -2,15 +2,13 @@ import os
 os.environ['OMP_NUM_THREADS'] = '1'
 import numpy as np
 import numpy.linalg as la
-#import matplotlib.pyplot as plt
-#from matplotlib.lines import Line2D
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
 from Coupling_To_Bath import *
 from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 from scipy.optimize import curve_fit
-#from O_z_Oscillations import *
 from Cluster_Sparse_Osc_Para import *
+#from O_z_Oscillations import *
 
 
 def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1):
