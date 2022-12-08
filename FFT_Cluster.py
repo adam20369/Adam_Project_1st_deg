@@ -23,7 +23,7 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
     :return: Matrix of fourier transform components (seed_max x len(Time))
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-    Fourier_components= np.empty((seed_max-1,len(Time)))
+    Fourier_components= np.empty((seed_max-1,int(len(Time)/2+1)))
     for i in range(1,seed_max):
         VecProp = np.load('Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i))
         Fourier_components[i-1,:]= rfft(VecProp)
@@ -43,7 +43,7 @@ def Cluster_FFT_Freq(T_start, T_max, T_step):
     Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
     np.save('Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step), Freq)
 
-Cluster_FFT_Freq(T_start, T_max, T_step)
+#Cluster_FFT_Freq(T_start, T_max, T_step)
 
 def Cluster_Lorentzian_function(omega, omega_0, gamma, amp):
     '''
@@ -66,11 +66,12 @@ def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_
     :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
-    :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude) matrix
+    :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude) matrix (N-1) x 3
+    SAVES ONLY THE COL OF GAMMAS!!!!
     '''
     Freq= np.load('Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step))
     sig_func = np.load('Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
-    popt_tot= np.empty(len(seed_max)-1,3)
+    popt_tot= np.empty((len(seed_max)-1,3))
     for i in range(1,seed_max):
         popt, pcov = curve_fit(Cluster_Lorentzian_function, Freq[Start_cutoff:], sig_func[i-1,Start_cutoff:]) # popt= parameter optimal values
         popt_tot[i-1,:]=popt
