@@ -29,7 +29,7 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
         Fourier_components[i-1,:]= rfft(VecProp)
     np.save('Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), Height_norm * np.abs(Fourier_components))
 
-Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
+#Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
 def Cluster_FFT_Freq(T_start, T_max, T_step):
     '''
@@ -71,13 +71,15 @@ def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_
     '''
     Freq= np.load('Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step))
     sig_func = np.load('Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
-    popt_tot= np.empty((len(seed_max)-1,3))
+    popt_tot= np.empty(((seed_max)-1,3))
     for i in range(1,seed_max):
         popt, pcov = curve_fit(Cluster_Lorentzian_function, Freq[Start_cutoff:], sig_func[i-1,Start_cutoff:]) # popt= parameter optimal values
         popt_tot[i-1,:]=popt
     np.save('gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), popt_tot[:,1])
 
-def Gamma_time_ave(n_PXP,n_TI,h_c):
+#Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_cutoff=5)
+
+def Gamma_time_ave():
     '''
     averages over Gamma's of different realizations
     :return: saves average
@@ -85,8 +87,6 @@ def Gamma_time_ave(n_PXP,n_TI,h_c):
     data= np.load('gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
     data_ave = np.mean(data)
     np.save('Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c), data_ave)
-#Gamma_time_ave(seed_max)
-
 
 def Gamma_Bootstrap(Sample_no):
     '''
@@ -94,7 +94,7 @@ def Gamma_Bootstrap(Sample_no):
     :return: 95% confidence interval upper and lower bounds for each of time steps' average of random samples
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-    lower_upper = np.empty((2,len(Time)))
+    lower_upper = np.empty((2))
     data = np.load('gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
     sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x Sample_no] matrix of randomly sampled arrays (with return) from the original
     sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
@@ -103,6 +103,7 @@ def Gamma_Bootstrap(Sample_no):
     lower_upper[0] = lower_mean
     lower_upper[1] = upper_mean
     np.save('Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c),lower_upper)
-#Gamma_Bootstrap(seed_max)
 
+#Gamma_time_ave()
+#Gamma_Bootstrap(Sample_no)
 

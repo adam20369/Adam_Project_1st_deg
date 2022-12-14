@@ -29,10 +29,11 @@ data_errors_fin_1 = data_errors[1,:]-data_ave #DATA ERRORS NEED TO BE +/- from N
 data_errors_fin= np.empty((2,len(data_errors_fin_0)))
 data_errors_fin[0,:]=data_errors_fin_0
 data_errors_fin[1,:]=data_errors_fin_1
-print(len(data_ave))
 #data_errors_fin= np.fabs(data_errors_fin)
-
 Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-plt.errorbar(Time[:], data_ave[:], yerr= data_errors_fin[:,:], fmt='bs-', ecolor='r',markersize=2,elinewidth=4)
-#error = bootstrap(data_ave, np.std, confidence_level=0.95, random_state=1, method='percentile')
+plt.errorbar(Time[:200], data_ave[:200], yerr= data_errors_fin[:200,:200], fmt='bs-', ecolor='r',markersize=2,elinewidth=4)
+#plt.errorbar(Time[:], data_ave[:], yerr= data_errors_fin[:,:], fmt='bs-', ecolor='r',markersize=2,elinewidth=4)
+plt.title(r'$\langle O_z(t)\rangle$ Vs. time for {} PXP atoms, {} TI Atoms, {} $h_c$ strength'.format(n_PXP,n_TI,h_c))
+plt.ylabel(r' $\langle O_z(t)\rangle$ ', fontsize=10)
+plt.xlabel(r'Time',fontsize=12)
 plt.show()
