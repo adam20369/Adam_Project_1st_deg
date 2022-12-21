@@ -104,7 +104,13 @@ def Gamma_Bootstrap(Sample_no):
     lower_upper[1] = upper_mean
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
 
-Gamma_time_ave()
-Gamma_Bootstrap(Sample_no)
+#Gamma_time_ave()
+#Gamma_Bootstrap(Sample_no)
 
+def data_move():
+    data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    os.mkdir('PXP_{}_Gammas'.format(n_PXP))
+    np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
+    np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err)
 
