@@ -61,7 +61,7 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
         np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
     return
 
-Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
+#Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
 
 def Sparse_time_combine(seed_max):
     '''
@@ -70,11 +70,11 @@ def Sparse_time_combine(seed_max):
     :return: saves average
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-    data = np.empty((seed_max,len(Time)))
+    data = np.empty((seed_max-1,len(Time)))
     for j in range(1,seed_max):
-        data[j,:]= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed))) #creates
+        data[j-1,:]= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,j))) #creates
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data)
-#Sparse_time_combine(seed_max)
+Sparse_time_combine(seed_max)
 
 
 def Sparse_time_ave():

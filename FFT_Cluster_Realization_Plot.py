@@ -33,8 +33,10 @@ def FFT(T_start, T_max, T_step, Height_norm):
     :return: 2 arrays (Positive freq, positive freq fourier components)
     '''
     time= np.linspace(T_start, T_max,T_step)
-    VecProp = np.load('Sparse_time_propagation_8_12_0.4_sample_9.npy')
-    print(VecProp)
+    VecProp = np.load('Sparse_time_propagation_ave_10_10_0.4.npy')
+    print(VecProp.round(4))
+    plt.plot(time,VecProp.round(4))
+    plt.show()
     Fourier_components= rfft(VecProp)
     Sig_size= np.size(VecProp)
     Freq = rfftfreq(Sig_size, d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
@@ -85,4 +87,4 @@ def Lorentzian_curvefit_plt(T_start=0, T_max=200, T_step=2000, Height_norm=1, St
     plt.legend()
     plt.savefig("Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(8,12,0.4))
     return plt.show()
-#Lorentzian_curvefit_plt()
+Lorentzian_curvefit_plt()
