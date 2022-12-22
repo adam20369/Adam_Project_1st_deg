@@ -20,7 +20,7 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
     :param T_start: Start Time of propagation
     :param T_max: Max Time of propagation
     :param T_step: time step (division)
-    :return: Matrix of fourier transform components (seed_max x len(Time))
+    :return: Matrix of fourier transform components (seed_max x len(Time)) for all realizations!!!
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     Fourier_components= np.empty((seed_max-1,int(len(Time)/2+1)))
@@ -88,15 +88,14 @@ def Gamma_time_ave():
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data_ave)
 
 
-def Gamma_Bootstrap(Sample_no):
+def Gamma_Bootstrap_confidence(Sample_no):
     '''
-    Bootstrapping of Gamma samples
-    :return: 95% confidence interval upper and lower bounds for each of time steps' average of random samples
+    Bootstrapping of Gamma samples - confidence level 95%
+    :return: 95% confidence interval upper and lower bounds for each gamma
     '''
-    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     lower_upper = np.empty((2))
     data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x Sample_no] matrix of randomly sampled arrays (with return) from the original
+    sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no No.)] matrix of randomly sampled arrays (with return) from the original
     sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
     lower_mean = np.quantile(sample_ave, 0.025)
     upper_mean = np.quantile(sample_ave, 0.975)
@@ -104,8 +103,20 @@ def Gamma_Bootstrap(Sample_no):
     lower_upper[1] = upper_mean
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
 
+def Gamma_Bootstrap_std(Sample_no):
+    '''
+    Bootstrapping of Gamma samples - standard deviation
+    :return: standard deviation for each gamma
+    '''
+    data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no No.)] rows of randomly sampled numbers (with return) from the original sample
+    sample_ave = np.mean(sample, axis=0)  # vector of averages!! from randomly pulling numbers from 100 realizations of one time instance
+    std= np.std(sample_ave) #Standard deviation of the different means obtained with bootstrapping
+    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std)
+
 #Gamma_time_ave()
-#Gamma_Bootstrap(Sample_no)
+#Gamma_Bootstrap_confidence(Sample_no)
+#Gamma_Bootstrap_std(Sample_no)
 
 def data_move():
     data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))

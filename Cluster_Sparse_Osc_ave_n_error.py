@@ -22,7 +22,7 @@ def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_star
     :param T_step: time step (division)
     :param h_imp: impurity (TI) strength
     :param m: impurity site
-    :return: 2 vectors -  <NeelxHaar|O_z(t)|NeelxHaar> values and corresponding time values??????
+    :return: vector -  <NeelxHaar|O_z(t)|NeelxHaar>
     '''
     O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
     O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
@@ -33,7 +33,7 @@ def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_star
     Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
     return Sandwich.round(4).astype('float')
 
-def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
+def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     '''
     Runs time AVERAGE propagation plotter in EBE sparse method
     :param n_PXP: No. of PXP atoms
@@ -48,19 +48,20 @@ def Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_st
     :param T_step: time division
     :return: Plot of Time propagation
     '''
-    Initialstate = Neel_EBE_Haar(n_PXP,n_TI)
-    J = 1
-    h_x = np.sin(0.485 * np.pi)
-    h_z = np.cos(0.485 * np.pi)
-    Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
     if os.path.isdir('PXP_{}_TI_{}'.format(n_PXP,n_TI))==False:
         os.mkdir('PXP_{}_TI_{}'.format(n_PXP,n_TI))
     if os.path.isdir('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c))==False:
         os.mkdir('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c))
-    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
+    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c,seed))==False:
+        Initialstate = Neel_EBE_Haar(n_PXP, n_TI)
+        J = 1
+        h_x = np.sin(0.485 * np.pi)
+        h_z = np.cos(0.485 * np.pi)
+        Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
+        np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
     return
 
-#Run_Cluster_Averaged_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
+Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
 
 def Sparse_time_combine(seed_max):
     '''
@@ -76,7 +77,6 @@ def Sparse_time_combine(seed_max):
 #Sparse_time_combine(seed_max)
 
 
-
 def Sparse_time_ave():
     '''
     averages over Sparse time realizations
@@ -86,16 +86,16 @@ def Sparse_time_ave():
     data_ave = np.mean(data,axis=0)
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data_ave)
 
-def Bootstrap(Sample_no):
+def Bootstrap_confidence(Sample_no):
     '''
-    Bootstrapping of time propagation samples
+    Bootstrapping of time propagation samples - 95% confidence interval upper and lower bounds
     :return: 95% confidence interval upper and lower bounds for each of time steps' average of random samples
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     lower_upper = np.empty((2,len(Time)))
     data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    for i in range(0,len(Time)):
-        sample = np.random.choice(data[:,i],(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x n] matrix of randomly sampled arrays (with return) from the original
+    for i in range(0,len(Time)): #array of all realizations for given T (marked by i)
+        sample = np.random.choice(data[:,i],(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x len(Time)] matrix of randomly sampled arrays (with return) from the original
         sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
         lower_mean = np.quantile(sample_ave, 0.025)
         upper_mean = np.quantile(sample_ave, 0.975)
@@ -103,5 +103,20 @@ def Bootstrap(Sample_no):
         lower_upper[1,i] = upper_mean
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
 
-Sparse_time_ave()
-#Bootstrap(Sample_no)
+def Bootstrap_std(Sample_no):
+    '''
+    Bootstrapping of time propagation samples - standard deviation
+    :return: standard deviation of time steps' average of random samples
+    '''
+    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
+    std_vec = np.empty((len(Time)))
+    data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    for i in range(0,len(Time)): # array of all realizations for given T (marked by i)
+        sample = np.random.choice(data[:,i],(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no)] rows of randomly sampled numbers (with return) from the original sample
+        sample_ave = np.mean(sample, axis=0)  # vector of averages!! from randomly pulling numbers from 100 realizations for a specific time instance i
+        std_vec[i]= np.std(sample_ave)
+    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std_vec)
+
+#Sparse_time_ave()
+#Bootstrap_confidence(Sample_no)
+#Bootstrap_std(Sample_no)
