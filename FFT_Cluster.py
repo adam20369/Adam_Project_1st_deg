@@ -30,7 +30,7 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
             Fourier_components[i-1,:]= rfft(VecProp)
         np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), Height_norm * np.abs(Fourier_components))
 
-Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
+#Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
 def Cluster_FFT_Freq(T_start, T_max, T_step):
     '''
@@ -45,7 +45,7 @@ def Cluster_FFT_Freq(T_start, T_max, T_step):
     if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step))==False:
         np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)), Freq)
 
-Cluster_FFT_Freq(T_start, T_max, T_step)
+#Cluster_FFT_Freq(T_start, T_max, T_step)
 
 def Cluster_Lorentzian_function(omega, omega_0, gamma, amp):
     '''
@@ -103,7 +103,7 @@ def Gamma_Bootstrap_confidence(Sample_no):
     upper_mean = np.quantile(sample_ave, 0.975)
     lower_upper[0] = lower_mean
     lower_upper[1] = upper_mean
-    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
+    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
 
 def Gamma_Bootstrap_std(Sample_no):
     '''
@@ -114,7 +114,7 @@ def Gamma_Bootstrap_std(Sample_no):
     sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no No.)] rows of randomly sampled numbers (with return) from the original sample
     sample_ave = np.mean(sample, axis=0)  # vector of averages!! from randomly pulling numbers from 100 realizations of one time instance
     std= np.std(sample_ave) #Standard deviation of the different means obtained with bootstrapping
-    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std)
+    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std)
 
 #Gamma_time_ave()
 #Gamma_Bootstrap_confidence(Sample_no)
@@ -126,10 +126,12 @@ def FFT_data_move():
     :return: makes new folder and copies files there
     '''
     data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    data_err = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err_std= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     if os.path.isdir('PXP_{}_Gammas'.format(n_PXP))==False:
         os.mkdir('PXP_{}_Gammas'.format(n_PXP))
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
-    np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err)
+    np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_std)
+    np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_confidence)
 
-#FFT_data_move()
+FFT_data_move()

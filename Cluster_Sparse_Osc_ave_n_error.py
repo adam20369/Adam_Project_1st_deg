@@ -101,7 +101,7 @@ def Bootstrap_confidence(Sample_no):
         upper_mean = np.quantile(sample_ave, 0.975)
         lower_upper[0,i] = lower_mean
         lower_upper[1,i] = upper_mean
-    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
+    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
 
 def Bootstrap_std(Sample_no):
     '''
@@ -115,7 +115,7 @@ def Bootstrap_std(Sample_no):
         sample = np.random.choice(data[:,i],(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no)] rows of randomly sampled numbers (with return) from the original sample
         sample_ave = np.mean(sample, axis=0)  # vector of averages!! from randomly pulling numbers from 100 realizations for a specific time instance i
         std_vec[i]= np.std(sample_ave)
-    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std_vec)
+    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std_vec)
 
 #Sparse_time_ave()
 #Bootstrap_confidence(Sample_no)
@@ -127,10 +127,12 @@ def avg_data_move():
     :return: makes new folder and copies files there
     '''
     data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    data_err = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err_std = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     if os.path.isdir('PXP_{}_Osc_Ave'.format(n_PXP))==False:
         os.mkdir('PXP_{}_Osc_Ave'.format(n_PXP))
     np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
-    np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err)
+    np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_std)
+    np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_confidence)
 
 #avg_data_move()
