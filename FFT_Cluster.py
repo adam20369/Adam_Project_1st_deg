@@ -24,7 +24,7 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     Fourier_components= np.empty((seed_max-1,int(len(Time)/2+1)))
-    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c))==False:
+    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c))==False: #checks if file already exists, can take this part off of code
         for i in range(1,seed_max):
             VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
             Fourier_components[i-1,:]= rfft(VecProp)
@@ -120,11 +120,16 @@ def Gamma_Bootstrap_std(Sample_no):
 #Gamma_Bootstrap_confidence(Sample_no)
 #Gamma_Bootstrap_std(Sample_no)
 
-def data_move():
+def FFT_data_move():
+    '''
+    Copies gamma plotting data to main directory under 'PXP_{}_Gammas'
+    :return: makes new folder and copies files there
+    '''
     data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     data_err = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    os.mkdir('PXP_{}_Gammas'.format(n_PXP))
+    if os.path.isdir('PXP_{}_Gammas'.format(n_PXP))==False:
+        os.mkdir('PXP_{}_Gammas'.format(n_PXP))
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err)
 
-#data_move()
+#FFT_data_move()

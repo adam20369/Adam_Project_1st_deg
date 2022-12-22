@@ -74,7 +74,7 @@ def Sparse_time_combine(seed_max):
     for j in range(1,seed_max):
         data[j-1,:]= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,j))) #creates
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data)
-Sparse_time_combine(seed_max)
+#Sparse_time_combine(seed_max)
 
 
 def Sparse_time_ave():
@@ -120,3 +120,17 @@ def Bootstrap_std(Sample_no):
 #Sparse_time_ave()
 #Bootstrap_confidence(Sample_no)
 #Bootstrap_std(Sample_no)
+
+def avg_data_move():
+    '''
+    Copies oscillation plotting data to main directory under 'PXP_{}_Gammas'
+    :return: makes new folder and copies files there
+    '''
+    data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    if os.path.isdir('PXP_{}_Osc_Ave'.format(n_PXP))==False:
+        os.mkdir('PXP_{}_Osc_Ave'.format(n_PXP))
+    np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
+    np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err)
+
+#avg_data_move()

@@ -5,12 +5,13 @@ from scipy.optimize import curve_fit
 from Coupling_To_Bath import *
 from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 #import PXP_E_B_E_Sparse as Ebe
-#VecProp = np.load('Sparse_time_propagation_ave_10_10_0.4.npy')
-#plt.plot(np.linspace(0, 200,2000),VecProp)
-#plt.show()
-#n_PXP=
-#n_TI=
-#h_c=
+
+T_start=0
+T_max=400
+T_step=1000
+n_PXP=10
+n_TI=13
+h_c=0.0
 def Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     Lorentzian function shape definer (variables and parameters)
@@ -33,7 +34,7 @@ def FFT(T_start, T_max, T_step, Height_norm):
     :return: 2 arrays (Positive freq, positive freq fourier components)
     '''
     time= np.linspace(T_start, T_max,T_step)
-    VecProp = np.load('Sparse_time_propagation_ave_10_10_0.4.npy')
+    VecProp = np.load('PXP_{}_Osc_Ave/Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c))
     print(VecProp.round(4))
     plt.plot(time,VecProp.round(4))
     plt.show()
@@ -59,7 +60,7 @@ def Lorentzian_curvefit(T_start=0, T_max=200, T_step=2000, Height_norm=1, Start_
     popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
     return popt
 
-def Lorentzian_curvefit_plt(T_start=0, T_max=200, T_step=2000, Height_norm=1, Start_cutoff=8):
+def Lorentzian_curvefit_plt(T_start, T_max, T_step, Height_norm=1, Start_cutoff=8):
     #NEW TERMS 400, 1000
     #T_max about 100-300 and T_step 1000-2000ish, remember that t_max/t_step = N_tot ; N_tot/t_max = max freq
     # (need to increas t_max and increase t_step so that number of N_tot does not !! go a lot over t_max)
@@ -85,6 +86,6 @@ def Lorentzian_curvefit_plt(T_start=0, T_max=200, T_step=2000, Height_norm=1, St
     plt.xlabel(r'Frequency [$1/t$]')
     plt.ylabel('Amplitudes of Harmonic Functions')
     plt.legend()
-    plt.savefig("Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(8,12,0.4))
+    plt.savefig("Figures/Frequency_fit/Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(8,12,0.4))
     return plt.show()
-Lorentzian_curvefit_plt()
+Lorentzian_curvefit_plt(T_start, T_max, T_step)

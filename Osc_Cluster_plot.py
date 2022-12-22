@@ -15,15 +15,15 @@ from scipy.stats import bootstrap
 import matplotlib.pyplot as plt
 
 T_start = 0
-T_max = 200
-T_step = 2000
+T_max = 400
+T_step = 1000
 
-n_PXP=7
-n_TI=7
-h_c=0.9
+n_PXP=10
+n_TI=13
+h_c=0.4
 
-data_ave = np.load('Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
-data_errors = np.load('Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
+data_ave = np.load('PXP_{}_Osc_Ave/Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c))
+data_errors = np.load('PXP_{}_Osc_Ave/Sparse_time_propagation_errors_{}_{}_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c))
 data_errors_fin_0 = data_ave-data_errors[0,:] #DATA ERRORS NEED TO BE +/- from Null
 data_errors_fin_1 = data_errors[1,:]-data_ave #DATA ERRORS NEED TO BE +/- from Null
 data_errors_fin= np.empty((2,len(data_errors_fin_0)))

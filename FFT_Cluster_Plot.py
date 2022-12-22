@@ -16,15 +16,15 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from cycler import cycler
 
-def Plot_vs_h_c_diff_n_TI():
+def Plot_vs_h_c_diff_n_TI_condifence():
     '''
     Plot for different TI numbers, a normalized damping graph vs Coupling strength h_c
     :return: a plot of plots
     '''
     n_PXP=8
     T_start = 0
-    T_max = 200
-    T_step = 2000
+    T_max = 400
+    T_step = 1000
     h_c_max=1
     n_TI_max=12
     n_TI=np.linspace(8,n_TI_max,5,endpoint=True)
@@ -34,10 +34,10 @@ def Plot_vs_h_c_diff_n_TI():
     cmap = cm.get_cmap('viridis',int(n_TI_max-3)) #length of colormap should be about x2 of the number of plots
     for j in np.nditer(n_TI):
         for i in np.nditer(h_c):
-            data_ave[int(i*10)]=np.load('Gamma_ave_{}_{}_{}.npy'.format(n_PXP,int(j),np.round(i,2)))
-            print(data_ave)
-            data_errors[:,int(i*10)]=np.load('Gamma_errors_{}_{}_{}.npy'.format(n_PXP,int(j),np.round(i,2)))
-            print(data_errors)
+            data_ave[int(i*10)]=np.load('PXP_{}_Gammas/Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
+            #print(data_ave)
+            data_errors[:,int(i*10)]=np.load('PXP_{}_Gammas/Gamma_errors_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
+            #print(data_errors)
         data_errors_fin_0 = data_ave - data_errors[0, :]  # DATA ERRORS NEED TO BE +/- from Null
         data_errors_fin_1 = data_errors[1, :] - data_ave  # DATA ERRORS NEED TO BE +/- from Null
         data_errors_fin = np.empty((2, len(data_errors_fin_0)))
@@ -50,9 +50,11 @@ def Plot_vs_h_c_diff_n_TI():
     plt.ylabel(r' Normalized Damping $\frac{\gamma}{\gamma_0}$', fontsize=10)
     plt.xlabel(r'Coupling Strength $h_c$',fontsize=12)
     plt.legend()
+    plt.savefig('Figures/Norm_damping_{}_PXP_vs_h_c'.format(n_PXP))
     return plt.show()
-Plot_vs_h_c_diff_n_TI()
-def Plot_vs_h_c():
+Plot_vs_h_c_diff_n_TI_condifence()
+
+def Plot_vs_h_c_confidence():
     '''
      Plot normalized damping graph vs Coupling strength h_c for a fixed PXP and TI number
     :return:
@@ -83,7 +85,5 @@ def Plot_vs_h_c():
     plt.xlabel(r'Coupling Strength $h_c$',fontsize=12)
     #plt.fill_between(h_c[:],scaled_data_ave[:]-data_errors_fin[0, :],scaled_data_ave[:]+data_errors_fin[1, :])
     return plt.show()
-#Plot_vs_h_c()
+#Plot_vs_h_c_confidence()
 
-def Plot_Vs_TI_No():
-    return
