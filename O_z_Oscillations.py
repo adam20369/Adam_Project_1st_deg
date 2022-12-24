@@ -412,7 +412,7 @@ def Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, S
     popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
     return popt
 
-def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
+def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff,End_cutoff):
     #T_max about 100-300 and T_step 1000-2000ish, remember that t_max/t_step = N_tot ; N_tot/t_max = max freq
     # (need to increas t_max and increase t_step so that number of N_tot does not !! go a lot over t_max)
     '''
@@ -430,7 +430,7 @@ def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_nor
     Freq, sig_func = FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
     plt.plot(Freq[Start_cutoff:], sig_func[Start_cutoff:], marker='o', markersize=3,
              color='b', label='data')
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff]) # popt= parameter optimal values
     plt.plot(Freq[Start_cutoff:], Lorentzian_function(Freq[Start_cutoff:],*popt),'r-',
          label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={}'.format(*np.round(popt,4)))
     #plt.title('Frequency fit for {} PXP and {} TI atoms, Coupling strength {}'.format(n_PXP,n_TI,h_c))
@@ -440,7 +440,7 @@ def Lorentzian_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_nor
     plt.savefig("Figures/Frequency_fit/Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(n_PXP,n_TI,h_c))
     return plt.show()
 
-def Lorentzian_inverse_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
+def Lorentzian_inverse_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff, End_cutoff):
     '''
     Inverse fits lorentzian function with optimal parameters (=fitted data) back to time domain
     :param n_PXP: Size of PXP chain (atoms)
@@ -462,7 +462,7 @@ def Lorentzian_inverse_curvefit_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, He
     plt.plot(Time,Lorentzian_IFFT, marker= 'x', markersize= 3, color='r')
     return plt.show()
 
-def Lorentzian_inverse_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm,Start_cutoff):
+def Lorentzian_inverse_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm):
     '''
     Inverse fits FFT Raw Data (complex numbers) back to time domain - non symmetric damping as of
     :param n_PXP: Size of PXP chain (atoms)
@@ -472,7 +472,6 @@ def Lorentzian_inverse_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm
     :param T_max: Max Time of propagation
     :param T_step: time step (division)
     :param Height_norm: controls the amplitude of the frequency graph (default= 1)
-    :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: a plot of the original signal
     '''
     Freq, sig_func = FFT_non_abs(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm)
@@ -481,6 +480,9 @@ def Lorentzian_inverse_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm
     plt.plot(Time,Lorentzian_IFFT, marker= 'x', markersize= 3, color='r')
     return plt.show()
 
+############################################################################################################
+#                                    NEWER FUNCTION IN FFT_Cluster                                         #
+############################################################################################################
 
 def Damping_coef_vs_TI_No_plt(n_PXP, n_TI_max, h_c, T_start, T_max, T_step, Height_norm, Start_cutoff):
     '''
@@ -567,9 +569,9 @@ def Residuals_plot(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_
     plt.title('Residuals')
     return plt.show()
 
-##################################################################################################################################################################################################################################
-#                                                                                                         OLD METHODS - TO BE DELETED?                                                                                           #
-##################################################################################################################################################################################################################################
+##############################################################################################################
+#                                              OLD METHODS - TO BE DELETED?                                  #
+##############################################################################################################
 
 def Averagesig(n_PXP, n_TI, h_c, T_start=0, T_max=100, T_step=1):
     '''

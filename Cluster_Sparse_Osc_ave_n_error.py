@@ -48,7 +48,7 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     :param T_step: time division
     :return: Plot of Time propagation
     '''
-    if os.path.isdir('PXP_{}_TI_{}'.format(n_PXP,n_TI))==False:
+    if os.path.isdir('PXP_{}_TI_{}'.format(n_PXP,n_TI)) == False:
         os.mkdir('PXP_{}_TI_{}'.format(n_PXP,n_TI))
     if os.path.isdir('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c))==False:
         os.mkdir('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c))
@@ -74,7 +74,7 @@ def Sparse_time_combine(seed_max):
     for j in range(1,seed_max):
         data[j-1,:]= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,j))) #creates
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data)
-#Sparse_time_combine(seed_max)
+Sparse_time_combine(seed_max)
 
 
 def Sparse_time_ave():

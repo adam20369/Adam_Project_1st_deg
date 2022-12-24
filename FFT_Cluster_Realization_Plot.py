@@ -9,9 +9,13 @@ from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 T_start=0
 T_max=400
 T_step=1000
-n_PXP=10
-n_TI=13
-h_c=0.0
+n_PXP=9
+n_TI=12
+h_c=0.5
+sample=2
+Start_cutoff=8
+End_cutoff= 1000
+
 def Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     Lorentzian function shape definer (variables and parameters)
@@ -34,7 +38,8 @@ def FFT(T_start, T_max, T_step, Height_norm):
     :return: 2 arrays (Positive freq, positive freq fourier components)
     '''
     time= np.linspace(T_start, T_max,T_step)
-    VecProp = np.load('PXP_{}_Osc_Ave/Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c))
+    VecProp = np.load('Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,sample))
+    #VecProp = np.load('PXP_10_Osc_Ave/Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))
     print(VecProp.round(4))
     plt.plot(time,VecProp.round(4))
     plt.show()
@@ -43,7 +48,7 @@ def FFT(T_start, T_max, T_step, Height_norm):
     Freq = rfftfreq(Sig_size, d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
     return Freq, (Height_norm * np.abs(Fourier_components))
 
-def Lorentzian_curvefit(T_start=0, T_max=200, T_step=2000, Height_norm=1, Start_cutoff=8):
+def Lorentzian_curvefit(T_start, T_max, T_step, Start_cutoff, End_cutoff,Height_norm=1):
     '''
     Fits lorentzian function to Fourier signal, returns gamma (damping coefficient)
     :param n_PXP: Size of PXP chain (atoms)
@@ -57,10 +62,11 @@ def Lorentzian_curvefit(T_start=0, T_max=200, T_step=2000, Height_norm=1, Start_
     :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude)
     '''
     Freq, sig_func = FFT(T_start, T_max, T_step, Height_norm)
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff]) # popt= parameter optimal values
     return popt
 
-def Lorentzian_curvefit_plt(T_start, T_max, T_step, Height_norm=1, Start_cutoff=8):
+def Lorentzian_curvefit_plt(T_start, T_max, T_step, Start_cutoff, End_cutoff, Height_norm=1):
+
     #NEW TERMS 400, 1000
     #T_max about 100-300 and T_step 1000-2000ish, remember that t_max/t_step = N_tot ; N_tot/t_max = max freq
     # (need to increas t_max and increase t_step so that number of N_tot does not !! go a lot over t_max)
@@ -77,15 +83,15 @@ def Lorentzian_curvefit_plt(T_start, T_max, T_step, Height_norm=1, Start_cutoff=
     :return: a plot of data (blue) and fit (red)
     '''
     Freq, sig_func = FFT(T_start, T_max, T_step, Height_norm)
-    plt.plot(Freq[Start_cutoff:500], sig_func[Start_cutoff:500], marker='o', markersize=3,
+    plt.plot(Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff], marker='o', markersize=3,
              color='b', label='data')
-    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:], sig_func[Start_cutoff:]) # popt= parameter optimal values
-    plt.plot(Freq[Start_cutoff:500], Lorentzian_function(Freq[Start_cutoff:500],*popt),'r-',
+    popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff]) # popt= parameter optimal values
+    plt.plot(Freq[Start_cutoff:End_cutoff], Lorentzian_function(Freq[Start_cutoff:End_cutoff],*popt),'r-',
          label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={}'.format(*np.round(popt,4)))
     #plt.title('Frequency fit for {} PXP and {} TI atoms, Coupling strength {}'.format(n_PXP,n_TI,h_c))
     plt.xlabel(r'Frequency [$1/t$]')
     plt.ylabel('Amplitudes of Harmonic Functions')
     plt.legend()
-    plt.savefig("Figures/Frequency_fit/Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(8,12,0.4))
+    #plt.savefig("Figures/Frequency_fit/Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(8,12,0.4))
     return plt.show()
-Lorentzian_curvefit_plt(T_start, T_max, T_step)
+Lorentzian_curvefit_plt(T_start, T_max, T_step,Start_cutoff, End_cutoff)

@@ -10,6 +10,8 @@ from scipy.optimize import curve_fit
 from Cluster_Sparse_Osc_Para import *
 #from O_z_Oscillations import *
 
+Start_cutoff = 8
+End_cutoff = 500
 
 def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1):
     '''
@@ -57,7 +59,7 @@ def Cluster_Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     return np.divide(amp * gamma, gamma**2 + (omega-omega_0)**2)
 
-def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_cutoff): #TODO CHECK IF CURVEFIT SHOULD BE DONE PARRALELISH
+def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_cutoff, End_cutoff): #TODO CHECK IF CURVEFIT SHOULD BE DONE PARRALELISH
     '''
     Fits lorentzian function to Fourier signals, returns array of gammas for different r's (damping coefficient)
     :param n_PXP: Size of PXP chain (atoms)
@@ -72,13 +74,13 @@ def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_
     SAVES ONLY THE COL OF GAMMAS!!!!
     '''
     Freq= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)))
-    sig_func = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    sig_func = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))) #matrix!
     popt_tot= np.empty(((seed_max)-1,3))
     for i in range(1,seed_max):
-        popt, pcov = curve_fit(Cluster_Lorentzian_function, Freq[Start_cutoff:], sig_func[i-1,Start_cutoff:]) # popt= parameter optimal values
+        popt, pcov = curve_fit(Cluster_Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[i-1,Start_cutoff:End_cutoff]) # popt= parameter optimal values
         popt_tot[i-1,:]=popt
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), popt_tot[:,1])
-#Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_cutoff=5)
+#Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step)
 
 def Gamma_time_ave():
     '''
