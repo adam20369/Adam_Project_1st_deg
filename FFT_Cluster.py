@@ -10,8 +10,8 @@ from scipy.optimize import curve_fit
 from Cluster_Sparse_Osc_Para import *
 #from O_z_Oscillations import *
 
-Start_cutoff = 8
-End_cutoff = 500
+Start_cutoff = 20
+End_cutoff = 1000
 
 def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1):
     '''
@@ -44,7 +44,7 @@ def Cluster_FFT_Freq(T_start, T_max, T_step):
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
-    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step))==False:
+    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step)) == False:
         np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)), Freq)
 
 #Cluster_FFT_Freq(T_start, T_max, T_step)
@@ -80,7 +80,7 @@ def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_
         popt, pcov = curve_fit(Cluster_Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[i-1,Start_cutoff:End_cutoff]) # popt= parameter optimal values
         popt_tot[i-1,:]=popt
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), popt_tot[:,1])
-#Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step)
+#Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step,Start_cutoff, End_cutoff)
 
 def Gamma_time_ave():
     '''
@@ -130,10 +130,12 @@ def FFT_data_move():
     data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     data_err_std= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    if os.path.isdir('PXP_{}_Gammas'.format(n_PXP))==False:
+    try:
         os.mkdir('PXP_{}_Gammas'.format(n_PXP))
+    except:
+        pass
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_std)
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_confidence)
 
-FFT_data_move()
+#FFT_data_move()

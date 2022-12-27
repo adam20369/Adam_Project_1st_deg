@@ -27,7 +27,7 @@ def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_star
     O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
     O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
     Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
-                                        start= T_start , stop=T_max ,num=T_step,endpoint = True)
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
     Propagated_ket_fin= np.transpose(Propagated_ket)
     Propagated_bra_fin = np.conjugate(Propagated_ket)
     Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
@@ -48,11 +48,15 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     :param T_step: time division
     :return: Plot of Time propagation
     '''
-    if os.path.isdir('PXP_{}_TI_{}'.format(n_PXP,n_TI)) == False:
-        os.mkdir('PXP_{}_TI_{}'.format(n_PXP,n_TI))
-    if os.path.isdir('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c))==False:
+    try:
+        os.mkdir('PXP_{}_TI_{}'.format(n_PXP, n_TI))
+    except:
+        pass
+    try:
         os.mkdir('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c))
-    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c,seed))==False:
+    except:
+        pass
+    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c,seed)) == False:
         Initialstate = Neel_EBE_Haar(n_PXP, n_TI)
         J = 1
         h_x = np.sin(0.485 * np.pi)
@@ -74,7 +78,7 @@ def Sparse_time_combine(seed_max):
     for j in range(1,seed_max):
         data[j-1,:]= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,j))) #creates
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data)
-Sparse_time_combine(seed_max)
+#Sparse_time_combine(seed_max)
 
 
 def Sparse_time_ave():
@@ -129,10 +133,11 @@ def avg_data_move():
     data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     data_err_std = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    if os.path.isdir('PXP_{}_Osc_Ave'.format(n_PXP))==False:
+    try:
         os.mkdir('PXP_{}_Osc_Ave'.format(n_PXP))
+    except:
+        pass
     np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
     np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_std)
     np.save(os.path.join('PXP_{}_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_confidence)
-
 #avg_data_move()
