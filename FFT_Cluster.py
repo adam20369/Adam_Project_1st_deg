@@ -138,4 +138,4 @@ def FFT_data_move():
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_std)
     np.save(os.path.join('PXP_{}_Gammas'.format(n_PXP),'Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_confidence)
 
-#FFT_data_move()
+FFT_data_move()

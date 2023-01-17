@@ -10,9 +10,11 @@ import scipy.sparse as sp
 from scipy.special import comb
 #from scipy.sparse.csr_matrix import multiply
 
-##################################################################
-#           OLD SUBSPACE BASIS FINDING METHOD                   #
-###################################################################
+
+####################################################################################################################################
+#                                               OLD SUBSPACE BASIS FINDING METHOD                                                  #
+####################################################################################################################################
+
 def Basis(n):
     '''
     Builds binary basis of all possible states (not the kinetically constrained subspace yet)
@@ -85,9 +87,9 @@ def Subspace_basis_indeces(n):
 #     # print((np.fliplr(permute)))
 #     return permute
 
-def Subspace_basis(n):
+def Subspace_basis(n): #OLD VERSION!!!
     '''
-    Returns subspace matrix (consisting of only constrained subspace states)
+    Returns subspace matrix (consisting of only constrained subspace states) OLD VERSION!!!!
     :param n: No of atoms in chain
     :return: matrix of allowed states
     '''
@@ -95,9 +97,9 @@ def Subspace_basis(n):
     Subspace_rows = Subspace_basis_indeces(n)
     return basis[Subspace_rows,:]
 
-########################################################################
-#                                   End                               #
-########################################################################
+################################################################################################################################################
+#                                                                       End                                                                    #
+################################################################################################################################################
 
 def Subspace_basis_count(n):
     '''
@@ -134,28 +136,6 @@ def TI_Allowed_No(n_pxp):
     return print('No. of TI atoms allowed: {}'.format(N))
 
 
-# def PXP(n):
-#     '''
-#     PXP Hamiltonian construction in subspace basis - Open Boundary Conditions!
-#     :param n: number of PXP atoms
-#     :return: matrix
-#     '''
-#     Base = Subspace_basis(n)
-#     Ham= np.zeros((np.shape(Base)[0], np.shape(Base)[0])) # Hamiltonian is of shape N_subspace x N_subspace
-#     for i in range(0, np.shape(Base)[0]):
-#         for j in range(0,n):
-#             if Base[i, j]==0 and Base[i, j + 2]==0:
-#                 if Base[i,j+1]==0:
-#                     vecj= Base[i,:].copy()
-#                 vecj[i]=0
-#                 Ham[np.argwhere((Base == vecj).all(axis=1))[0],j]= 1
-#             if Base[j, i]==0 and Base[j, i - 1]==0 and Base[j, i + 1]==0:
-#                 vecj=Base[j].copy()
-#                 vecj[i]=1
-#             vecj
-# #      Ham[masheu,masheu]=1
-# #      if Base[j, i] and Base[j + 1, i]:
-#     return
 def PXP_Subspace_Algo(n):
     '''
     New algorithm of producing PXP subspace from the start
@@ -191,7 +171,9 @@ def PXP_connected_states(n,Subspace): #TODO need to make faster
     '''
     Gets connected states of every subspace basis vector
     :param n: number of PXP atoms
-    :return: matrix of # x 2 of basis vectors and products of Hamiltonian multipication
+    :return: matrix of # x 2 of basis vectors and products of Hamiltonian multiplication
+    - Generally a map that tells you to which vectors every starting vector (all numbered by their index in the basis) maps under the Hamiltonian transformation
+    (first col is initial vector and second col is vector after transformation)
     '''
     Base = Subspace(n)
     x = np.empty((0,2))

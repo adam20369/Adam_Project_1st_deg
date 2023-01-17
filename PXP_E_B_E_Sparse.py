@@ -57,7 +57,7 @@ def O_z_PXP_Entry_Sparse(n, Subspace):
 
 def Z_i_PXP_Entry_Sparse(n, i, Subspace):
     '''
-    Builds Z_i in Subspace basis of PXP entry Sparsely
+    Builds Z_i in Subspace basis of PXP entry!!!! written Sparsely
     :param n: number of atoms
     :param i: index of Z_i
     :return: Z_i matrix sparse
@@ -74,7 +74,7 @@ def Z_i_PXP_Entry_Sparse(n, i, Subspace):
 
 def Z_i_Spin_Basis_sparse(n,i):
     '''
-    :param n: dimension 2**n
+    :param n: full dimension (2**n) Z_i sparse matrix (Regular KRON SPIN BASIS FOR TI !!!)
     :param i: atom index of Z operator
     :return: Z_i in dimension 2**n sparsely!
     '''
@@ -86,7 +86,7 @@ def Z_i_Spin_Basis_sparse(n,i):
 
 def X_i_Dict_PXP_Full_Basis_Sparse(n, i):
     '''
-    Builds X_i in FULL basis of PXP entry Sparsely
+    Builds X_i in FULL basis of PXP entry Sparsely (NOT SUBSPACE!!!)
     :param n: number of atoms
     :param i: index of X_i
     :return: X_i matrix sparse
@@ -106,8 +106,7 @@ def X_i_Dict_PXP_Full_Basis_Sparse(n, i):
 
 def X_i_Mat_PXP_Full_Basis_Sparse(n, i):
     '''
-    X_i in PXP space - CAN'T BE WRITTEN IN SUBSPACE BECAUSE IT TAKES OUT OF SUBSPACE!!!
-    Sparse method - IS it even sparse??
+    X_i in PXP space for full basis (NOT SUBSPACE!!) - in sparse method!
     :param n: No of atoms
     :param i: site wanted
     :return: X Matrix for specific i sparsley
@@ -118,6 +117,50 @@ def X_i_Mat_PXP_Full_Basis_Sparse(n, i):
         X_mat[int(dict[j,0]),int(dict[j,1])] = 1
     return X_mat
 
+
+def X_i_Dict_PXP_Subspace_Basis_Sparse_last_site(n):
+    '''
+    Builds X_f in Subspace basis of PXP entry Sparsely (NOT SUBSPACE!!!)
+    :param n: number of atoms
+    :return: X_f matrix sparse
+    '''
+    Base = PXP_Subspace_Algo(n)
+    Search = Base.copy()
+    x = np.empty((len(Base), 2))
+    x[:, 0] = np.arange(0, int(len(Base)), 1)
+    for j in range(0, len(Base)):
+        if Base[j, n-1] == 1:
+            Search[j, n-1] = 0
+        elif Base[j,n-1]==0 and Base[j,n-2]==0:
+            Search[j, n-1] = 1
+        x[j, 1] = int(np.nonzero(np.all(Base == Search[j, :], axis=1))[0])  # gets basis row index of new vector after X acts on initial state vector
+    return x
+
+
+def X_i_Mat_PXP_Subspace_Basis_Sparse_last_site(n):
+    '''
+    X_f in PXP space for subspace!!! basis - in sparse method! - doesn't do nothing when site is thrown out
+    :param n: No of atoms
+    :return: X Matrix for final atom sparsley
+    '''
+    X_mat = sp.dok_matrix((Subspace_basis_count_faster(n),Subspace_basis_count_faster(n)))
+    dict = X_i_Dict_PXP_Subspace_Basis_Sparse_last_site(n)
+    for j in range(0,Subspace_basis_count_faster(n)):
+        X_mat[int(dict[j,0]),int(dict[j,1])] = 1
+    return X_mat
+
+
+def X_i_Spin_Basis_sparse(n,i):
+    '''
+    :param n: full dimension (2**n) X_i sparse matrix (Regular KRON SPIN BASIS FOR TI !!!)
+    :param i: atom index of X operator
+    :return: X_i in dimension 2**n sparsely!
+    '''
+    if i <= n:
+        X_geni = sp.kron(sp.identity(2**(i-1)),sp.kron(X_i_Sparse, sp.identity(2**(n-i))))
+    else:
+        X_geni= sp.identity(2**n)
+    return X_geni
 
 def PXP_Ham_OBC_Sparse(n, Subspace):
     '''
@@ -192,10 +235,26 @@ def Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
         Coupterm = Coupling
     return Coupterm
 
+def X_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
+    """
+    SPARSE X_i nature coupling matrix (two-site) of Subspace NEW PXP version and TI regular (dimension is Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI))
+    :param n_PXP: Number of PXP atoms (0 to whatever)
+    :param n_TI: Number of TI atoms (0 to whatever)
+    :param h_c: coupling strength parameter
+    :return: matrix in (full) Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI) dimension, sparse
+    """
+    n_tot = n_PXP + n_TI  # Total number of atoms
+    d_TOT = Subspace_basis_count_faster(n_PXP) * 2 ** n_TI  # Total dimension
+    Coupling = (h_c) * sp.kron(X_i_Mat_PXP_Subspace_Basis_Sparse_last_site(n_PXP), X_i_Spin_Basis_sparse(n_TI, 1))
+    if n_TI == 0 or n_PXP == 0 or h_c == 0:
+        Coupterm = sp.csr_matrix((d_TOT, d_TOT))
+    else:
+        Coupterm = Coupling
+    return Coupterm
 
 def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     '''
-    Full coupled Hamiltonian with PXP Subspace Entry by entry code, sparse!!
+    Full Z_i nature coupled Hamiltonian with PXP Subspace Entry by entry code, sparse!!
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI Atoms
     :param J: TI ising term strength
@@ -213,6 +272,28 @@ def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     d_TI = 2 ** n_TI
     HamNoCoupl = sp.kron(PXP, sp.identity(d_TI))+sp.kron(sp.identity(d_PXP), TI)
     TotalHam = HamNoCoupl + Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c)
+    return TotalHam
+
+def PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
+    '''
+    Full X_i nature coupled Hamiltonian with PXP Subspace Entry by entry code, sparse!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: Matrix (full Hamiltonian), Sparse
+    '''
+    #n_tot= n_PXP + n_TI
+    PXP = PXP_Ham_OBC_Sparse(n_PXP, PXP_Subspace_Algo)
+    TI = TIOBCNewImpure_sparse(n_TI, J, h_x, h_z, h_imp, m)
+    d_PXP = Subspace_basis_count_faster(n_PXP)
+    d_TI = 2 ** n_TI
+    HamNoCoupl = sp.kron(PXP, sp.identity(d_TI))+sp.kron(sp.identity(d_PXP), TI)
+    TotalHam = HamNoCoupl + X_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c)
     return TotalHam
 
 ######################################################################################################################################################################################333###

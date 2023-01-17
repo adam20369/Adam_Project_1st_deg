@@ -370,7 +370,7 @@ def EigenCombine(Mat,VecState):
     Recombine= np.round(np.dot(Evec,W),4)
     return Recombine
 
-################################ CONNECTED SUBSPACE REDUCTION OF PXP OBC ####################################
+################################ CONNECTED SUBSPACE REDUCTION OF PXP OBC - OLD ####################################
 
 def GroundstateCheck(n_PXP, n_TI, h_c=0 ,Coupmat=Z_i, J=1,h_x=np.sin(0.485*np.pi), h_z=np.cos(0.485*np.pi) ,h_imp=0.01):
     '''
@@ -530,10 +530,10 @@ def EigenvalueUniqueness(n,j,st):
     Unique= np.unique(eval,False,False,True)
     return Unique
 
-###################################################################################
-#                                 EE CALCULATION                                  #
-###################################################################################
-#       NOT NEEDED DUE TO BUILDING NEW HAMILTONIAN ENTRY BY ENTRY                 #
+######################################################################################################################################################################
+#                                                                       EE CALCULATION  (old)                                                                        #
+######################################################################################################################################################################
+#                                               NOT NEEDED DUE TO BUILDING NEW HAMILTONIAN ENTRY BY ENTRY                                                            #
 
 
 def Binary_State_Mapping(state): #TODO check for some more cases

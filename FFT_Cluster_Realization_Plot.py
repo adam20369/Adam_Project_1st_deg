@@ -10,9 +10,8 @@ T_start=0
 T_max=400
 T_step=1000
 n_PXP=9
-n_TI=10
-h_c=0.5
-sample=2
+n_TI=13
+h_c=1.0
 Start_cutoff=8
 End_cutoff= 1000
 
@@ -86,12 +85,16 @@ def Lorentzian_curvefit_plt(T_start, T_max, T_step, Start_cutoff, End_cutoff, He
     plt.plot(Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff], marker='o', markersize=3,
              color='b', label='data')
     popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff]) # popt= parameter optimal values
+    residuals = sig_func[Start_cutoff:End_cutoff] - Lorentzian_function(Freq[Start_cutoff:End_cutoff],*popt)
+    res_sum_squares = np.sum(residuals**2)
+    tot_sum_squares= np.sum((sig_func[Start_cutoff:End_cutoff]-np.mean(sig_func[Start_cutoff:End_cutoff]))**2)
+    r_squared= 1-(res_sum_squares/tot_sum_squares)
     plt.plot(Freq[Start_cutoff:End_cutoff], Lorentzian_function(Freq[Start_cutoff:End_cutoff],*popt),'r-',
-         label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={}'.format(*np.round(popt,4)))
-    #plt.title('Frequency fit for {} PXP and {} TI atoms, Coupling strength {}'.format(n_PXP,n_TI,h_c))
+         label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={},$R^2$={}'.format(*np.round(popt,4),r_squared))
+    plt.title(r'Frequency fit for {} PXP, {} TI, $h_c$ {}, cutoff {}-{}'.format(n_PXP,n_TI,h_c,Start_cutoff,End_cutoff))
     plt.xlabel(r'Frequency [$1/t$]')
     plt.ylabel('Amplitudes of Harmonic Functions')
     plt.legend()
-    #plt.savefig("Figures/Frequency_fit/Freq_Fit_{}_PXP_{}_TI_{}_Coup.png".format(8,12,0.4))
+    plt.savefig("Figures/Frequency_fit/FFT_Fit_{}_PXP_{}_TI_{}_Coup_{}-{}_cutoff.png".format(n_PXP,n_TI,h_c,Start_cutoff,End_cutoff))
     return plt.show()
 Lorentzian_curvefit_plt(T_start, T_max, T_step,Start_cutoff, End_cutoff)
