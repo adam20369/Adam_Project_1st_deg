@@ -10,6 +10,7 @@ from scipy import integrate
 from sympy.utilities.iterables import multiset_permutations
 import scipy.sparse as sp
 from scipy.special import comb
+from Cluster_Sparse_Osc_Para import *
 
 def Subspace_basis_count(n):
     '''
@@ -193,6 +194,7 @@ def Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 gig
     np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Entanglement_h_c_{}'.format(h_c)), SVD_vec_mat)
     np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Eval_h_c_{}'.format(h_c)), SVD_vec_mat)
     return
+Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c)
 
 def Entanglement_entropy_calc_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 giga (8x11 uses 100 Giga)
     '''
