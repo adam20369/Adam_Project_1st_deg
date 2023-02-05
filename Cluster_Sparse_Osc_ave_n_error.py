@@ -65,7 +65,7 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
         np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
     return
 
-#Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
+Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
 
 def Sparse_time_combine(seed_max):
     '''

@@ -10,10 +10,11 @@ T_start=0
 T_max=400
 T_step=1000
 n_PXP=9
-n_TI=13
-h_c=1.0
-Start_cutoff=8
-End_cutoff= 1000
+n_TI=11
+h_c=0.5
+sample= 75
+Start_cutoff=105
+End_cutoff= 240
 
 def Lorentzian_function(omega, omega_0, gamma, amp):
     '''
@@ -37,7 +38,7 @@ def FFT(T_start, T_max, T_step, Height_norm):
     :return: 2 arrays (Positive freq, positive freq fourier components)
     '''
     time= np.linspace(T_start, T_max,T_step)
-    #VecProp = np.load('Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,sample))
+    #VecProp = np.load('1.4_check/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,sample))
     VecProp = np.load('PXP_{}_Osc_Ave/Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c))
     print(VecProp.round(4))
     plt.plot(time,VecProp.round(4))

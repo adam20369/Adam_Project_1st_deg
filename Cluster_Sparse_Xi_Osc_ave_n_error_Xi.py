@@ -7,6 +7,10 @@ import numpy.linalg as la
 
 np.random.seed(seed)
 
+#############################################################################################################################################################
+#                                                               X_i VERSION!                                                                                #
+#############################################################################################################################################################
+
 def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
     '''
     Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method
@@ -65,7 +69,7 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
         np.save(os.path.join('PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
     return
 
-#Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
+Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
 
 def Sparse_time_combine(seed_max):
     '''

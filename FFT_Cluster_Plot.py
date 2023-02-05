@@ -16,31 +16,41 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from cycler import cycler
 
+n_PXP_feed = 9
+n_TI_max_feed = 14
+T_start_feed = 0
+T_max_feed = 400
+T_step_feed = 1000
+h_c_max_feed = 1.4
+h_c_step_feed = 0.1
+Start_cutoff_feed = 8
+End_cutoff_feed = 1000
+
 def Plot_vs_h_c_diff_n_TI_condifence():
     '''
     Plot for different TI numbers, a normalized damping graph vs Coupling strength h_c
     :return: a plot of plots
     '''
-    n_PXP=9
-    T_start = 0
-    T_max = 400
-    T_step = 1000
-    Start_cutoff= 8 #implement
-    End_cutoff= 1000 #implement
-    h_c_max=1.3
-    h_c_step=0.1
-    n_TI_start=n_PXP
-    n_TI_max=14
-    n_TI=np.linspace(n_TI_start,n_TI_max,n_TI_max - n_TI_start +1,endpoint=True)
-    h_c=np.linspace(0, h_c_max, int(np.round(((h_c_max)/h_c_step),1)) +1,endpoint=True)
+    n_PXP= n_PXP_feed
+    T_start = T_start_feed
+    T_max = T_max_feed
+    T_step = T_step_feed
+    Start_cutoff = Start_cutoff_feed #implement DONT THINK IT IS HERE!
+    End_cutoff = End_cutoff_feed #implement DONT THINK IT IS HERE!
+    h_c_max = h_c_max_feed
+    h_c_step = h_c_step_feed
+    n_TI_start = n_PXP
+    n_TI_max = n_TI_max_feed
+    n_TI= np.linspace(n_TI_start,n_TI_max,n_TI_max - n_TI_start +1,endpoint=True)
+    h_c= np.linspace(0, h_c_max, int(np.round(((h_c_max)/h_c_step),1)) +1,endpoint=True)
     data_ave= np.empty((len(h_c)))
     data_errors= np.empty((2,(len(h_c))))
     cmap = cm.get_cmap('plasma',int(n_TI_max-5)) #length of colormap should be about x2 of the number of plots
     for j in np.nditer(n_TI):
         for i in np.nditer(h_c):
-            data_ave[int(i*10)]=np.load('PXP_{}_Gammas/Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
+            data_ave[int(np.round(i,2)*10)]=np.load('PXP_{}_Gammas/Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
             #print(data_ave)
-            data_errors[:,int(i*10)]=np.load('PXP_{}_Gammas/Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
+            data_errors[:,int(np.round(i,2)*10)]=np.load('PXP_{}_Gammas/Gamma_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
             #print(data_errors)
         data_errors_fin_0 = data_ave - data_errors[0, :]  # DATA ERRORS NEED TO BE +/- from Null
         data_errors_fin_1 = data_errors[1, :] - data_ave  # DATA ERRORS NEED TO BE +/- from Null
@@ -63,14 +73,16 @@ def Plot_vs_h_c_diff_n_TI_std():
     Plot for different TI numbers, a normalized damping graph vs Coupling strength h_c
     :return: a plot of plots
     '''
-    n_PXP=9
-    T_start = 0
-    T_max = 400
-    T_step = 1000
-    h_c_max=1.3
-    h_c_step=0.1
-    n_TI_start= n_PXP
-    n_TI_max=14
+    n_PXP= n_PXP_feed
+    T_start = T_start_feed
+    T_max = T_max_feed
+    T_step = T_step_feed
+    Start_cutoff = Start_cutoff_feed #implement DONT THINK IT IS HERE!
+    End_cutoff = End_cutoff_feed #implement DONT THINK IT IS HERE!
+    h_c_max = h_c_max_feed
+    h_c_step = h_c_step_feed
+    n_TI_start = n_PXP
+    n_TI_max = n_TI_max_feed
     n_TI=np.linspace(n_TI_start,n_TI_max,n_TI_max - n_TI_start +1,endpoint=True)
     h_c=np.linspace(0, h_c_max, int(np.round(((h_c_max)/h_c_step),1)) +1,endpoint=True)
     data_ave= np.empty((len(h_c)))
@@ -78,9 +90,9 @@ def Plot_vs_h_c_diff_n_TI_std():
     cmap = cm.get_cmap('plasma',int(n_TI_max-5)) #length of colormap should be about x2 of the number of plots
     for j in np.nditer(n_TI):
         for i in np.nditer(h_c):
-            data_ave[int(i*10)]=np.load('PXP_{}_Gammas/Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
+            data_ave[int(np.round(i,2)*10)]=np.load('PXP_{}_Gammas/Gamma_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
             #print(data_ave)
-            data_errors[int(i*10)]=np.load('PXP_{}_Gammas/Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
+            data_errors[int(np.round(i,2)*10)]=np.load('PXP_{}_Gammas/Gamma_errors_std_{}_{}_{}.npy'.format(n_PXP,n_PXP,int(j),np.round(i,2)))
             #print(data_errors)
         data_errors_fin = data_errors/data_ave[0] #Scaled errors as to gamma/gamma_0
         #print('data_errors',data_errors)
