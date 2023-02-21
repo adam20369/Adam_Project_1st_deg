@@ -14,7 +14,7 @@ n_TI=11
 h_c=0.5
 sample= 75
 Start_cutoff=105
-End_cutoff= 240
+End_cutoff= 235
 
 def Lorentzian_function(omega, omega_0, gamma, amp):
     '''

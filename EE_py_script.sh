@@ -2,7 +2,7 @@
 #$ -cwd
 #$ -e err.txt
 #$ -o out.txt
-#$ -l mem_free=32G
+#$ -l mem_free=24G
 #$ -pe shared 10
 source /etc/profile
 module load use.own

@@ -7,13 +7,13 @@ import numpy.linalg as la
 
 np.random.seed(seed)
 
-#############################################################################################################################################################
-#                                                               X_i VERSION!                                                                                #
-#############################################################################################################################################################
+####################################################################################################################################################################
+#                                                             True X_i coupling extended PXP basis VERSION!                                                        #
+####################################################################################################################################################################
 
 def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
     '''
-    Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method
+    Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method for Extended X_i PXP basis
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI Atoms
     :param J: TI ising term strength
@@ -26,9 +26,9 @@ def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_star
     :param T_step: time step (division)
     :param h_imp: impurity (TI) strength
     :param m: impurity site
-    :return: vector -  <NeelxHaar|O_z(t)|NeelxHaar>
+    :return: vector - <NeelxHaar|O_z(t)|NeelxHaar> for X_i coupling
     '''
-    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
+    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, Extended_X_i_Subspace_basis_count_faster(n_PXP))
     O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
     Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
                                         start= T_start , stop=T_max ,num = T_step ,endpoint = True)
@@ -53,20 +53,20 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     :return: Plot of Time propagation
     '''
     try:
-        os.mkdir('PXP_{}_TI_{}_X_i'.format(n_PXP, n_TI))
+        os.mkdir('PXP_{}_TI_{}_True_X_i'.format(n_PXP, n_TI))
     except:
         pass
     try:
-        os.mkdir('PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c))
+        os.mkdir('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c))
     except:
         pass
-    if os.path.isfile('PXP_{}_TI_{}_X_i/h_c_{}/Sparse_time_propagation_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c,seed)) == False:
+    if os.path.isfile('PXP_{}_TI_{}_True_X_i/h_c_{}/Sparse_time_propagation_True_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c,seed)) == False:
         Initialstate = Neel_EBE_Haar(n_PXP, n_TI)
         J = 1
         h_x = np.sin(0.485 * np.pi)
         h_z = np.cos(0.485 * np.pi)
         Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
-        np.save(os.path.join('PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
+        np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
     return
 
 Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
@@ -80,8 +80,8 @@ def Sparse_time_combine(seed_max):
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     data = np.empty((seed_max-1,len(Time)))
     for j in range(1,seed_max):
-        data[j-1,:]= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,j))) #creates
-    np.save(os.path.join('PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data)
+        data[j-1,:]= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,j))) #creates
+    np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data)
 #Sparse_time_combine(seed_max)
 
 
@@ -90,9 +90,9 @@ def Sparse_time_ave():
     averages over Sparse time realizations
     :return: saves average
     '''
-    data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     data_ave = np.mean(data,axis=0)
-    np.save(os.path.join('PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data_ave)
+    np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), data_ave)
 
 def Bootstrap_confidence(Sample_no):
     '''
@@ -101,7 +101,7 @@ def Bootstrap_confidence(Sample_no):
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     lower_upper = np.empty((2,len(Time)))
-    data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     for i in range(0,len(Time)): #array of all realizations for given T (marked by i)
         sample = np.random.choice(data[:,i],(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x len(Time)] matrix of randomly sampled arrays (with return) from the original
         sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
@@ -109,7 +109,7 @@ def Bootstrap_confidence(Sample_no):
         upper_mean = np.quantile(sample_ave, 0.975)
         lower_upper[0,i] = lower_mean
         lower_upper[1,i] = upper_mean
-    np.save(os.path.join('PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
+    np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),lower_upper)
 
 def Bootstrap_std(Sample_no):
     '''
@@ -118,12 +118,12 @@ def Bootstrap_std(Sample_no):
     '''
     Time = np.linspace(T_start, T_max, T_step, endpoint=True)
     std_vec = np.empty((len(Time)))
-    data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_combine_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     for i in range(0,len(Time)): # array of all realizations for given T (marked by i)
         sample = np.random.choice(data[:,i],(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no)] rows of randomly sampled numbers (with return) from the original sample
         sample_ave = np.mean(sample, axis=0)  # vector of averages!! from randomly pulling numbers from 100 realizations for a specific time instance i
         std_vec[i]= np.std(sample_ave)
-    np.save(os.path.join('PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std_vec)
+    np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),std_vec)
 
 #Sparse_time_ave()
 #Bootstrap_confidence(Sample_no)
@@ -134,14 +134,14 @@ def avg_data_move():
     Copies oscillation plotting data to main directory under 'PXP_{}_Gammas'
     :return: makes new folder and copies files there
     '''
-    data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    data_err_std = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
-    data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_X_i_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err_std = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
+    data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)))
     try:
-        os.mkdir('PXP_{}_X_i_Osc_Ave'.format(n_PXP))
+        os.mkdir('PXP_{}_True_X_i_Osc_Ave'.format(n_PXP))
     except:
         pass
-    np.save(os.path.join('PXP_{}_X_i_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_X_i_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
-    np.save(os.path.join('PXP_{}_X_i_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_X_i_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_std)
-    np.save(os.path.join('PXP_{}_X_i_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_X_i_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_confidence)
+    np.save(os.path.join('PXP_{}_True_X_i_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_True_X_i_ave_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_ave)
+    np.save(os.path.join('PXP_{}_True_X_i_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_True_X_i_errors_std_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_std)
+    np.save(os.path.join('PXP_{}_True_X_i_Osc_Ave'.format(n_PXP),'Sparse_time_propagation_True_X_i_errors_confidence_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)),data_err_confidence)
 #avg_data_move()

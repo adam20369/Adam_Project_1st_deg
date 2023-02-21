@@ -109,6 +109,7 @@ def NeelHaar(n_PXP, n_TI):
     NeelHaarstate = np.kron(Neelstate(n_PXP), Haarstate(n_TI))
     return NeelHaarstate
 
+#################################################################### END
 # def Haarstate_seed(n,seed):
 #     '''
 #     General Haar state (seeded), A Haar state is a state that simulates an "average" thermal eigenstate of the system,

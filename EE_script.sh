@@ -1,6 +1,6 @@
 #!/bin/bash
-n_PXP='8'
-n_TI='10'
+n_PXP='9'
+n_TI='9'
 h_c_max='20'
 dummy1='1'
 dummy2='2'

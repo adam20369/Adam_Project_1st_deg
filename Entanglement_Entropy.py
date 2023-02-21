@@ -10,7 +10,7 @@ from scipy import integrate
 from sympy.utilities.iterables import multiset_permutations
 import scipy.sparse as sp
 from scipy.special import comb
-from Cluster_Sparse_Osc_Para import *
+#from Cluster_Sparse_Osc_Para import *
 
 def Subspace_basis_count(n):
     '''
@@ -190,11 +190,12 @@ def Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 gig
     SVD_num = np.minimum(2**(n_TI),Subspace_basis_count_faster(n_PXP))
     SVD_vec_mat = np.empty((len(eval),SVD_num))
     for i in range(0,len(eval)):
-        SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
+         SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
     np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Entanglement_h_c_{}'.format(h_c)), SVD_vec_mat)
-    np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Eval_h_c_{}'.format(h_c)), SVD_vec_mat)
+    np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Eval_h_c_{}'.format(h_c)), eval)
     return
-Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c)
+
+#Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c)
 
 def Entanglement_entropy_calc_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 giga (8x11 uses 100 Giga)
     '''
@@ -231,6 +232,33 @@ def Entanglement_entropy_avg_std(n_PXP, n_TI, h_c, interval_width): #8 PXP 10 TI
     std = np.std(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
     return np.round(average,4), np.round(std,4)
 
+def Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width): #8 PXP 10 TI max calc
+    '''
+    Calculating entanglement entropy average and standard deviation for some energy interval from cluster data!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param interval_width: energy interval width +-delta
+    :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
+    :return: average, standard deviation (two scalars)
+    '''
+    SVD_vec_mat = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Entanglement_h_c_{}.npy'.format(h_c)))
+    eval = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Eval_h_c_{}.npy'.format(h_c)))
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
+    eval_interval_arg_min= np.min(np.argwhere(eval>(h_c-interval_width)))
+    eval_interval_arg_max= np.min(np.argwhere(eval>(h_c+interval_width)))
+    average = np.average(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
+    std = np.std(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
+    try:
+        os.mkdir('EE_PXP_{}_TI_{}/AVG_STD_width_{}'.format(n_PXP,n_TI,interval_width))
+    except:
+        pass
+    np.save(os.path.join('EE_PXP_{}_TI_{}/AVG_STD_width_{}'.format(n_PXP,n_TI,interval_width),'Average_h_c_{}_width_{}'.format(h_c,interval_width)), average)
+    np.save(os.path.join('EE_PXP_{}_TI_{}/AVG_STD_width_{}'.format(n_PXP,n_TI,interval_width),'STD_h_c_{}_width_{}'.format(h_c,interval_width)), std)
+    return
+#Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=1)
+
+
 def EE_Avg_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
     '''
     Plots average entanglement for given interval
@@ -245,7 +273,7 @@ def EE_Avg_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
     avg= np.empty((np.size(h_c)))
     std= avg.copy()
     for i in np.nditer(h_c):
-        avg[int(np.round(i,2)*10-h_c_start*10)], std[int(np.round(i,2)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
+        avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
     plt.plot(h_c,avg, color='b')
     plt.title('Average Entanglement vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
     plt.xlabel('Coupling Strength $h_c$')
@@ -268,7 +296,7 @@ def EE_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
     avg= np.empty((np.size(h_c)))
     std= avg.copy()
     for i in np.nditer(h_c):
-        avg[int(np.round(i,2)*10-h_c_start*10)], std[int(np.round(i,2)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
+        avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
     plt.plot(h_c,std, color='r')
     plt.title('Entanglement STD vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
     plt.xlabel('Coupling Strength $h_c$')
@@ -290,20 +318,49 @@ def EE_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
     avg = np.empty((np.size(h_c)))
     std = avg.copy()
     for i in np.nditer(h_c):
-        avg[int(np.round(i, 2) * 10 - h_c_start * 10)], std[int(np.round(i, 2) * 10 - h_c_start * 10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
+        avg[int(np.round(i, 1) * 10 - h_c_start * 10)], std[int(np.round(i, 1) * 10 - h_c_start * 10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
     plt.plot(h_c[:], avg[:], linestyle='-',color='b')
     #plt.errorbar(h_c[:], avg[:], yerr=std[:],marker='s', markersize=2, linestyle='-', barsabove=True, capsize=3, capthick=3)
     plt.fill_between(h_c[:], avg[:] - std[:], avg[:]+std[:], alpha=0.4)
     plt.title('Average Entanglement vs $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
     plt.xlabel('Coupling Strength $h_c$')
     plt.ylabel('Average Entanglement Entropy')
-    plt.savefig('Figures/Entanglement_Entropy/Average_Entanglement_With_Errors_filled')
     plt.show()
+
+def EE_Avg_Std_plot_Cluster(n_PXP, n_TI,h_c_start, h_c_max,interval_width):
+    '''
+    Plots average and Standard deviation of entanglement for given interval
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param interval_width: energy interval width +-delta
+    :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
+    :return: plot of average entanglement and Standard deviation vs h_c
+    '''
+    h_c = np.arange(h_c_start, h_c_max + 0.1, 0.1)
+    avg = np.empty((np.size(h_c)))
+    std = avg.copy()
+    for i in np.nditer(h_c):
+        avg[int(np.round(i, 1) * 10 - h_c_start * 10)]  = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}/AVG_STD_width_{}'.format(n_PXP,n_TI,interval_width),'Average_h_c_{}_width_{}.npy'.format(np.round(i,1),interval_width)))
+        std[int(np.round(i, 1) * 10 - h_c_start * 10)] = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}/AVG_STD_width_{}'.format(n_PXP,n_TI,interval_width),'STD_h_c_{}_width_{}.npy'.format(np.round(i,1),interval_width)))
+    plt.plot(h_c[:], avg[:], linestyle='-',color='b')
+    plt.fill_between(h_c[:], avg[:] - std[:], avg[:]+std[:], alpha=0.4)
+    plt.title('Average Entanglement vs $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
+    plt.xlabel('Coupling Strength $h_c$')
+    plt.ylabel('Average Entanglement Entropy')
+    plt.savefig('Figures/Entanglement_Entropy/Average_EE_filled_{}_PXP_{}_TI_{}_max_h_c'.format(n_PXP,n_TI,h_c_max))
+    plt.show()
+
+#Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c)
+#Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=1)
+
 
 
 #####################################################################################################################################
 #                                                   PXP-PXP EE CODE                                                                 #
 #####################################################################################################################################
+
+
 
 def Subspace_complement(n_PXP,i):
     '''

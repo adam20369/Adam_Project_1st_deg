@@ -10,6 +10,26 @@ import scipy.sparse as sp
 from scipy.special import comb
 #from scipy.sparse.csr_matrix import multiply
 
+####################################################################################################################################
+#                                                     definitions dim = 1                                                          #
+####################################################################################################################################
+g = np.array([0, 1])  # ground state
+# print("ground=\n", g)
+
+r = np.array([1, 0])  # rydberg state
+# print("rydberg=\n", r)
+
+X_i = np.array([[0, 1], [1, 0]])  # flips ground -> rydberg/ rydberg-> ground |g><r|+|r><g|
+# print("X_i = \n", X_i)
+
+Q_i = np.array([[1, 0], [0, 0]])  # projector on rydberg state (density of excited states) |r><r|
+# print("Q_i = \n", Q_i)
+
+P_i = np.array([[0, 0], [0, 1]])  # projector on ground state (density of ground states) |g><g|
+# print("P_i = \n",P_i)
+
+Z_i = np.array([[1, 0], [0, -1]])  # pauli Z
+
 
 ####################################################################################################################################
 #                                               OLD SUBSPACE BASIS FINDING METHOD                                                  #
@@ -115,7 +135,7 @@ def Subspace_basis_count(n):
 def Subspace_basis_count_faster(n):
     ''' Counts number of Subspace vectors in faster way, with the aid of Binet formula
     :param n: No of atoms in chain
-    :return: Scalar - No of subspace vectors = fib(n+3)
+    :return: Scalar - No of subspace states = fib(n+3)
 
     '''
     Fibonacci = np.arange(0,n+3)
@@ -125,6 +145,14 @@ def Subspace_basis_count_faster(n):
     beta = (1 - sqrtFive) / 2
     F_n = np.rint(((alpha ** Fibonacci)- (beta ** Fibonacci)) / (sqrtFive))
     return int(F_n[len(F_n)-1])
+
+def Extended_X_i_Subspace_basis_count_faster(n):
+    '''
+    Counts the number of states in the Exntended X_i PXP subspace
+    :param n: number of atoms in PXP chain
+    :return: Scaler - number of subspace states = fib(n+3)+fib(n)
+    '''
+    return Subspace_basis_count_faster(n)+Subspace_basis_count_faster(n-3)
 
 def TI_Allowed_No(n_pxp):
     '''
@@ -166,10 +194,50 @@ def PXP_Subspace_Algo(n):
         Subspace = np.vstack((Subspace, single_excited_states[Vec,:]+Subspace[i,:]))
     return Subspace
 
-
-def PXP_connected_states(n,Subspace): #TODO need to make faster
+def PXP_Subspace_Algo_extended_X_i(n):
     '''
-    Gets connected states of every subspace basis vector
+    Algorithm for producing PXP subspace INCLUDING ...11 states from the start
+    :param n: No of atoms
+    :return: PXP constrained subspace matrix +....11 states [(Fib(n+3)+Fib(n)) x n]
+    '''
+    initial = np.zeros(n)
+    vec1 = initial.copy()
+    vec1[0] = 1
+    single_excited_states = np.identity(n) # base vectors of single excitations, col index of 1 is the row index of course
+    Subspace = np.vstack((initial, single_excited_states.copy()))
+    init_indeces = np.arange(0,n,1)
+    for i in range(1,Subspace_basis_count_faster(n)):
+        Og_One_indeces= np.where(Subspace[i,:] == 1) # returns array of col. indeces of 1's of a specific row of subspace mat
+        # print(Og_One_indeces)
+        Plus_one = np.array(Og_One_indeces)+1
+        Minus_one = np.array(Og_One_indeces)-1
+        One_indeces = np.unique(np.concatenate((np.concatenate((Og_One_indeces, Plus_one),axis=0),Minus_one),axis=0)) # unique array of indeces where one's are not allowed
+        # print(One_indeces)
+        OG_Last = Og_One_indeces[0][np.shape(Og_One_indeces)[1]-1] #Last 1 in subspace vector No. i
+        # print(OG_Last)
+        Boolean = np.isin(init_indeces, One_indeces, invert = True) # searches for One_indeces in init_indeces and returns flipped boolean
+            # print(Boolean)
+        Boolean[np.where(init_indeces < OG_Last)] = False #defining all entries before some entry as false
+            # print(Boolean)
+        Vec = init_indeces.copy()[Boolean] # indeces of all initial vectors that are allowed to add
+            # print(Vec)
+        Subspace = np.vstack((Subspace, single_excited_states[Vec,:]+Subspace[i,:]))
+    #######Extension start##########
+    #print(np.size(Subspace,axis=0))
+    count=0
+    for i in range(1,Subspace_basis_count_faster(n)):
+        if Subspace[i,n-2] == 1:
+            count=count+1
+            vec = Subspace[i,:].copy()
+            vec[n-1]=1
+            Subspace = np.vstack((Subspace, vec))
+    matsize = Extended_X_i_Subspace_basis_count_faster(n)
+    #print(np.isclose(np.size(Subspace,axis=0),matsize)) #check
+    return Subspace
+
+def PXP_connected_states(n,Subspace): #TODO can make it a little faster
+    '''
+    Gets connected states of every subspace basis vector ALSO WORKS FOR X_i EXTENDED!!!!
     :param n: number of PXP atoms
     :return: matrix of # x 2 of basis vectors and products of Hamiltonian multiplication
     - Generally a map that tells you to which vectors every starting vector (all numbered by their index in the basis) maps under the Hamiltonian transformation
@@ -258,19 +326,21 @@ def PXP_connected_states(n,Subspace): #TODO need to make faster
 
 def PXP_Ham_OBC_Entrybyentry(n,Subspace):
     '''
-    builds the Hamiltonian from pairs of PXP_connected_states
+    builds the Hamiltonian from pairs of PXP_connected_states ALSO WORKS FOR X_i EXTENDED!!!!
     :param n: number of atoms
     :return: Matrix (the Hamiltonian) N_subspace x N_subspace
     '''
     x = PXP_connected_states(n,Subspace)
-    PXP = np.zeros((Subspace_basis_count_faster(n),Subspace_basis_count_faster(n)))
+    Base = Subspace(n)
+    PXP = np.zeros((len(Base),len(Base)))
     for i in range(0,len(x)):
         PXP[x[i,0],x[i,1]] = 1
     return PXP
 
+
 def O_z_PXP_Entry_basis(n,Subspace):
     '''
-    Building O_z in basis of PXP entry
+    Building O_z in basis of PXP entry ALSO WORKS FOR X_i EXTENDED!!!!
     :param n: number of atoms
     :return: O_z matrix
     '''
@@ -284,7 +354,7 @@ def O_z_PXP_Entry_basis(n,Subspace):
 
 def Z_i_PXP_Entry_basis(n, i, Subspace):
     '''
-    Building Z_i in basis of PXP entry
+    Building Z_i in basis of PXP entry ALSO WORKS FOR X_i EXTENDED!!!!
     :param n: number of atoms
     :param i: index of Z_i
     :return: Z_i matrix
@@ -298,60 +368,130 @@ def Z_i_PXP_Entry_basis(n, i, Subspace):
             Z_i_mag[j] = -1
     return np.diag(Z_i_mag)
 
-def X_i_Dict_PXP_Full_Basis(n, i):
+def Z_i_Spin_Basis(n,i): # calculates Z for general i
     '''
-    X_i in PXP space - CAN'T BE WRITTEN IN SUBSPACE BECAUSE IT TAKES OUT OF SUBSPACE!!!
-    :param n: No of atoms
-    :param i: site wanted
-    :return: X dictionary (first col = the initial vectors ; second col = final vectors)
+    Z_i matrix for TI 2**n basis
+    :param n: dimension 2**n (spin)
+    :param i: atom index of Z operator
+    :return: Z_i matrix in dimension 2**n
     '''
+    if i <= n:
+        Z_geni = np.kron(np.identity(2**(i-1)),np.kron(Z_i, np.identity(2**(n-i))))
+    else:
+        Z_geni= np.identity(2**n)
+    return Z_geni
 
-    Base = Basis(n)
+# def X_i_Dict_PXP_Full_Basis(n, i):
+#     '''
+#     X_i in PXP space - CAN'T BE WRITTEN IN SUBSPACE BECAUSE IT TAKES OUT OF SUBSPACE!!!
+#     :param n: No of atoms
+#     :param i: site wanted
+#     :return: X dictionary (first col = the initial vectors ; second col = final vectors)
+#     '''
+#
+#     Base = Basis(n)
+#     Search = Base.copy()
+#     x = np.empty((len(Base), 2))
+#     x[:,0] = np.arange(0,int(len(Base)),1)
+#     for j in range(0,len(Base)):
+#         if Base[j,i] == 1:
+#             Search[j,i] = 0
+#         else:
+#             Search[j,i] = 1
+#         x[j,1] = int(np.nonzero(np.all(Base == Search[j,:],axis=1))[0]) #gets basis row index of new vector after X acts on initial state vector
+#     return x
+#
+# def X_i_Mat_PXP_Full_Basis(n, i):
+#     '''
+#     X_i in PXP space - CAN'T BE WRITTEN IN SUBSPACE BECAUSE IT TAKES OUT OF SUBSPACE!!!
+#     :param n: No of atoms
+#     :param i: site wanted
+#     :return: X Matrix for specific i
+#     '''
+#     X_mat = np.empty((2**n,2**n))
+#     dict = X_i_Dict_PXP_Full_Basis(n, i)
+#     for j in range(0,2**n):
+#         X_mat[int(dict[j,0]),int(dict[j,1])] = 1
+#     return X_mat
+
+def X_n_Dict_PXP_X_i_Extended_Subspace(n):
+    '''
+    Builds final atom X_n dictionary (start state -> end state) in X_i extended Subspace basis of PXP entry Sparsely
+    :param n: number of atoms
+    :return: X_f matrix sparse
+    '''
+    Base = PXP_Subspace_Algo_extended_X_i(n)
     Search = Base.copy()
     x = np.empty((len(Base), 2))
-    x[:,0] = np.arange(0,int(len(Base)),1)
-    for j in range(0,len(Base)):
-        if Base[j,i] == 1:
-            Search[j,i] = 0
-        else:
-            Search[j,i] = 1
-        x[j,1] = int(np.nonzero(np.all(Base == Search[j,:],axis=1))[0]) #gets basis row index of new vector after X acts on initial state vector
+    x[:, 0] = np.arange(0, int(len(Base)), 1)
+    for j in range(0, len(Base)):
+        if Base[j, n-1] == 1:
+            Search[j, n-1] = 0
+        elif Base[j,n-1] == 0:
+            Search[j, n-1] = 1
+        x[j, 1] = int(np.nonzero(np.all(Base == Search[j, :], axis=1))[0])  # gets basis row index of new vector after X acts on initial state vector
     return x
 
-def X_i_Mat_PXP_Full_Basis(n, i):
+def X_n_Mat_PXP_X_i_Extended_Subspace(n):
     '''
-    X_i in PXP space - CAN'T BE WRITTEN IN SUBSPACE BECAUSE IT TAKES OUT OF SUBSPACE!!!
+    X_n (final atom) matrix in PXP extended X_i subspace
     :param n: No of atoms
-    :param i: site wanted
-    :return: X Matrix for specific i
+    :return: X Matrix for final atom in extended X_i basis
     '''
-    X_mat = np.empty((2**n,2**n))
-    dict = X_i_Dict_PXP_Full_Basis(n, i)
-    for j in range(0,2**n):
+    X_mat = np.zeros((Extended_X_i_Subspace_basis_count_faster(n),Extended_X_i_Subspace_basis_count_faster(n)))
+    dict = X_n_Dict_PXP_X_i_Extended_Subspace(n)
+    for j in range(0,Extended_X_i_Subspace_basis_count_faster(n)):
         X_mat[int(dict[j,0]),int(dict[j,1])] = 1
     return X_mat
 
+def X_i_Spin_Basis(n,i):
+    '''
+    :param n: full dimension (2**n) X_i sparse matrix (Regular KRON SPIN BASIS FOR TI !!!)
+    :param i: atom index of X operator
+    :return: X_i in dimension 2**n sparsely!
+    '''
+    if i <= n:
+        X_geni = np.kron(np.identity(2**(i-1)),np.kron(X_i, np.identity(2**(n-i))))
+    else:
+        X_geni= np.identity(2**n)
+    return X_geni
 
 def Z_i_Coupling_PXP_Entry_to_TI(n_PXP, n_TI, h_c):
         """
-        Z_i nature coupling matrix (two-site) of Subspace NEW pxp version and TI regular (dimension is Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI))
+        Z_i nature coupling matrix (two-site) of Subspace PXP version and TI regular (dimension is Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI))
         :param n_PXP: Number of PXP atoms (0 to whatever)
         :param n_TI: Number of TI atoms (0 to whatever)
         :param h_c: coupling strength parameter
         :return: matrix in (full) Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI) dimension
         """
         d_TOT = Subspace_basis_count_faster(n_PXP)+2 ** n_TI   # Total dimension
-        Coupling = (h_c) * np.kron(Z_i_PXP_Entry_basis(n_PXP, n_PXP, PXP_Subspace_Algo), Z_generali(n_TI,1))
+        Coupling = (h_c) * np.kron(Z_i_PXP_Entry_basis(n_PXP, n_PXP, PXP_Subspace_Algo), Z_i_Spin_Basis(n_TI,1))
         if n_TI == 0 or n_PXP == 0 or h_c == 0:
             Coupterm = np.zeros((d_TOT, d_TOT))
         else:
             Coupterm = Coupling
         return Coupterm
 
+def X_i_Coupling_PXP_Entry_to_TI(n_PXP,n_TI,h_c):
+    """
+    X_i extended basis! nature coupling matrix (two-site) of Subspace PXP version and TI regular (dimension is [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI) x [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI))
+    :param n_PXP: Number of PXP atoms (0 to whatever)
+    :param n_TI: Number of TI atoms (0 to whatever)
+    :param h_c: coupling strength parameter
+    :return: matrix in full [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI) x [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI) dimension
+    """
+    d_TOT = Extended_X_i_Subspace_basis_count_faster(n_PXP)+(2 ** n_TI)   # Total dimension
+    Coupling = (h_c) * np.kron(X_n_Mat_PXP_X_i_Extended_Subspace(n_PXP), X_i_Spin_Basis(n_TI,1))
+    if n_TI == 0 or n_PXP == 0 or h_c == 0:
+        Coupterm = np.zeros((d_TOT, d_TOT))
+    else:
+        Coupterm = Coupling
+    return Coupterm
+
 
 def PXP_EBE_BathHam(n_PXP, n_TI, Subspace, J, h_x, h_z, h_c, h_imp, m): #Needs fixing
     """
-    FULL 2**(n_tot) dimension COUPLED PXP and TI hamiltonian Builder
+    FULL 2**(n_tot) dimension Z_i nature COUPLED PXP and TI hamiltonian Builder
     :param n_PXP: PXP Atom number
     :param n_TI: TI Atom number
     :param Coupmat: 2x2 base matrix of coupling
@@ -381,7 +521,7 @@ def Neelstate_spin_base_faster(n_PXP):
     Neel[Even]=1
     return Neel
 
-def Neel_Subspace_Basis(n_PXP): #TODO with pickle when saving subspace basis!
+def Neel_Subspace_Basis(n_PXP):
     '''
     Finds Neelstate in Subspace (PXP) Basis
     :param n_PXP: Number of PXP atoms
