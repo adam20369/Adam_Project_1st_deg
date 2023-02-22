@@ -1,8 +1,8 @@
 #!/bin/bash
 seed_max='100'
 seed=$(awk 'BEGIN{for(i=1;i<100;i+=1)print i}')  
-n_PXP='7'
-n_TI='7'
+n_PXP='9'
+n_TI='12'
 h_c='0.2'
 Sample_no='100'
 
