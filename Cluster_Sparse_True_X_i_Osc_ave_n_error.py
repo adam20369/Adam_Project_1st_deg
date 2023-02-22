@@ -28,7 +28,7 @@ def Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_star
     :param m: impurity site
     :return: vector - <NeelxHaar|O_z(t)|NeelxHaar> for X_i coupling
     '''
-    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, Extended_X_i_Subspace_basis_count_faster(n_PXP))
+    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, Extended_X_i_Subspace_basis_count_faster)
     O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
     Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
                                         start= T_start , stop=T_max ,num = T_step ,endpoint = True)
