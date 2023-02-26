@@ -361,6 +361,17 @@ def EE_Avg_Std_plot_Cluster(n_PXP, n_TI,h_c_start, h_c_max,interval_width):
 #####################################################################################################################################
 
 
+def PXP_PXP_EE_Mat(n_PXP):
+    '''
+    Builds the Schmidt decomposition matrix of the new basis (splitting basis)
+    :param n_PXP: Total number of PXP atoms
+    :return: meow
+    '''
+    if n_PXP%2 == 0: #Even PXP number, the cut is in the middle
+        Base= PXP_Subspace_Algo(np.divide(n_PXP,2))
+    else: #ODD PXP number, the cut is taken in a way that the LHS has an even number of atoms
+
+
 
 def Subspace_complement(n_PXP,i):
     '''

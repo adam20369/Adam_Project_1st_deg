@@ -193,12 +193,24 @@ def X_i_Spin_Basis_sparse(n,i):
 
 def PXP_Ham_OBC_Sparse(n, Subspace):
     '''
-    builds the Hamiltonian from pairs of PXP_connected_states
+    builds the Hamiltonian from pairs of PXP_connected_states OLD Z_i COUPLING (REGULAR SUBSPACE BASIS)
     :param n: number of atoms
     :return: Matrix (the Hamiltonian) N_subspace x N_subspace
     '''
     x = PXP_connected_states(n, Subspace)
     PXP = sp.dok_matrix((Subspace_basis_count_faster(n), Subspace_basis_count_faster(n)))
+    for i in range(0, len(x)):
+        PXP[x[i, 0], x[i, 1]] = 1   # should be 1 and then 0 in the cols of the x's, but doesn't really matter
+    return PXP
+
+def PXP_Ham_OBC_Sparse_True_X_i(n, Subspace):
+    '''
+    builds the Hamiltonian from PXP_connected_states dictionary for X_i EXTENDED SUBSPACE PXP!
+    :param n: number of atoms
+    :return: Matrix (the Hamiltonian) N_subspace x N_subspace
+    '''
+    x = PXP_connected_states(n, Subspace)
+    PXP = sp.dok_matrix((Extended_X_i_Subspace_basis_count_faster(n), Extended_X_i_Subspace_basis_count_faster(n)))
     for i in range(0, len(x)):
         PXP[x[i, 0], x[i, 1]] = 1   # should be 1 and then 0 in the cols of the x's, but doesn't really matter
     return PXP
@@ -356,7 +368,7 @@ def PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m): #EXTENDED
     :return: Sparse Matrix (Hamiltonian of dimension [Fib(n_PXP+3)+FIB(n_PXP)]*[2**(n_TI)] x [Fib(n_PXP+3)+FIB(n_PXP)]*[2**(n_TI)] )
     '''
     #n_tot= n_PXP + n_TI
-    PXP = PXP_Ham_OBC_Sparse(n_PXP, PXP_Subspace_Algo_extended_X_i(n_PXP))
+    PXP = PXP_Ham_OBC_Sparse_True_X_i(n_PXP, PXP_Subspace_Algo_extended_X_i)
     TI = TIOBCNewImpure_sparse(n_TI, J, h_x, h_z, h_imp, m)
     d_PXP = Extended_X_i_Subspace_basis_count_faster(n_PXP)
     d_TI = 2 ** n_TI

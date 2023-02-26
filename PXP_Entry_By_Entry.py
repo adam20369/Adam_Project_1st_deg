@@ -474,7 +474,7 @@ def Z_i_Coupling_PXP_Entry_to_TI(n_PXP, n_TI, h_c):
 
 def X_i_Coupling_PXP_Entry_to_TI(n_PXP,n_TI,h_c):
     """
-    X_i extended basis! nature coupling matrix (two-site) of Subspace PXP version and TI regular (dimension is [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI) x [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI))
+    X_i EXTENDED BASIS!!!! nature coupling matrix (two-site) of Subspace PXP version and TI regular (dimension is [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI) x [Fib(n_PXP+3)+Fib(n_PXP)]*(2**n_TI))
     :param n_PXP: Number of PXP atoms (0 to whatever)
     :param n_TI: Number of TI atoms (0 to whatever)
     :param h_c: coupling strength parameter
@@ -534,6 +534,19 @@ def Neel_Subspace_Basis(n_PXP):
     Subs_Base_Neel[Neel_index] = 1
     return Subs_Base_Neel
 
+def Neel_X_i_Extended_Subspace_Basis(n_PXP):
+    '''
+    Finds Neelstate in X_i extended PXP Subspace
+    :param n_PXP: Number of PXP atoms
+    :return: vector of Neelstate in Subspace Basis of PXP
+    '''
+    Neel = Neelstate_spin_base_faster(n_PXP)
+    Subspace = PXP_Subspace_Algo_extended_X_i(n_PXP)
+    Neel_index = np.where(np.all(Subspace==Neel,axis=1))
+    Subs_Base_Neel = np.zeros((Extended_X_i_Subspace_basis_count_faster(n_PXP)))
+    Subs_Base_Neel[Neel_index] = 1
+    return Subs_Base_Neel
+
 def Neel_EBE_Haar(n_PXP, n_TI): #Haarstate from Coupling_To_Bath
     """
     Combination of the Neel EBE Subspace basis and Haar states
@@ -542,6 +555,16 @@ def Neel_EBE_Haar(n_PXP, n_TI): #Haarstate from Coupling_To_Bath
     :return: Neel-Haar combined state
     """
     NeelHaarstate = np.kron(Neel_Subspace_Basis(n_PXP), Haarstate(n_TI))
+    return NeelHaarstate
+
+def Neel_EBE_Haar_X_i_Extended(n_PXP, n_TI): #Haarstate from Coupling_To_Bath
+    """
+    Combination of the Neel EBE X_i extended PXP Subspace basis and Haar states in regular spin basis
+    :param n_PXP:  Number of PXP chain atoms
+    :param n_TI: number of TI chain atoms
+    :return: Neel-Haar combined state
+    """
+    NeelHaarstate = np.kron(Neel_X_i_Extended_Subspace_Basis(n_PXP), Haarstate(n_TI))
     return NeelHaarstate
 
 # def Neel_EBE_Haar_seeded(n_PXP, n_TI,seed): #Haarstate from Coupling_To_Bath
