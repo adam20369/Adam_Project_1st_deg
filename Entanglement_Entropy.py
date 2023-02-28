@@ -357,21 +357,48 @@ def EE_Avg_Std_plot_Cluster(n_PXP, n_TI,h_c_start, h_c_max,interval_width):
 
 
 #####################################################################################################################################
-#                                                   PXP-PXP EE CODE                                                                 #
+#                                                   PXP-PXP CUT EE CODE                                                             #
 #####################################################################################################################################
 
+#                                                   PXP-PXP CUT EE CODE FOR PXP OBC ONLY                                            #
 
-def PXP_PXP_EE_Mat(n_PXP):
+def PXP_PXP_Full_Permutation_Basis(n_PXP):
     '''
-    Builds the Schmidt decomposition matrix of the new basis (splitting basis)
+    Builds the full permutation basis of options of a cut in the middle of a PXP chain (meaning all left side states appended with all the right side states)
     :param n_PXP: Total number of PXP atoms
-    :return: meow
+    :return: matrix of dimension [Fib((n_PXP+3)/2)*Fib((n_PXP+3)/2)]x(n_PXP) for EVEN number n_PXP OR [Fib((n_PXP+3)/2)*Fib((n_PXP+3)/2+1)]x(n_PXP) for ODD
     '''
+    Base_full_PXP= PXP_Subspace_Algo(n_PXP) #dim Fib(n_PXP+3)x(n_PXP)
     if n_PXP%2 == 0: #Even PXP number, the cut is in the middle
-        Base= PXP_Subspace_Algo(np.divide(n_PXP,2))
+        Base_left_cut= PXP_Subspace_Algo(int(np.divide(n_PXP,2)))
+        Base_right_cut= Base_left_cut.copy()
+        Full_Permutation_basis = np.empty((len(Base_left_cut)*len(Base_right_cut),n_PXP))  # dim [Fib((n_PXP+3)/2)*Fib((n_PXP+3)/2)]x(n_PXP) for even
     else: #ODD PXP number, the cut is taken in a way that the LHS has an even number of atoms
+        Base_left_cut= PXP_Subspace_Algo(int(np.divide(n_PXP,2)))
+        Base_right_cut= PXP_Subspace_Algo(n_PXP-int(np.divide(n_PXP,2)))
+        Full_Permutation_basis = np.zeros((len(Base_left_cut)*len(Base_right_cut),n_PXP))  # dim Fib[((n_PXP+3)/2)*Fib((n_PXP+3)/2 +1)]x(n_PXP) for even
+    for i in range(0,len(Base_left_cut)):
+        for j in range(0,len(Base_right_cut)):
+            Full_Permutation_basis[len(Base_right_cut)*i+j,:]= np.hstack((Base_left_cut[i,:],Base_right_cut[j,:]))
+    #Check_Even= np.isclose(len(Full_Permutation_basis),Subspace_basis_count_faster(int(np.divide(n_PXP,2)))*Subspace_basis_count_faster(int(np.divide(n_PXP,2))))
+    #Check_Odd= np.isclose(len(Full_Permutation_basis),Subspace_basis_count_faster(int(np.divide(n_PXP,2)))*Subspace_basis_count_faster(int(np.divide(n_PXP,2))+1))
+    return Base_full_PXP, Base_left_cut, Base_right_cut, Full_Permutation_basis
 
-
+def PXP_PXP_Schmidt_Decomp_matrix(n_PXP,EigenVec):
+    '''
+    Schmidt decomposition of one given eigenvector - FOR PXP OBC HAM ONLY!!
+    :param n_PXP: No. of PXP atoms
+    :param EigenVec: eigenvector (dim Fib(n_PXP+3))
+    :return: Schmidt decomposition Matrix (dimension - )
+    '''
+    Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP= PXP_PXP_Full_Permutation_Basis(n_PXP)
+    Base_vecs= Base_full_PXP[np.squeeze(np.argwhere(EigenVec==1)), :] #TODO condition that EigenVec is of size Fib(n_PXP+3)!
+    #a number - int((permutation base state Number) / (len(Base_right_cut))) #DIVISION
+    #b number- (permutation base state number) % (len(Base_right_cut)) #MOD
+    Perm_state_array=np.zeros((len(Base_vecs)))
+    for i in range(0,len(Base_vecs)):
+        Perm_state_array[i]=np.squeeze(np.nonzero(np.all((Permutation_basis_PXP == Base_vecs[i,:]),axis=1))) #array of numbers of permstates #TODO CHECK!@!!
+    return Perm_state_array
 
 def Subspace_complement(n_PXP,i):
     '''
