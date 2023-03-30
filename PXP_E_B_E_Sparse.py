@@ -144,11 +144,10 @@ def P_iminus1_X_i_Mat_PXP_Subspace_Basis_Sparse_last_site(n):
     '''
     X_mat = sp.dok_matrix((Subspace_basis_count_faster(n),Subspace_basis_count_faster(n)))
     dict = P_iminus1_X_i_Dict_PXP_Subspace_Basis_Sparse_last_site(n)
-    for j in range(0,Subspace_basis_count_faster(n)):
-        X_mat[int(dict[j,0]),int(dict[j,1])] = 1
+    X_mat[dict[:,1].astype(int),dict[:,0].astype(int)] = 1
     return X_mat
 
-def X_n_Dict_PXP_X_i_Extended_Subspace_sparse(n): #TODO CHECK!!!
+def X_n_Dict_PXP_X_i_Extended_Subspace_sparse(n):
     '''
     Builds X_n dictionary (start state -> end state) in X_i extended Subspace basis of PXP entry Sparsely
     :param n: number of atoms
@@ -175,8 +174,7 @@ def X_i_Mat_PXP_X_i_Extended_Subspace_sparse(n):
     '''
     X_mat = sp.dok_matrix((Extended_X_i_Subspace_basis_count_faster(n),Extended_X_i_Subspace_basis_count_faster(n)))
     dict = X_n_Dict_PXP_X_i_Extended_Subspace_sparse(n)
-    for j in range(0,Extended_X_i_Subspace_basis_count_faster(n)):
-        X_mat[int(dict[j,0]),int(dict[j,1])] = 1
+    X_mat[dict[:,1].astype(int),dict[:,0].astype(int)] = 1
     return X_mat
 
 def X_i_Spin_Basis_sparse(n,i):
@@ -199,9 +197,9 @@ def PXP_Ham_OBC_Sparse(n, Subspace):
     '''
     x = PXP_connected_states(n, Subspace)
     PXP = sp.dok_matrix((Subspace_basis_count_faster(n), Subspace_basis_count_faster(n)))
-    for i in range(0, len(x)):
-        PXP[x[i, 0], x[i, 1]] = 1   # should be 1 and then 0 in the cols of the x's, but doesn't really matter
+    PXP[x[:, 1], x[:, 0]] = 1  # should be 1 and then 0 in the cols of the x's, but doesn't really matter
     return PXP
+
 
 def PXP_Ham_OBC_Sparse_True_X_i(n, Subspace):
     '''
@@ -209,10 +207,9 @@ def PXP_Ham_OBC_Sparse_True_X_i(n, Subspace):
     :param n: number of atoms
     :return: Matrix (the Hamiltonian) N_subspace x N_subspace
     '''
-    x = PXP_connected_states(n, Subspace)
+    x = PXP_connected_states_extended_X_i(n, Subspace)
     PXP = sp.dok_matrix((Extended_X_i_Subspace_basis_count_faster(n), Extended_X_i_Subspace_basis_count_faster(n)))
-    for i in range(0, len(x)):
-        PXP[x[i, 0], x[i, 1]] = 1   # should be 1 and then 0 in the cols of the x's, but doesn't really matter
+    PXP[x[:, 1], x[:, 0]] = 1   # should be 1 and then 0 in the cols of the x's, but doesn't really matter
     return PXP
 
 def TIOBCNew_Sparse(n_TI, J, h_x, h_z): # faster method
@@ -312,7 +309,7 @@ def X_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
 
 def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     '''
-    Full Z_i nature coupled Hamiltonian with PXP Subspace Entry by entry code, sparse!!
+    Full Z_i !!!!! nature coupled Hamiltonian with PXP Subspace Entry by entry code, sparse!!
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI Atoms
     :param J: TI ising term strength
@@ -354,7 +351,7 @@ def PXP_TI_coupled_Sparse_Piminus1_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     TotalHam = HamNoCoupl + P_iminus1_X_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c)
     return TotalHam
 
-def PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m): #EXTENDED X_i !!!!!
+def PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m): ###EXTENDED X_i !!!!!###
     '''
     X_i nature coupling Extended X_i (!!!) PXP subspace & TI FULL !! Hamiltonian, sparse
     :param n_PXP: No. of PXP atoms
@@ -418,6 +415,34 @@ def Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max
     Time = np.linspace(T_start,T_max,T_step, endpoint=True)
     return Time, Sandwich.round(4).astype('float')
 
+def Sparse_Time_prop_True_X_i_extended(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
+    '''
+    Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method for Extended X_i PXP basis
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: vector - <NeelxHaar|O_z(t)|NeelxHaar> for X_i coupling
+    '''
+    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo_extended_X_i)
+    O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
+    Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
+    Time = np.linspace(T_start,T_max,T_step, endpoint=True)
+    return Time, Sandwich.round(4).astype('float')
+
+
 def Run_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     '''
     Runs time propagation plotter in EBE sparse method
@@ -460,6 +485,31 @@ def Plot_Time_prop_EBE(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_m
     plt.title('{} PXP atoms, {} TI atoms, {} Coupling strength'.format(n_PXP, n_TI, h_c))
     return plt.show()
 
+def Plot_Time_prop_EBE_X_i_extended(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step):
+    '''
+    Plots Time propagation of O_z in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    time, Sandwich = Sparse_Time_prop_True_X_i_extended(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
+    plt.plot(time, Sandwich, marker='o', markersize=3,
+             color='b')
+    plt.title(r'$\langle O_z(t)\rangle$ Vs. time for {} PXP atoms, {} TI Atoms, {} $h_c$ X_i Nature {}-{}'.format(n_PXP, n_TI, h_c,T_start,T_max))
+    plt.ylabel(r' $\langle O_z(t)\rangle$ ', fontsize=10)
+    plt.xlabel(r'Time', fontsize=12)
+    plt.savefig('Figures/True_X_i_Osc/Time_Prop_X_i_{}_PXP_{}_TI_{}_h_c_Time{}-{}.png'.format(n_PXP,n_TI,h_c,T_start,T_max))
+    return plt.show()
+
+
 def Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     '''
     Runs time propagation plotter in EBE sparse method
@@ -481,6 +531,29 @@ def Run_plot_Time_prop_EBE(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     h_z = np.cos(0.485 * np.pi)
     return Plot_Time_prop_EBE(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
 
+#Run_plot_Time_prop_EBE(7, 7,0,0, 400, 1000)
+
+def Run_plot_Time_prop_EBE_X_i_extended(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
+    '''
+    Runs time propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_EBE_Haar_X_i_Extended(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    Plot_Time_prop_EBE_X_i_extended(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step)
+#Run_plot_Time_prop_EBE_X_i_extended(10, 13, 0.4,0, 400, 1000)
 
 def Plot_Averaged_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, samples, h_imp=0, m=2):
     '''

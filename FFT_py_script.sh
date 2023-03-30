@@ -2,8 +2,8 @@
 #$ -cwd
 #$ -e err.txt
 #$ -o out.txt
-#$ -l mem_free=10G
-#$ -pe shared 5
+#$ -l mem_free=12G
+#$ -pe shared 3
 source /etc/profile
 module load use.own
 module load anaconda3

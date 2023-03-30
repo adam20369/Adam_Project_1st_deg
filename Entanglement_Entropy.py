@@ -67,6 +67,10 @@ def PXP_Subspace_Algo(n): #TODO option to add stop condition instead of feeding 
         Subspace = np.vstack((Subspace, single_excited_states[Vec,:]+Subspace[i,:]))
     return Subspace
 
+#########################################################################################################################################################
+#####                                   GOOD FOR NOTHING CODE I DID IN ORDER TO UNDERSTAND WHAT'S GOING ON                                          #####
+#########################################################################################################################################################
+
 def PXP_basis_gen(n):
     '''
     Generates basis of all posible PXP states in fib(n_PXP+3) basis {mapping between both bases PXP_Subspace_Algo[i,:] : -> vec=np.zeros(fib(n+3)) & vec[i]=1}
@@ -141,6 +145,11 @@ def VecSpan(n_PXP,n_TI,
     W = np.dot(Basis,VecState)
     return W
 
+######################################################################################################################################################
+####                                                PXP/TI CUT ENTANGLEMENT ENTROPY CODE                                                          ####
+######################################################################################################################################################
+
+
 
 def Evec_Reshape_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2):
     '''
@@ -151,11 +160,11 @@ def Evec_Reshape_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np
     :param Eigenvec: eigenvectors (as cols of a matrix)
     :return: rank 3 tensor of matrices of each eigenstate's decomposition to joint basis
     '''
-    eval, evec = la.eigh(csr_matrix.todense(PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m)))
+    eval, evec = la.eigh((PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m)).todense())
     Ham_Dim = len(eval) #also number of evecs
-    Tensor = np.empty((Subspace_basis_count_faster(n_PXP),2**(n_TI),Ham_Dim))
-    for i in range(0,Ham_Dim):
-         Tensor[:,:,i]=np.reshape(evec[:,i],(Subspace_basis_count_faster(n_PXP),2**(n_TI)))
+    Tensor = np.empty((Subspace_basis_count_faster(n_PXP), 2**(n_TI), Ham_Dim))
+    for i in range(0, Ham_Dim):
+        Tensor[:,:,i]=np.reshape(evec[:,i],(Subspace_basis_count_faster(n_PXP),2**(n_TI)))
     return Tensor, eval
 
 
@@ -169,10 +178,10 @@ def Evec_SVD_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 giga (8x11 
     '''
     Tensor, eval = Evec_Reshape_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
     SVD_num = np.minimum(2**(n_TI),Subspace_basis_count_faster(n_PXP))
-    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    SVD_vec_mat = np.zeros((len(eval),SVD_num))
     for i in range(0,len(eval)):
         SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
-    return SVD_vec_mat ,eval
+    return SVD_vec_mat, eval
 
 def Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 giga (8x11 uses 100 Giga)
     '''
@@ -207,7 +216,7 @@ def Entanglement_entropy_calc_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - us
     '''
     SVD_vec_mat, eval = Evec_SVD_PXP_TI(n_PXP, n_TI, np.round(h_c,5))
     Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
-    plt.scatter(eval, Entanglement_entropy_vec)
+    plt.scatter(eval, np.round(Entanglement_entropy_vec,16))
     plt.title('Entanglement vs Energy for {} PXP & {} TI atoms, $h_c$ {} '.format(n_PXP, n_TI, np.round(h_c,5)))
     plt.xlabel('Energy')
     plt.ylabel('Entanglement Entropy')
@@ -259,50 +268,50 @@ def Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width): #8 P
 #Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=1)
 
 
-def EE_Avg_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
-    '''
-    Plots average entanglement for given interval
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param h_c: coupling strength
-    :param interval_width: energy interval width +-delta
-    :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
-    :return: plot of average entanglement vs h_c
-    '''
-    h_c= np.arange(h_c_start,h_c_max+0.1,0.1)
-    avg= np.empty((np.size(h_c)))
-    std= avg.copy()
-    for i in np.nditer(h_c):
-        avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
-    plt.plot(h_c,avg, color='b')
-    plt.title('Average Entanglement vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
-    plt.xlabel('Coupling Strength $h_c$')
-    plt.ylabel('Average Entanglement Entropy')
-    plt.savefig('Figures/Entanglement_Entropy/Average_Entanglement_Entropy')
-    plt.show()
-
-
-def EE_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
-    '''
-    Plots Standard deviation of entanglement for given interval
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param h_c: coupling strength
-    :param interval_width: energy interval width +-delta
-    :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
-    :return: plot of Standard deviation vs h_c
-    '''
-    h_c= np.arange(h_c_start,h_c_max+0.1,0.1)
-    avg= np.empty((np.size(h_c)))
-    std= avg.copy()
-    for i in np.nditer(h_c):
-        avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
-    plt.plot(h_c,std, color='r')
-    plt.title('Entanglement STD vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
-    plt.xlabel('Coupling Strength $h_c$')
-    plt.ylabel('Standard Deviation of Entanglement Entropy')
-    plt.savefig('Figures/Entanglement_Entropy/Standard_Deviation_of_Entanglement_Entropy')
-    plt.show()
+# def EE_Avg_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
+#     '''
+#     Plots average entanglement for given interval
+#     :param n_PXP: No. of PXP atoms
+#     :param n_TI: No. of TI atoms
+#     :param h_c: coupling strength
+#     :param interval_width: energy interval width +-delta
+#     :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
+#     :return: plot of average entanglement vs h_c
+#     '''
+#     h_c= np.arange(h_c_start,h_c_max+0.1,0.1)
+#     avg= np.empty((np.size(h_c)))
+#     std= avg.copy()
+#     for i in np.nditer(h_c):
+#         avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
+#     plt.plot(h_c,avg, color='b')
+#     plt.title('Average Entanglement vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
+#     plt.xlabel('Coupling Strength $h_c$')
+#     plt.ylabel('Average Entanglement Entropy')
+#     plt.savefig('Figures/Entanglement_Entropy/Average_Entanglement_Entropy')
+#     plt.show()
+#
+#
+# def EE_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
+#     '''
+#     Plots Standard deviation of entanglement for given interval
+#     :param n_PXP: No. of PXP atoms
+#     :param n_TI: No. of TI atoms
+#     :param h_c: coupling strength
+#     :param interval_width: energy interval width +-delta
+#     :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
+#     :return: plot of Standard deviation vs h_c
+#     '''
+#     h_c= np.arange(h_c_start,h_c_max+0.1,0.1)
+#     avg= np.empty((np.size(h_c)))
+#     std= avg.copy()
+#     for i in np.nditer(h_c):
+#         avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
+#     plt.plot(h_c,std, color='r')
+#     plt.title('Entanglement STD vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
+#     plt.xlabel('Coupling Strength $h_c$')
+#     plt.ylabel('Standard Deviation of Entanglement Entropy')
+#     plt.savefig('Figures/Entanglement_Entropy/Standard_Deviation_of_Entanglement_Entropy')
+#     plt.show()
 
 def EE_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
     '''
@@ -372,87 +381,290 @@ def PXP_PXP_Full_Permutation_Basis(n_PXP):
     if n_PXP%2 == 0: #Even PXP number, the cut is in the middle
         Base_left_cut= PXP_Subspace_Algo(int(np.divide(n_PXP,2)))
         Base_right_cut= Base_left_cut.copy()
-        Full_Permutation_basis = np.empty((len(Base_left_cut)*len(Base_right_cut),n_PXP))  # dim [Fib((n_PXP+3)/2)*Fib((n_PXP+3)/2)]x(n_PXP) for even
+        Full_Permutation_basis = np.zeros((len(Base_left_cut)*len(Base_right_cut),n_PXP))  # dim [Fib((n_PXP+3)/2)*Fib((n_PXP+3)/2)]x(n_PXP) for even
     else: #ODD PXP number, the cut is taken in a way that the LHS has an even number of atoms
         Base_left_cut= PXP_Subspace_Algo(int(np.divide(n_PXP,2)))
         Base_right_cut= PXP_Subspace_Algo(n_PXP-int(np.divide(n_PXP,2)))
         Full_Permutation_basis = np.zeros((len(Base_left_cut)*len(Base_right_cut),n_PXP))  # dim Fib[((n_PXP+3)/2)*Fib((n_PXP+3)/2 +1)]x(n_PXP) for even
     for i in range(0,len(Base_left_cut)):
-        for j in range(0,len(Base_right_cut)):
+        for j in range(0,len(Base_right_cut)): #TODO make more efficient?
             Full_Permutation_basis[len(Base_right_cut)*i+j,:]= np.hstack((Base_left_cut[i,:],Base_right_cut[j,:]))
     #Check_Even= np.isclose(len(Full_Permutation_basis),Subspace_basis_count_faster(int(np.divide(n_PXP,2)))*Subspace_basis_count_faster(int(np.divide(n_PXP,2))))
     #Check_Odd= np.isclose(len(Full_Permutation_basis),Subspace_basis_count_faster(int(np.divide(n_PXP,2)))*Subspace_basis_count_faster(int(np.divide(n_PXP,2))+1))
+    # print(Full_Permutation_basis)
     return Base_full_PXP, Base_left_cut, Base_right_cut, Full_Permutation_basis
 
-def PXP_PXP_Schmidt_Decomp_matrix(n_PXP,EigenVec):
+def PXP_Full_Permutation_Basis_To_Reg_Basis_Mapping(n_PXP):
     '''
-    Schmidt decomposition of one given eigenvector - FOR PXP OBC HAM ONLY!!
+    mapping of the Reg PXP basis to the full permutation basis, with vector of kernels
     :param n_PXP: No. of PXP atoms
-    :param EigenVec: eigenvector (dim Fib(n_PXP+3))
-    :return: Schmidt decomposition Matrix (dimension - )
+    :return: mapping (dictionary) of Reg PXP basis states indeces -> new full permutation basis states indeces, and vector of kernel indeces of Permutation states
     '''
     Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP= PXP_PXP_Full_Permutation_Basis(n_PXP)
-    Base_vecs= Base_full_PXP[np.squeeze(np.argwhere(EigenVec==1)), :] #TODO condition that EigenVec is of size Fib(n_PXP+3)!
-    #a number - int((permutation base state Number) / (len(Base_right_cut))) #DIVISION
-    #b number- (permutation base state number) % (len(Base_right_cut)) #MOD
-    Perm_state_array=np.zeros((len(Base_vecs)))
-    for i in range(0,len(Base_vecs)):
-        Perm_state_array[i]=np.squeeze(np.nonzero(np.all((Permutation_basis_PXP == Base_vecs[i,:]),axis=1))) #array of numbers of permstates #TODO CHECK!@!!
-    return Perm_state_array
+    Ordering_vec=np.zeros(len(Base_full_PXP))
+    for i in range(0,len(Base_full_PXP)):
+        Ordering_vec[i]= np.squeeze(np.nonzero(np.all((Permutation_basis_PXP==Base_full_PXP[i,:]),axis=1)))
+    # Full_Permu_state_indeces=np.arange(0,len(Permutation_basis_PXP),1)
+    # Permutation_kernel=np.squeeze(np.where(np.in1d(Full_Permu_state_indeces,Ordering_vec)==False)) #indeces of permutation basis vectors that go to zero in schmidt matrix!!!
+    Mapping_Dict=np.transpose(np.array((np.arange(0,len(Base_full_PXP),1),Ordering_vec)))
+    Mapping_Mat= np.zeros((len(Permutation_basis_PXP),len(Base_full_PXP)))
+    Mapping_Mat[Mapping_Dict[:,1].astype(int),Mapping_Dict[:,0].astype(int)]=1
+    return Mapping_Mat, Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP
 
-def Subspace_complement(n_PXP,i):
-    '''
-    Calculates number of complement states of some PXP reduced state after breaking a PXP chain in the middle (for odd numbers- the A subsystem contains an EVEN number of states)
-    :param n_PXP: number of PXP atoms
-    :return: number of states for a corresponding index of PXP state
-    '''
 
-def Evec_Reshape_PXP_PXP(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2):
+def PXP_PXP_schmidt_decomposition_matrix_efficient(n_PXP,Subspace):
     '''
-    Reshapes each eigenvector to the shape of a matrix for schmidt decomposition - for splitting PXP at middle of chain!
+    Schmidt decomposition matrix tensor of eigenvectors of PXP OBC HAM ONLY NOW!! MORE EFFICIENT METHOD
     :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param h_c: coupling strength
-    :param Eigenvec: eigenvectors (as cols of a matrix)
-    :return: rank 3 tensor of matrices of each eigenstate's decomposition to joint basis
+    :param Subspace: PXP kinetically constrained subspace
+    :return: tensor of dimension [Fib(n_left_cut +3) x Fib(n_right_Cut+3) x Fib(n_PXP +3)] in ordered basis |a,b> of the full permutations of cuts, and eigenvalues!!
     '''
-    eval, evec = la.eigh(csr_matrix.todense(PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m)))
-    Ham_Dim = len(eval) #also number of evecs
-    Tensor = np.empty((Subspace_basis_count_faster(int(n_PXP/2)),int(np.rint(Subspace_basis_count_faster(n_PXP)/Subspace_basis_count_faster(int(n_PXP/2))))*2**(n_TI),Ham_Dim))
-    for i in range(0,Ham_Dim):
-         Tensor[:,:,i]=np.reshape(evec[:,i],(Subspace_basis_count_faster(int(n_PXP/2)),int(np.rint(Subspace_basis_count_faster(n_PXP)/Subspace_basis_count_faster(int(n_PXP/2))))*2**(n_TI))) #TODO check this
+    eval, evec = la.eigh(csr_matrix.todense(PXP_Ham_OBC_Sparse(n_PXP, Subspace)))
+    Mapping_Mat, Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP= PXP_Full_Permutation_Basis_To_Reg_Basis_Mapping(n_PXP)
+    Tensor = np.zeros((len(Base_left_cut),len(Base_right_cut),len(evec)))
+    for i in range(0,len(evec)):
+       evec_rearanged= np.dot(Mapping_Mat,evec[:,i])
+       Tensor[:, :, i] = np.reshape(evec_rearanged, (len(Base_left_cut), len(Base_right_cut)))
     return Tensor, eval
 
-def Evec_SVD_PXP_PXP(n_PXP, n_TI, h_c):
+def PXP_PXP_schmidt_decomposition_matrix_old(n_PXP,Subspace):
     '''
-    singular values of each matrix of eigenvector in the tensor (see Eigenvec_Reshape) for splitting PXP at middle of chain
+    OLD METHOD- SLOW! Schmidt decomposition matrix tensor of eigenvectors of PXP OBC HAM ONLY NOW!!
     :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
+    :param Subspace: PXP kinetically constrained subspace
+    :return: tensor of dimension [Fib(n_left_cut +3) x Fib(n_right_Cut+3) x Fib(n_PXP +3)] in ordered basis |a,b> of the full permutations of cuts, and eigenvalues!!
+    '''
+    eval, evec = la.eigh(csr_matrix.todense(PXP_Ham_OBC_Sparse(n_PXP, Subspace)))
+    Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP= PXP_PXP_Full_Permutation_Basis(n_PXP)
+    Tensor = np.zeros((len(Base_left_cut),len(Base_right_cut),len(evec)))
+    for i in range(0,len(evec)):
+        Base_vecs = Base_full_PXP[np.argwhere(np.round(evec,16)[:,i] != 0),:]
+        if np.ndim(Base_vecs) == 1:  # for case of only one vector
+            Base_vecs = np.expand_dims(Base_vecs, 0)
+        Permu_state_array = np.zeros((len(Base_vecs), 2))
+        for j in range(0, len(Base_vecs)): # gets indeces of full Permutation basis vectors of one given eigenvector - FOR PXP OBC HAM ONLY NOW!!
+            Permu_state_array[j, 0] = np.squeeze(np.nonzero(np.all((Permutation_basis_PXP == Base_vecs[j, :]), axis=1)))
+        Permu_state_array[:, 1] = np.squeeze(evec[:,i][(np.argwhere(np.round(evec,16)[:,i] != 0))])
+        Permu_array_vector = np.zeros(len(Permutation_basis_PXP))
+        Permu_array_vector[Permu_state_array[:, 0].astype(int)] = Permu_state_array[:, 1]
+        # print(Permu_state_array)
+        # print(Permu_array_vector)
+        Tensor[:,:,i]=np.reshape(Permu_array_vector,(len(Base_left_cut),len(Base_right_cut)))
+    return Tensor, eval
+
+
+def Evec_SVD_PXP_PXP(n_PXP): #TOP NUMBER TO CALC IS???
+    '''
+    singular values of each matrix of eigenvector in the tensor (see PXP_PXP_schmidt_decomposition_matrix) for splitting at PXP - PXP boundary FOR PXP OBC ONLY!!!
+    :param n_PXP: No. of PXP atoms
     :param h_c: coupling strength
     :return: singular values of the matrix
     '''
-    Tensor, eval = Evec_Reshape_PXP_PXP(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
-    SVD_num = np.minimum(Subspace_basis_count_faster(int(n_PXP/2)),int(np.rint(Subspace_basis_count_faster(n_PXP)/Subspace_basis_count_faster(int(n_PXP/2))))*2**(n_TI))
-    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    Tensor, eval = PXP_PXP_schmidt_decomposition_matrix_efficient(n_PXP,Subspace=PXP_Subspace_Algo)
+    SVD_num = np.minimum(np.shape(Tensor)[0],np.shape(Tensor)[1])
+    SVD_vec_mat = np.zeros((len(eval),SVD_num))
     for i in range(0,len(eval)):
         SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
     return SVD_vec_mat ,eval
 
-def Entanglement_entropy_calc_PXP_PXP(n_PXP, n_TI, h_c):
+def Entanglement_entropy_calc_PXP_PXP(n_PXP): #TOP NUMBER TO CALC IS ???
     '''
-    calculating entanglement entropy of each eigenstate from singular values -sigma^2ln(sigma) for splitting PXP at middle of chain
+    calculating entanglement entropy of each eigenstate from singular values -sigma^2ln(sigma) for splitting at PXP - PXP Half chain
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI atoms
     :param h_c: coupling strength
     :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
     '''
-    SVD_vec_mat, eval = Evec_SVD_PXP_PXP(n_PXP, n_TI, np.round(h_c,5))
+    SVD_vec_mat, eval = Evec_SVD_PXP_PXP(n_PXP)
     Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
     plt.scatter(eval, Entanglement_entropy_vec)
-    plt.title('Entanglement vs Energy for {} PXP & {} TI atoms, $h_c$ {} '.format(n_PXP, n_TI, np.round(h_c,5)))
+    plt.title('Entanglement vs Energy for {} PXP atoms, pure PXP'.format(n_PXP))
     plt.xlabel('Energy')
     plt.ylabel('Entanglement Entropy')
-    plt.savefig("Figures/Entanglement_Entropy/Entropy_for_PXP_{}_TI_{}_Coup_{}.png".format(n_PXP, n_TI, np.round(h_c,5)))
+    #plt.savefig("Figures/Entanglement_Entropy/PXP_PXP_Cut/Entropy_for_PXP_PXP_{}_Atoms_Pure_PXP_Ham.png".format(n_PXP))
+    return Entanglement_entropy_vec
+
+def Evec_SVD_PXP_PXP_Cluster(n_PXP): #TOP NUMBER TO CALC IS????
+    '''
+    Cluster Calculation of singular values of each matrix of eigenvector in the tensor (see Eigenvec_Reshape) for splitting at PXP - TI boundary
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :return: singular values of the matrix, eigenvalues (saved in numpy format)
+    '''
+    try:
+        os.mkdir('EE_PXP_{}_OBC_CUT'.format(n_PXP))
+    except:
+        pass
+    Tensor, eval = PXP_PXP_schmidt_decomposition_matrix_efficient(n_PXP,PXP_Subspace_Algo)
+    SVD_num = np.minimum(np.shape(Tensor)[0],np.shape(Tensor)[1])
+    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    for i in range(0,len(eval)):
+         SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
+    np.save(os.path.join('EE_PXP_{}_OBC_CUT'.format(n_PXP),'SVD.npy'), SVD_vec_mat)
+    np.save(os.path.join('EE_PXP_{}_OBC_CUT'.format(n_PXP),'Eval.npy'), eval)
     return
+
+#Evec_SVD_PXP_PXP_Cluster(n_PXP)
+
+
+
+######################################################################################################################################################
+#                                                   PXP-PXP CUT EE CODE FOR FULL PXP TI COUPLED HAMILTONIAN                                         #
+######################################################################################################################################################
+
+
+def PXP_TI_Full_Permutation_Basis_To_Reg_Basis_Mapping(n_PXP,n_TI):
+    '''
+    mapping of the Reg PXP basis to the full permutation basis, extended to the kroniker product with TI chain!!!!!
+    :param n_PXP: No. of PXP atoms
+    :return: mapping (dictionary) of Reg PXP basis states indeces -> new full permutation basis states indeces, and vector of kernel indeces of Permutation states
+    '''
+    Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP= PXP_PXP_Full_Permutation_Basis(n_PXP)
+    Ordering_vec = np.zeros(len(Base_full_PXP))
+    for i in range(0,len(Base_full_PXP)):
+        Ordering_vec[i]= np.squeeze(np.nonzero(np.all((Permutation_basis_PXP==Base_full_PXP[i,:]),axis=1)))
+    # Full_Permu_state_indeces = np.arange(0,len(Permutation_basis_PXP),1)
+    # Permutation_kernel=np.squeeze(np.where(np.in1d(Full_Permu_state_indeces,Ordering_vec)==False)) #indeces of permutation basis vectors that go to zero in schmidt matrix!!!
+    Ordering_vec_resized = np.repeat(Ordering_vec*(2**n_TI),2**(n_TI))
+    for i in range(0,len(Ordering_vec_resized)):
+        Ordering_vec_resized[i]=Ordering_vec_resized[i]+i%(2**n_TI)
+    Mapping_Dict=np.transpose(np.array([np.arange(0,len(Base_full_PXP)*(2**n_TI),1),Ordering_vec_resized]))
+    Mapping_Mat= np.zeros((len(Permutation_basis_PXP)*(2**n_TI),len(Base_full_PXP)*(2**n_TI)))
+    Mapping_Mat[Mapping_Dict[:,1].astype(int),Mapping_Dict[:,0].astype(int)]=1
+    return Mapping_Mat, Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP
+
+# def PXP_TI_Full_Permutation_Basis_To_Reg_Basis_Mapping_faster(n_PXP,n_TI): #TODO write in matrix form when multiplying the rows and cols
+#     '''
+#     Faster method of mapping of the Reg PXP basis to the full permutation basis, extended to the kroniker product with TI chain!!!!!
+#     :param n_PXP: No. of PXP atoms
+#     :return: mapping (dictionary) of Reg PXP basis states indeces -> new full permutation basis states indeces, and vector of kernel indeces of Permutation states
+#     '''
+#     Mapping_Mat, Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP= PXP_Full_Permutation_Basis_To_Reg_Basis_Mapping(n_PXP)
+#     #which peula happens on the transformation matrix????
+#     Ordering_vec = np.zeros(len(Base_full_PXP))
+#     for i in range(0,len(Base_full_PXP)):
+#         Ordering_vec[i]= np.squeeze(np.nonzero(np.all((Permutation_basis_PXP==Base_full_PXP[i,:]),axis=1)))
+#     # Full_Permu_state_indeces = np.arange(0,len(Permutation_basis_PXP),1)
+#     # Permutation_kernel=np.squeeze(np.where(np.in1d(Full_Permu_state_indeces,Ordering_vec)==False)) #indeces of permutation basis vectors that go to zero in schmidt matrix!!!
+#     Ordering_vec_resized = np.repeat(Ordering_vec*(2**n_TI),2**(n_TI))
+#     for i in range(0,len(Ordering_vec_resized)):
+#         Ordering_vec_resized[i]=Ordering_vec_resized[i]+i%(2**n_TI)
+#     print(Ordering_vec_resized)
+#     Mapping_Dict=np.transpose(np.array((np.arange(0,len(Base_full_PXP)*(2**n_TI),1),Ordering_vec_resized)))
+#     Mapping_Mat= np.zeros((len(Permutation_basis_PXP)*(2**n_TI),len(Base_full_PXP)*(2**n_TI)))
+#     Mapping_Mat[Mapping_Dict[:,1].astype(int),Mapping_Dict[:,0].astype(int)]=1
+#     return Mapping_Mat, Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP
+
+def PXP_PXP_TI_schmidt_decomposition_matrix_efficient(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2):
+    '''
+    Schmidt decomposition matrix tensor of eigenvectors of PXP TI coupled Hamiltonian for a cut in middle of PXP chain!
+    :param n_PXP: No. of PXP atoms
+    :param Subspace: PXP kinetically constrained subspace
+    :return: tensor of dimension [Fib(n_left_cut +3) x Fib(n_right_Cut+3)*(2**n_TI) x Fib(n_PXP +3)] in ordered basis |a,b> of the full permutations of cuts, and eigenvalues!!
+    '''
+    eval, evec = la.eigh(csr_matrix.todense(PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m)))
+    Mapping_Mat, Base_full_PXP, Base_left_cut, Base_right_cut, Permutation_basis_PXP= PXP_TI_Full_Permutation_Basis_To_Reg_Basis_Mapping(n_PXP,n_TI)
+    Tensor = np.zeros((len(Base_left_cut),len(Base_right_cut)*(2**n_TI),len(evec)))
+    for i in range(0,len(eval)):
+       evec_rearanged= np.dot(Mapping_Mat,evec[:,i])
+       Tensor[:, :, i] = np.reshape(evec_rearanged, (len(Base_left_cut), len(Base_right_cut)*(2**n_TI)))
+    return Tensor, eval
+
+
+def Evec_SVD_PXP_PXP_TI(n_PXP,n_TI, h_c): #TOP NUMBER TO CALC IS???
+    '''
+    singular values of each matrix of eigenvector in the tensor  for splitting at PXP - PXP boundary for PXP TI FULL HAMILTONIAN
+    :param n_PXP: No. of PXP atoms
+    :param h_c: coupling strength
+    :return: singular values of the matrix
+    '''
+    Tensor, eval = PXP_PXP_TI_schmidt_decomposition_matrix_efficient(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
+    SVD_num = np.minimum(np.shape(Tensor)[0],np.shape(Tensor)[1])
+    SVD_vec_mat = np.zeros((len(eval),SVD_num))
+    for i in range(0,len(eval)):
+        SVD_vec_mat[i,:]= scla.svdvals((Tensor[:,:,i]))
+    return SVD_vec_mat ,eval
+
+def Entanglement_entropy_calc_PXP_PXP_TI(n_PXP,n_TI, h_c): #TOP NUMBER TO CALC IS ???
+    '''
+    calculating entanglement entropy of each eigenstate from singular values -sigma^2ln(sigma) for splitting at PXP - PXP Half chain for full PXP TI coupled
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
+    '''
+    SVD_vec_mat, eval = Evec_SVD_PXP_PXP_TI(n_PXP,n_TI, np.round(h_c,5))
+    #Entanglement_entropy_normalization_check= np.sum(SVD_vec_mat**2,axis=1)
+    #print(np.nonzero(np.round(Entanglement_entropy_normalization_check,5)!=1))
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
+    #print('Entanglement_entropy_vec', Entanglement_entropy_vec,'eval',eval)
+    plt.scatter(eval, np.round(Entanglement_entropy_vec,8))
+    plt.title('Entanglement vs Energy for {} PXP {} TI, {} $h_c$ PXP-PXP cut'.format(n_PXP,n_TI, np.round(h_c,5)))
+    plt.xlabel('Energy')
+    plt.ylabel('Entanglement Entropy')
+    #plt.savefig("Figures/Entanglement_Entropy/PXP_PXP_TI_Cut/Entropy_for_PXP_PXP_{}_TI_{}_h_c_{}.png".format(n_PXP,n_TI, np.round(h_c,5)))
+    return eval, Entanglement_entropy_vec
+
+def Entanglement_Entropy_unique_check(n_PXP,n_TI, h_c):
+    '''
+    Checking unique Entanglement entropy values (that are not doubles), and corresponding energies (are they 0?)
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :return: energy values of unique (1) Entanglement entropy values, and plots them on the EE graph
+    '''
+    eval, Entanglement_entropy_vec =Entanglement_entropy_calc_PXP_PXP_TI(n_PXP,n_TI, h_c)
+    Entanglement_Values, Repetitions = np.unique(np.round(Entanglement_entropy_vec,10),return_counts=True)
+    print(Entanglement_Values, Repetitions)
+    Where_uniques_initial=np.squeeze(np.argwhere(Repetitions==1))
+    Who_uniques= Entanglement_Values[Where_uniques_initial]
+    Where_uniques=np.nonzero(np.isin(np.round(Entanglement_entropy_vec,10),Who_uniques))
+    Unique_evals=eval[Where_uniques]
+    Where_doubles_initial=np.squeeze(np.argwhere(Repetitions==2))
+    Who_doubles= Entanglement_Values[Where_doubles_initial]
+    Where_doubles=np.nonzero(np.isin(np.round(Entanglement_entropy_vec,10),Who_doubles))
+    double_evals=eval[Where_doubles]
+    #print('Unique Energies fo {} PXP atoms'.format(n_PXP),np.unique(np.round(Unique_evals,8)))
+    #print('Unique Entropies of these energies:')
+    #print(np.transpose(np.array((Unique_evals,Entanglement_entropy_vec[Where_uniques]))))
+    #print('Double Energies fo {} PXP atoms'.format(n_PXP),np.unique(np.round(double_evals,8)))
+    #print('Double Entropies of these energies:')
+    #print(np.transpose(np.array((double_evals,Entanglement_entropy_vec[Where_doubles]))))
+    plt.scatter(np.round(Unique_evals,8), Entanglement_entropy_vec[Where_uniques])
+    plt.scatter(np.round(double_evals,8), Entanglement_entropy_vec[Where_doubles])
+#TODO WHY ARE THESE UNIQUE VALUES DIFFERENT FOR THE SAME ENERGIES?? WHATS GOING ON WITH TI when there is no coupling???
+#TODO check what happens to zero energy states in N_TI=0 (check multiplicity)
+
+def Evec_SVD_PXP_PXP_TI_Cluster(n_PXP,n_TI,h_c): #TOP NUMBER TO CALC IS????
+    '''
+    Cluster Calculation of singular values of each matrix of eigenvector in the tensor (see Eigenvec_Reshape) for splitting at PXP - TI boundary
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :return: singular values of the matrix, eigenvalues (saved in numpy format)
+    '''
+    try:
+        os.mkdir('EE_PXP_PXPTI_CUT_PXP_{}'.format(n_PXP))
+    except:
+        pass
+    Tensor, eval =  PXP_PXP_TI_schmidt_decomposition_matrix_efficient(n_PXP, n_TI, np.round(h_c,5), J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
+    SVD_num = np.minimum(np.shape(Tensor)[0],np.shape(Tensor)[1])
+    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    for i in range(0,len(eval)):
+         SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
+    np.save(os.path.join('EE_PXP_PXPTI_CUT_PXP_{}'.format(n_PXP),'TI_{}_h_c_{}_SVD.npy'.format(n_TI,np.round(h_c,5))), SVD_vec_mat)
+    np.save(os.path.join('EE_PXP_PXPTI_CUT_PXP_{}'.format(n_PXP),'TI_{}_h_c_{}_Eval.npy'.format(n_TI,np.round(h_c,5))), eval)
+    return
+
+#Evec_SVD_PXP_PXP_TI_Cluster(n_PXP,n_TI,h_c)
+
+
+
+
+
+
+
+
 
 

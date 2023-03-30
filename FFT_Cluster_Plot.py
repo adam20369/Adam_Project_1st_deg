@@ -26,6 +26,9 @@ h_c_step_feed = 0.1
 Start_cutoff_feed = 105
 End_cutoff_feed = 235
 
+#data_check_Ave=np.load('PXP_10_True_X_i_Gammas_cutoff_105_235/Gamma_ave_True_X_i_10_10_2.0_cutoff_105_235.npy')
+#print(data_check_Ave)
+
 def Plot_vs_h_c_diff_n_TI_condifence():
     '''
     Plot for different TI numbers, a normalized damping graph vs Coupling strength h_c
@@ -60,11 +63,11 @@ def Plot_vs_h_c_diff_n_TI_condifence():
         scaled_data_ave= data_ave/data_ave[0] #Scaled errors as to gamma/gamma_0
         plt.errorbar(h_c[:], scaled_data_ave[:], yerr=data_errors_fin[:, :], color=cmap.colors[int(j-n_TI[0])], marker='s',markersize=2, linestyle='-', barsabove=True, capsize=3, capthick=3, label= '{} TI atoms'.format(int(j)))
         #plt.fill_between(h_c[:], scaled_data_ave[:] - data_errors_fin[0, :], scaled_data_ave[:] + data_errors_fin[1, :])
-    plt.title(r'Normalized damping for {} PXP atoms vs $h_c$, cutoff {}-{}'.format(n_PXP,Start_cutoff,End_cutoff))
+    plt.title(r'$Z_i$ coupling normalized damping for {} PXP atoms vs $h_c$, cutoff {}-{}'.format(n_PXP,Start_cutoff,End_cutoff))
     plt.ylabel(r' Normalized Damping $\frac{\gamma}{\gamma_0}$', fontsize=10)
     plt.xlabel(r'Coupling Strength $h_c$',fontsize=12)
     plt.legend()
-    plt.savefig('Figures/Norm_damping_{}_PXP_vs_h_c_{}_confi_err_cutoff_{}_{}.png'.format(n_PXP,h_c_max,Start_cutoff,End_cutoff))
+    #plt.savefig('Figures/True_X_i_Osc/Z_i_damping_{}_PXP_vs_h_c_{}_confi_err_cutoff_{}_{}.png'.format(n_PXP,h_c_max,Start_cutoff,End_cutoff))
     return plt.show()
 Plot_vs_h_c_diff_n_TI_condifence()
 
@@ -99,11 +102,12 @@ def Plot_vs_h_c_diff_n_TI_std():
         scaled_data_ave= data_ave/data_ave[0] #Scaled errors as to gamma/gamma_0
         plt.errorbar(h_c[:], scaled_data_ave[:], yerr=data_errors_fin, color=cmap.colors[int(j-n_TI[0])], marker='s',markersize=2, linestyle='-', barsabove=True, capsize=3, capthick=3, label= '{} TI atoms'.format(int(j)))
         plt.fill_between(h_c[:], data_errors_fin, data_errors_fin)
-    plt.title(r'Normalized damping for {} PXP atoms vs $h_c$, cutoff {}-{}'.format(n_PXP,Start_cutoff,End_cutoff))
+        print(data_ave[11])
+    plt.title(r'$Z_i$ coupling normalized damping for {} PXP atoms vs $h_c$, cutoff {}-{}'.format(n_PXP,Start_cutoff,End_cutoff))
     plt.ylabel(r' Normalized Damping $\frac{\gamma}{\gamma_0}$', fontsize=10)
     plt.xlabel(r'Coupling Strength $h_c$',fontsize=12)
     plt.legend()
-    plt.savefig('Figures/Norm_damping_{}_PXP_vs_h_c_{}_std_err_cutoff_{}_{}.png'.format(n_PXP,h_c_max,Start_cutoff,End_cutoff))
+    #plt.savefig('Figures/True_X_i_Osc/Z_i_damping_{}_PXP_vs_h_c_{}_std_err_cutoff_{}_{}.png'.format(n_PXP,h_c_max,Start_cutoff,End_cutoff))
     return plt.show()
 Plot_vs_h_c_diff_n_TI_std()
 

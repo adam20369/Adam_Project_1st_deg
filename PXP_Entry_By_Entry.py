@@ -235,9 +235,9 @@ def PXP_Subspace_Algo_extended_X_i(n):
     #print(np.isclose(np.size(Subspace,axis=0),matsize)) #check
     return Subspace
 
-def PXP_connected_states(n,Subspace): #TODO can make it a little faster
+def PXP_connected_states(n,Subspace):
     '''
-    Gets connected states of every subspace basis vector ALSO WORKS FOR X_i EXTENDED!!!!
+    Gets connected states of every subspace basis vector for regular PXP subspace
     :param n: number of PXP atoms
     :return: matrix of # x 2 of basis vectors and products of Hamiltonian multiplication
     - Generally a map that tells you to which vectors every starting vector (all numbered by their index in the basis) maps under the Hamiltonian transformation
@@ -270,6 +270,7 @@ def PXP_connected_states(n,Subspace): #TODO can make it a little faster
                     index4 = np.squeeze((np.where(np.all(Base==vec4,axis=1)))) #index of the basis state that the state moves to under PXP Ham (flip UP)
                     x = np.vstack((x,np.array((i, index4)))) # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
     return x.astype('int')
+
 
 # def PXP_connected_states_option2(n,basis_generating_func):
 #     '''
@@ -324,13 +325,86 @@ def PXP_connected_states(n,Subspace): #TODO can make it a little faster
 #                                         index6))))  # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
 #     return x.astype('int')
 
+def PXP_connected_states_extended_X_i(n,Subspace):
+    '''
+    Gets connected states of every subspace basis vector FOR X_i EXTENDED!!!
+    :param n: number of PXP atoms
+    :return: matrix of # x 2 of basis vectors and products of Hamiltonian multiplication
+    - Generally a map that tells you to which vectors every starting vector (all numbered by their index in the basis) maps under the Hamiltonian transformation
+    (first col is initial vector and second col is vector after transformation)
+    '''
+    Base = Subspace(n)
+    x = np.empty((0,2))
+    for i in range(0, len(Base)):
+        # rows = np.count_nonzero(Base[i,:]==1) #Number of rows in a transformed matrix of state i is number of excitations in i
+        # if rows != 0:
+        if Base[i, n-2] == 1 and Base[i,n-1] ==1:
+            for j in range(0, n-3):
+                if Base[i, j] == 1:  # finds all vectors that are -1 magnetization from the original one
+                    vec1 = Base[i, :].copy()
+                    vec1[j] = 0
+                    index1 = np.squeeze((np.where(np.all(Base == vec1,
+                                                         axis=1))))  # index of the basis state that the state moves to under PXP Ham (flip DOWN)
+                    x = np.vstack((x, np.array((i,
+                                                index1))))  # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
+                elif j == 0 and Base[i, j + 1] == 0:
+                    vec2 = Base[i, :].copy()
+                    vec2[j] = 1
+                    index2 = np.squeeze((np.where(np.all(Base == vec2,
+                                                         axis=1))))  # index of the basis state that the state moves to under PXP Ham (flip UP)
+                    x = np.vstack((x, np.array((i,
+                                                index2))))  # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
+                elif Base[i, j - 1] == 0 and Base[i, j + 1] == 0:
+                    vec4 = Base[i, :].copy()
+                    vec4[j] = 1
+                    index4 = np.squeeze((np.where(np.all(Base == vec4,
+                                                         axis=1))))  # index of the basis state that the state moves to under PXP Ham (flip UP)
+                    x = np.vstack((x, np.array((i,
+                                                index4))))  # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
+        else:
+            for j in range(0,n):
+                if Base[i, j] == 1: # finds all vectors that are -1 magnetization from the original one
+                    vec1 = Base[i,:].copy()
+                    vec1[j] = 0
+                    index1 = np.squeeze((np.where(np.all(Base==vec1,axis=1)))) #index of the basis state that the state moves to under PXP Ham (flip DOWN)
+                    x = np.vstack((x,np.array((i, index1)))) # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
+                elif j == 0 and Base[i,j+1] == 0:
+                    vec2 = Base[i,:].copy()
+                    vec2[j] = 1
+                    index2 = np.squeeze((np.where(np.all(Base==vec2,axis=1)))) #index of the basis state that the state moves to under PXP Ham (flip UP)
+                    x = np.vstack((x,np.array((i, index2)))) # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
+                elif j == n-1 and Base[i,j-1] == 0:
+                    vec3 = Base[i,:].copy()
+                    vec3[j] = 1
+                    index3 = np.squeeze((np.where(np.all(Base==vec3,axis=1)))) #index of the basis state that the state moves to under PXP Ham (flip UP)
+                    x = np.vstack((x,np.array((i, index3)))) # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
+                elif Base[i,j-1] == 0 and Base[i,j+1] == 0:
+                    vec4 = Base[i,:].copy()
+                    vec4[j] = 1
+                    index4 = np.squeeze((np.where(np.all(Base==vec4,axis=1)))) #index of the basis state that the state moves to under PXP Ham (flip UP)
+                    x = np.vstack((x,np.array((i, index4)))) # matrix of 2-vectors that specify index of original basis vector and indeces of the vectors it transforms too under the Hamiltonian
+    return x.astype('int')
+
 def PXP_Ham_OBC_Entrybyentry(n,Subspace):
     '''
-    builds the Hamiltonian from pairs of PXP_connected_states ALSO WORKS FOR X_i EXTENDED!!!!
+    builds the Hamiltonian from pairs of PXP_connected_states
     :param n: number of atoms
     :return: Matrix (the Hamiltonian) N_subspace x N_subspace
     '''
     x = PXP_connected_states(n,Subspace)
+    Base = Subspace(n)
+    PXP = np.zeros((len(Base),len(Base)))
+    for i in range(0,len(x)):
+        PXP[x[i,0],x[i,1]] = 1
+    return PXP
+
+def PXP_Ham_OBC_Entrybyentry_extended_X_i(n,Subspace):
+    '''
+    builds the Hamiltonian from pairs of PXP_connected_states EXTENDED BASIS X_i
+    :param n: number of atoms
+    :return: Matrix (the Hamiltonian) N_subspace x N_subspace
+    '''
+    x = PXP_connected_states_extended_X_i(n,Subspace)
     Base = Subspace(n)
     PXP = np.zeros((len(Base),len(Base)))
     for i in range(0,len(x)):

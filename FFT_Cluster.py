@@ -25,15 +25,14 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
     :param T_step: time step (division)
     :return: Matrix of fourier transform components (seed_max x len(Time)) for all realizations!!!
     '''
-    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-    Fourier_components= np.empty((seed_max-1,int(len(Time)/2+1)))
-    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c))==False: #checks if file already exists, can take this part off of code
-        for i in range(1,seed_max):
-            VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
-            Fourier_components[i-1,:]= rfft(VecProp)
-        np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), Height_norm * np.abs(Fourier_components))
+    Time = np.linspace(T_start, T_max, T_step)
+    Fourier_components= np.zeros((seed_max-1,int(len(Time)/2+1))).astype('complex')
+    for i in range(1,seed_max):
+        VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
+        Fourier_components[i-1,:]= rfft(VecProp)
+    np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), Height_norm * np.abs(Fourier_components))
 
-#Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
+# Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
 def Cluster_FFT_Freq(T_start, T_max, T_step):
     '''
@@ -43,12 +42,11 @@ def Cluster_FFT_Freq(T_start, T_max, T_step):
     :param T_step: time step (division)
     :return: vector of frequency components
     '''
-    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
+    Time = np.linspace(T_start, T_max, T_step)
     Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
     if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step)) == False:
         np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)), Freq)
-
-#Cluster_FFT_Freq(T_start, T_max, T_step)
+# Cluster_FFT_Freq(T_start, T_max, T_step)
 
 def Cluster_Lorentzian_function(omega, omega_0, gamma, amp):
     '''
@@ -76,7 +74,7 @@ def Cluster_Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step, Start_
     '''
     Freq= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)))
     sig_func = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))) #matrix!
-    popt_tot= np.empty(((seed_max)-1,3))
+    popt_tot= np.zeros(((seed_max)-1,3))
     for i in range(1,seed_max):
         popt, pcov = curve_fit(Cluster_Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[i-1,Start_cutoff:End_cutoff]) # popt= parameter optimal values
         popt_tot[i-1,:]=popt
@@ -99,7 +97,7 @@ def Gamma_Bootstrap_confidence(Sample_no):
     Bootstrapping of Gamma samples - confidence level 95%
     :return: 95% confidence interval upper and lower bounds for each gamma
     '''
-    lower_upper = np.empty((2))
+    lower_upper = np.zeros((2))
     data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
     sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no No.)] matrix of randomly sampled arrays (with return) from the original
     sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
@@ -120,9 +118,9 @@ def Gamma_Bootstrap_std(Sample_no):
     std= np.std(sample_ave) #Standard deviation of the different means obtained with bootstrapping
     np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),std)
 
-#Gamma_time_ave()
-#Gamma_Bootstrap_confidence(Sample_no)
-#Gamma_Bootstrap_std(Sample_no)
+# Gamma_time_ave()
+# Gamma_Bootstrap_confidence(Sample_no)
+# Gamma_Bootstrap_std(Sample_no)
 
 def FFT_data_move():
     '''
@@ -140,4 +138,4 @@ def FFT_data_move():
     np.save(os.path.join('PXP_{}_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_errors_std_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_err_std)
     np.save(os.path.join('PXP_{}_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_errors_confidence_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_err_confidence)
 
-#FFT_data_move()
+FFT_data_move()

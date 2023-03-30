@@ -2,20 +2,20 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-from Coupling_To_Bath import *
+#from Coupling_To_Bath import *
 from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 #import PXP_E_B_E_Sparse as Ebe
 
 T_start=0
 T_max=400
-T_step=1000
-n_PXP=9
-n_TI=11
-h_c=0.5
-sample= 75
-Start_cutoff=105
-End_cutoff= 235
-
+T_step= 1000
+n_PXP=10
+n_TI=12
+h_c=1.1
+Start_cutoff=8
+End_cutoff= 1000
+#for sample in range(1,99):
+sample=1
 def Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     Lorentzian function shape definer (variables and parameters)
@@ -25,6 +25,25 @@ def Lorentzian_function(omega, omega_0, gamma, amp):
     :return: Lorentzian "shape" (scalar, just the f(x)= output of lorentzian)
     '''
     return np.divide(amp * gamma, gamma**2 + (omega-omega_0)**2)
+
+# def Osc_graph(T_start, T_max, T_step):
+#     '''
+#     Gets positive frequency (absolute value of) fourier components of the propagation signal and positive frequencies
+#     :param n_PXP: Size of PXP chain (atoms)
+#     :param n_TI: Size of TI chain (atoms)
+#     :param Initialstate:  Initial Vector state we would like to propagate
+#     :param T_start: Start Time of propagation
+#     :param T_max: Max Time of propagation
+#     :param T_step: time step (division)
+#     :return: 2 arrays (Positive freq, positive freq fourier components)
+#     '''
+#     time= np.linspace(T_start, T_max,T_step)
+#     #VecProp = np.load('1.4_check/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,sample))
+#     VecProp = np.load('PXP_{}_Osc_Ave/Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c))
+#     print(VecProp.round(4))
+#     plt.plot(time,VecProp.round(4)[:len(time)])
+#     plt.show()
+
 
 def FFT(T_start, T_max, T_step, Height_norm):
     '''
@@ -40,9 +59,31 @@ def FFT(T_start, T_max, T_step, Height_norm):
     time= np.linspace(T_start, T_max,T_step)
     #VecProp = np.load('1.4_check/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,sample))
     VecProp = np.load('PXP_{}_Osc_Ave/Sparse_time_propagation_ave_{}_{}_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c))
-    print(VecProp.round(4))
-    plt.plot(time,VecProp.round(4))
-    plt.show()
+    #print(VecProp.round(4))
+    #plt.plot(time,VecProp.round(4)[:len(time)])
+    #plt.show()
+    Fourier_components= rfft(VecProp)
+    Sig_size= np.size(VecProp)
+    Freq = rfftfreq(Sig_size, d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
+    return Freq, (Height_norm * np.abs(Fourier_components))
+
+
+def FFT_X_i(T_start, T_max, T_step, Height_norm):
+    '''
+    Gets positive frequency (absolute value of) fourier components of the propagation signal and positive frequencies
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :return: 2 arrays (Positive freq, positive freq fourier components)
+    '''
+    time= np.linspace(T_start, T_max,T_step,endpoint= True)
+    #VecProp = np.load('1.4_check/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,sample))
+    VecProp = np.load('PXP_{}_Osc_X_i/Sparse_time_propagation_True_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_PXP,n_TI,h_c,sample))
+    #plt.plot(time,VecProp.round(4)[:len(time)])
+    #plt.show()
     Fourier_components= rfft(VecProp)
     Sig_size= np.size(VecProp)
     Freq = rfftfreq(Sig_size, d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
@@ -61,7 +102,7 @@ def Lorentzian_curvefit(T_start, T_max, T_step, Start_cutoff, End_cutoff,Height_
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude)
     '''
-    Freq, sig_func = FFT(T_start, T_max, T_step, Height_norm)
+    Freq, sig_func = FFT_X_i(T_start, T_max, T_step, Height_norm)
     popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff]) # popt= parameter optimal values
     return popt
 
@@ -82,7 +123,7 @@ def Lorentzian_curvefit_plt(T_start, T_max, T_step, Start_cutoff, End_cutoff, He
     :param Start_cutoff: cutoff of lowest frequencies (they are weird)
     :return: a plot of data (blue) and fit (red)
     '''
-    Freq, sig_func = FFT(T_start, T_max, T_step, Height_norm)
+    Freq, sig_func = FFT_X_i(T_start, T_max, T_step, Height_norm)
     plt.plot(Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff], marker='o', markersize=3,
              color='b', label='data')
     popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[Start_cutoff:End_cutoff]) # popt= parameter optimal values
@@ -96,6 +137,7 @@ def Lorentzian_curvefit_plt(T_start, T_max, T_step, Start_cutoff, End_cutoff, He
     plt.xlabel(r'Frequency [$1/t$]')
     plt.ylabel('Amplitudes of Harmonic Functions')
     plt.legend()
-    plt.savefig("Figures/Frequency_fit/FFT_Fit_{}_PXP_{}_TI_{}_Coup_{}-{}_cutoff.png".format(n_PXP,n_TI,h_c,Start_cutoff,End_cutoff))
-    return plt.show()
+    #plt.savefig("Figures/Frequency_fit/FFT_Fit_{}_PXP_{}_TI_{}_Coup_{}-{}_cutoff.png".format(n_PXP,n_TI,h_c,Start_cutoff,End_cutoff))
+    plt.show()
+    return
 Lorentzian_curvefit_plt(T_start, T_max, T_step,Start_cutoff, End_cutoff)
