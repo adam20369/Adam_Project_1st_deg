@@ -1,7 +1,7 @@
 #!/bin/bash
 seed_max='100'
-n_PXP='9'
-n_TI_max='14'
+n_PXP='10'
+n_TI_max='13'
 h_c_max='2'
 Sample_no='1000'
 Sleep='5'

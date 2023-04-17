@@ -10,12 +10,12 @@ T_start=0
 T_max=400
 T_step= 1000
 n_PXP=10
-n_TI=12
-h_c=1.1
-Start_cutoff=8
-End_cutoff= 1000
+n_TI=13
+h_c=1.9
+Start_cutoff=105
+End_cutoff= 235
 #for sample in range(1,99):
-sample=1
+sample=2
 def Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     Lorentzian function shape definer (variables and parameters)
@@ -131,8 +131,9 @@ def Lorentzian_curvefit_plt(T_start, T_max, T_step, Start_cutoff, End_cutoff, He
     res_sum_squares = np.sum(residuals**2)
     tot_sum_squares= np.sum((sig_func[Start_cutoff:End_cutoff]-np.mean(sig_func[Start_cutoff:End_cutoff]))**2)
     r_squared= 1-(res_sum_squares/tot_sum_squares)
+    Rel_std_err=int(np.divide(np.sqrt(np.diag(pcov)[1]),popt[1])*100) #relative standard error of gamma parameter!!
     plt.plot(Freq[Start_cutoff:End_cutoff], Lorentzian_function(Freq[Start_cutoff:End_cutoff],*popt),'r-',
-         label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={},$R^2$={}'.format(*np.round(popt,4),r_squared))
+         label=r'fit: $\omega_0$={}, $\gamma$={}, Amp={},$R^2$={}, Rel std err={}%'.format(*np.round(popt,4),np.round(r_squared,4),Rel_std_err))
     plt.title(r'Frequency fit for {} PXP, {} TI, $h_c$ {}, cutoff {}-{}'.format(n_PXP,n_TI,h_c,Start_cutoff,End_cutoff))
     plt.xlabel(r'Frequency [$1/t$]')
     plt.ylabel('Amplitudes of Harmonic Functions')

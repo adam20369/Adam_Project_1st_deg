@@ -11,6 +11,7 @@ from Cluster_Sparse_Osc_Para import *
 #from O_z_Oscillations import *
 
 #TODO CHANGE TO CUTOFF FRIENDLY VERSION OF FFT FIT
+#TODO CHANGE TO CUTOFF FRIENDLY VERSION OF FFT FIT
 
 Start_cutoff = 20
 End_cutoff = 1000
@@ -29,13 +30,12 @@ def Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_no
     :param T_step: time step (division)
     :return: Matrix of fourier transform components (seed_max x len(Time)) for all realizations!!!
     '''
-    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
-    Fourier_components= np.empty((seed_max-1,int(len(Time)/2+1)))
-    if os.path.isfile('PXP_{}_TI_{}_P_iminus1_X_i/h_c_{}/Fourier_components_P_iminus1_X_i_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c))==False: #checks if file already exists, can take this part off of code
-        for i in range(1,seed_max):
-            VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_P_iminus1_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_P_iminus1_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
-            Fourier_components[i-1,:]= rfft(VecProp)
-        np.save(os.path.join('PXP_{}_TI_{}_P_iminus1_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_P_iminus1_X_i_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), Height_norm * np.abs(Fourier_components))
+    Time = np.linspace(T_start, T_max, T_step)
+    Fourier_components= np.empty((seed_max-1,int(len(Time)/2+1))).astype('complex')
+    for i in range(1,seed_max):
+        VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_P_iminus1_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_P_iminus1_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
+        Fourier_components[i-1,:]= rfft(VecProp)
+    np.save(os.path.join('PXP_{}_TI_{}_P_iminus1_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_P_iminus1_X_i_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c)), Height_norm * np.abs(Fourier_components))
 
 #Cluster_Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
@@ -47,7 +47,7 @@ def Cluster_FFT_Freq(T_start, T_max, T_step):
     :param T_step: time step (division)
     :return: vector of frequency components
     '''
-    Time = np.linspace(T_start, T_max, T_step, endpoint=True)
+    Time = np.linspace(T_start, T_max, T_step)
     Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
     if os.path.isfile('PXP_{}_TI_{}_P_iminus1_X_i/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step)) == False:
         np.save(os.path.join('PXP_{}_TI_{}_P_iminus1_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)), Freq)

@@ -166,7 +166,7 @@ def X_n_Dict_PXP_X_i_Extended_Subspace_sparse(n):
     return x
 
 
-def X_i_Mat_PXP_X_i_Extended_Subspace_sparse(n):
+def X_n_Mat_PXP_X_i_Extended_Subspace_sparse(n):
     '''
     Builds X_n in X_i extended Subspace basis of PXP entry Sparsely from dictionary
     :param n: No of atoms
@@ -219,7 +219,7 @@ def TIOBCNew_Sparse(n_TI, J, h_x, h_z): # faster method
     :param J: Ising coupling parameter
     :param h_x: transverse field strength
     :param h_z: Z field (Longtitudinal) strength
-    :return: Tilted Ising Hamiltonian (for i=>2) SPARSE
+    :return: Tilted Ising Hamiltonian (for i=>2) SPARSE, for n_TI=1, we get (h_x * (X_1) + h_z * (Z_1)), for n_TI=0 we get null scalar.
     """
     d = 2 ** n_TI # dimension
     Zi = Z_i_Sparse # Notation convenience
@@ -249,12 +249,11 @@ def TIOBCNewImpure_sparse(n, J, h_x, h_z, h_imp, m): # faster method
     """
     TI = TIOBCNew_Sparse(n, J, h_x, h_z)
     if n==0:
-        Z_impure = np.array(0)
+        Z_impure = np.array((0))
     else:
         Z_impure = (h_imp) * Z_i_Spin_Basis_sparse(n, m)
     TI_impure = TI+ Z_impure
     return TI_impure
-
 
 def Z_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
     """
@@ -281,7 +280,7 @@ def P_iminus1_X_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
     :param h_c: coupling strength parameter
     :return: matrix in (full) Fib(n_PXP+3)*(2**n_TI) x Fib(n_PXP+3)*(2**n_TI) dimension, sparse
     """
-    n_tot = n_PXP + n_TI  # Total number of atoms
+    n_tot = n_PXP + n_TI  #Total number of atoms
     d_TOT = Subspace_basis_count_faster(n_PXP) * 2 ** n_TI  # Total dimension
     Coupling = (h_c) * sp.kron(P_iminus1_X_i_Mat_PXP_Subspace_Basis_Sparse_last_site(n_PXP), X_i_Spin_Basis_sparse(n_TI, 1))
     if n_TI == 0 or n_PXP == 0 or h_c == 0:
@@ -300,12 +299,13 @@ def X_i_Coupling_PXP_Entry_to_TI_Sparse(n_PXP, n_TI, h_c):
     """
     n_tot = n_PXP + n_TI  # Total number of atoms
     d_TOT = Extended_X_i_Subspace_basis_count_faster(n_PXP) * (2 ** n_TI)  # Total dimension
-    Coupling = (h_c) * sp.kron(X_i_Mat_PXP_X_i_Extended_Subspace_sparse(n_PXP), X_i_Spin_Basis_sparse(n_TI, 1))
+    Coupling = (h_c) * sp.kron(X_n_Mat_PXP_X_i_Extended_Subspace_sparse(n_PXP), X_i_Spin_Basis_sparse(n_TI, 1))
     if n_TI == 0 or n_PXP == 0 or h_c == 0:
         Coupterm = sp.csr_matrix((d_TOT, d_TOT))
     else:
         Coupterm = Coupling
     return Coupterm
+
 
 def PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
     '''
@@ -353,7 +353,7 @@ def PXP_TI_coupled_Sparse_Piminus1_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m):
 
 def PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m): ###EXTENDED X_i !!!!!###
     '''
-    X_i nature coupling Extended X_i (!!!) PXP subspace & TI FULL !! Hamiltonian, sparse
+    X_i nature coupling Extended X_i PXP subspace & TI FULL joint Hamiltonian, sparse!
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI Atoms
     :param J: TI ising term strength

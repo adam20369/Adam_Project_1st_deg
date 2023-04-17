@@ -482,7 +482,26 @@ def Entanglement_entropy_calc_PXP_PXP(n_PXP): #TOP NUMBER TO CALC IS ???
     plt.xlabel('Energy')
     plt.ylabel('Entanglement Entropy')
     #plt.savefig("Figures/Entanglement_Entropy/PXP_PXP_Cut/Entropy_for_PXP_PXP_{}_Atoms_Pure_PXP_Ham.png".format(n_PXP))
-    return Entanglement_entropy_vec
+    return Entanglement_entropy_vec,eval
+
+def Minimum_EE_eval_PXP_PXP(n_PXP):
+    '''
+    find energies (and indeces of states) of minimal entropy (L+1 states, where d is the system size)
+    :param n_PXP: No. fo PXP atoms
+    :param No_of_special_states: the number of anomalous eigenstates (calculated in function)
+    :return: plot of lowest values
+    '''
+    Entanglement_entropy_vec, eval = Entanglement_entropy_calc_PXP_PXP(n_PXP)
+    if n_PXP%2 == 1:
+        No_of_special_states= n_PXP+1
+    else:
+        No_of_special_states=n_PXP
+    Minimal_EE_ordered_vec=np.sort(Entanglement_entropy_vec)[0:No_of_special_states]
+    Minimal_ordered_eval= np.take_along_axis(eval,np.argsort(Entanglement_entropy_vec),axis=0)[0:No_of_special_states]
+    print(Minimal_EE_ordered_vec)
+    print(eval)
+    print(Minimal_ordered_eval)
+    plt.scatter(Minimal_ordered_eval,Minimal_EE_ordered_vec)
 
 def Evec_SVD_PXP_PXP_Cluster(n_PXP): #TOP NUMBER TO CALC IS????
     '''
@@ -608,33 +627,47 @@ def Entanglement_entropy_calc_PXP_PXP_TI(n_PXP,n_TI, h_c): #TOP NUMBER TO CALC I
 
 def Entanglement_Entropy_unique_check(n_PXP,n_TI, h_c):
     '''
-    Checking unique Entanglement entropy values (that are not doubles), and corresponding energies (are they 0?)
+    Checking Entanglement entropy values that return less than the multiplicity of 2*2**n_TI, and corresponding energies (are they the 0?)
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI atoms
     :param h_c: coupling strength
-    :return: energy values of unique (1) Entanglement entropy values, and plots them on the EE graph
+    :return: number of "unique" entanglement entropy values, plot with the "unique" values marked in dif color
     '''
-    eval, Entanglement_entropy_vec =Entanglement_entropy_calc_PXP_PXP_TI(n_PXP,n_TI, h_c)
+    eval, Entanglement_entropy_vec = Entanglement_entropy_calc_PXP_PXP_TI(n_PXP,n_TI, h_c)
     Entanglement_Values, Repetitions = np.unique(np.round(Entanglement_entropy_vec,10),return_counts=True)
     print(Entanglement_Values, Repetitions)
-    Where_uniques_initial=np.squeeze(np.argwhere(Repetitions==1))
-    Who_uniques= Entanglement_Values[Where_uniques_initial]
-    Where_uniques=np.nonzero(np.isin(np.round(Entanglement_entropy_vec,10),Who_uniques))
+    Where_uniques_npunique=np.squeeze(np.argwhere(Repetitions!=2**(n_TI+1)))
+    Where_nonuniques=np.squeeze(np.argwhere(Repetitions==2**(n_TI+1)))
+    Who_uniques= Entanglement_Values[Where_uniques_npunique]
+    print('number of "unique" evals:', np.sum(Repetitions[Where_uniques_npunique])) #counts the number of data dots that are not part of the 2*2**n_TI multiplicity
+   #print('number of NON-"unique" evals (WITHOUT MULTIPLICITY!!):', len(Where_nonuniques))
+    Where_uniques=np.nonzero(np.isin(np.round(Entanglement_entropy_vec,10),Who_uniques)) #indeces of "unique" entanglement entropy
     Unique_evals=eval[Where_uniques]
-    Where_doubles_initial=np.squeeze(np.argwhere(Repetitions==2))
-    Who_doubles= Entanglement_Values[Where_doubles_initial]
-    Where_doubles=np.nonzero(np.isin(np.round(Entanglement_entropy_vec,10),Who_doubles))
-    double_evals=eval[Where_doubles]
-    #print('Unique Energies fo {} PXP atoms'.format(n_PXP),np.unique(np.round(Unique_evals,8)))
+    print('Unique Energies for {} PXP atoms'.format(n_PXP),np.unique(np.round(Unique_evals,8)))
     #print('Unique Entropies of these energies:')
     #print(np.transpose(np.array((Unique_evals,Entanglement_entropy_vec[Where_uniques]))))
-    #print('Double Energies fo {} PXP atoms'.format(n_PXP),np.unique(np.round(double_evals,8)))
-    #print('Double Entropies of these energies:')
-    #print(np.transpose(np.array((double_evals,Entanglement_entropy_vec[Where_doubles]))))
     plt.scatter(np.round(Unique_evals,8), Entanglement_entropy_vec[Where_uniques])
-    plt.scatter(np.round(double_evals,8), Entanglement_entropy_vec[Where_doubles])
-#TODO WHY ARE THESE UNIQUE VALUES DIFFERENT FOR THE SAME ENERGIES?? WHATS GOING ON WITH TI when there is no coupling???
-#TODO check what happens to zero energy states in N_TI=0 (check multiplicity)
+
+def TI_PXP_eval_check(n_PXP,n_TI,J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi)):
+    '''
+    finds eigenvalues of TI and PXP separately and PXP+TI combined eigenvalues (for h_c=0!!) to try explain degeneracies
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param J: Ising strength
+    :param h_x: longtitudinal strength
+    :param h_z: transverse strengh
+    :return: Eigenvalues of PXP, TI and all combinations of additions of them (in the dimension of PXP kron TI!)
+    '''
+    eval, evec=la.eigh(csr_matrix.todense(PXP_Ham_OBC_Sparse(n_PXP, PXP_Subspace_Algo)))
+    eval=np.round(eval,10)
+    #print(eval)
+    eval2, evec2 = la.eigh(csr_matrix.todense(TIOBCNew_Sparse(n_TI, J, h_x, h_z)))
+    print(eval2)
+    extended_dim_eval=np.kron(eval,np.ones((len(eval2))))
+    extended_dim_repeated_eval2=np.tile(eval2,len(eval))
+    #print(np.allclose(len(extended_dim_eval),len(extended_dim_repeated_eval2)))
+    PXP_TI_combined_ev= extended_dim_eval+extended_dim_repeated_eval2  # all options of combined energies for h_c=0
+    PXP_TI_combined_ev_sorted=np.sort(PXP_TI_combined_ev)
 
 def Evec_SVD_PXP_PXP_TI_Cluster(n_PXP,n_TI,h_c): #TOP NUMBER TO CALC IS????
     '''

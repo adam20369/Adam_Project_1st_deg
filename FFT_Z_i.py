@@ -14,12 +14,11 @@ import matplotlib.pyplot as plt
 #                                  CODE BUILT FOR UNDERSTANDING THE ERROR IN FFT PLOTS                                               #
 #######################################################################################################################################
 
-n_PXP = 9
-n_TI_max = 14
+n_PXP = 10
+n_TI_max = 13
 h_c_max = 2
 h_c_step=0.1
 h_c_array=np.round(np.arange(0,h_c_max+h_c_step,h_c_step).astype('float'),2)
-
 T_start = 0
 T_max = 400
 T_step = 1000
@@ -46,10 +45,10 @@ for n_TI in range(n_PXP,n_TI_max+1):
             Time = np.linspace(T_start, T_max, T_step)
             Fourier_components= np.zeros((seed_max-1,int(len(Time)/2+1))).astype('complex')
             for i in range(1,seed_max):
-                VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
+                VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
                 Fourier_components[i-1,:]= rfft(VecProp)
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),
-                                 'Fourier_components_True_X_i_{}_{}_{}.npy'.format(n_PXP, n_TI, h_c)),
+            np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),
+                                 'Fourier_components_{}_{}_{}.npy'.format(n_PXP, n_TI, h_c)),
                     Height_norm * np.abs(Fourier_components))
         #Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
@@ -63,8 +62,8 @@ for n_TI in range(n_PXP,n_TI_max+1):
             '''
             Time = np.linspace(T_start, T_max, T_step)
             Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
-            if os.path.isfile('PXP_{}_TI_{}_True_X_i/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP, n_TI, h_c, T_max,T_step)) == False:
-                np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),
+            if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP, n_TI, h_c, T_max,T_step)) == False:
+                np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),
                                  'Frequency_T_max_{}_T_step_{}.npy'.format(T_max, T_step)), Freq)
         #FFT_Freq(T_start, T_max, T_step)
 
@@ -92,8 +91,8 @@ for n_TI in range(n_PXP,n_TI_max+1):
             :return: optimal coefficients (in the order: Omega_0, gamma, Amplitude) matrix (N-1) x 3
             SAVES ONLY THE COL OF GAMMAS!!!!
             '''
-            Freq= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)))
-            sig_func = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_True_X_i_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))) #matrix!
+            Freq= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)))
+            sig_func = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))) #matrix!
             popt_tot= np.zeros(((seed_max)-1,3))
             pcov_tot = np.zeros(((seed_max) - 1, 3))
             for i in range(1,seed_max):
@@ -101,8 +100,8 @@ for n_TI in range(n_PXP,n_TI_max+1):
                 popt_tot[i-1,:]=popt
                 pcov_tot[i - 1, :] = np.diag(pcov)
             print('for n_TI {} h_c {}'.format(n_TI,h_c),np.divide(np.sqrt(pcov_tot[:,1]),popt_tot[:,1])*100)
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)), popt_tot[:,1])
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),'gamma_error_array_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c, Start_cutoff, End_cutoff)), np.sqrt(pcov_tot[:, 1]))
+            np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)), popt_tot[:,1])
+            np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),'gamma_error_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c, Start_cutoff, End_cutoff)), np.sqrt(pcov_tot[:, 1]))
 
         #Lorentzian_curvefit(n_PXP, n_TI, h_c, T_start, T_max, T_step,Start_cutoff, End_cutoff)
 
@@ -123,8 +122,8 @@ for n_TI in range(n_PXP,n_TI_max+1):
             :param Start_cutoff: cutoff of lowest frequencies (they are weird)
             :return: a plot of data (blue) and fit (red)
             '''
-            Freq= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)))
-            sig_func = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_True_X_i_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))) #matrix!
+            Freq= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)))
+            sig_func = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Fourier_components_{}_{}_{}.npy'.format(n_PXP,n_TI,h_c))) #matrix!
             for i in range(1,2):
                 plt.plot(Freq[Start_cutoff:End_cutoff], sig_func[i-1,Start_cutoff:End_cutoff], marker='o', markersize=3,
                          color='b', label='data')
@@ -151,9 +150,9 @@ for n_TI in range(n_PXP,n_TI_max+1):
             averages over Gamma's of different realizations
             :return: saves average
             '''
-            data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
+            data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
             data_ave = np.mean(data)
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)), data_ave)
+            np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)), data_ave)
 
 
         def Gamma_pcov_std_err_ave():
@@ -161,11 +160,9 @@ for n_TI in range(n_PXP,n_TI_max+1):
             averages over standard deviation errors of gamma parameter of different realizations
             :return: saves average
             '''
-            data = np.load(os.getcwd() + os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),
-                                                      'gamma_error_array_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(
-                                                          n_PXP, n_TI, h_c, Start_cutoff, End_cutoff)))
+            data = np.load(os.getcwd() + os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),'gamma_error_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c, Start_cutoff, End_cutoff)))
             data_ave = np.mean(data)
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_error_ave_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)), data_ave)
+            np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_error_ave_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)), data_ave)
 
         def Gamma_Bootstrap_confidence(Sample_no):
             '''
@@ -173,28 +170,28 @@ for n_TI in range(n_PXP,n_TI_max+1):
             :return: 95% confidence interval upper and lower bounds for each gamma
             '''
             lower_upper = np.zeros((2))
-            data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
+            data= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
             sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no No.)] matrix of randomly sampled arrays (with return) from the original
             sample_ave = np.mean(sample, axis=0)  # vector of averages sampled from one row of propagation data (random)
             lower_mean = np.quantile(sample_ave, 0.025)
             upper_mean = np.quantile(sample_ave, 0.975)
             lower_upper[0] = lower_mean
             lower_upper[1] = upper_mean
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_confidence_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),lower_upper)
+            np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_confidence_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),lower_upper)
 
         def Gamma_Bootstrap_std(Sample_no):
             '''
             Bootstrapping of Gamma samples - standard deviation of gamma means
             :return: standard deviation of gamma means (bootstrapped) for each h_c
             '''
-            data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
+            data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
             sample = np.random.choice(data,(seed_max, Sample_no), replace=True) # creates [(seed_max No.) x (Sample_no No.)] rows of randomly sampled numbers (with return) from the original sample
             sample_ave = np.mean(sample, axis=0)  # vector of averages!! from randomly pulling numbers from 100 realizations of one time instance
             std= np.std(sample_ave) #Standard deviation of the different means obtained with bootstrapping
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),std)
+            np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),std)
 
-        # Gamma_time_ave()
-        # Gamma_pcov_std_err_ave()
+        #Gamma_time_ave()
+        #Gamma_pcov_std_err_ave()
 
         # Gamma_Bootstrap_confidence(Sample_no)
         # Gamma_Bootstrap_std(Sample_no)
@@ -204,17 +201,17 @@ for n_TI in range(n_PXP,n_TI_max+1):
             Copies gamma plotting data to main directory under 'PXP_{}_Gammas'
             :return: makes new folder and copies files there
             '''
-            data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
-            data_err_std= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
-            data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_confidence_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
-            data_rel_err_new = np.load(os.getcwd() + os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),'Gamma_error_ave_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c,Start_cutoff,End_cutoff)))
+            data_ave = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_ave_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
+            data_err_std= np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
+            data_err_confidence = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_confidence_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
+            data_rel_err_new = np.load(os.getcwd() + os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),'Gamma_error_ave_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c,Start_cutoff,End_cutoff)))
             try:
-                os.mkdir('PXP_{}_True_X_i_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff))
+                os.mkdir('PXP_{}_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff))
             except:
                 pass
-            np.save(os.path.join('PXP_{}_True_X_i_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_ave_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_ave)
-            np.save(os.path.join('PXP_{}_True_X_i_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_errors_std_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_err_std)
-            np.save(os.path.join('PXP_{}_True_X_i_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_errors_confidence_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_err_confidence)
-            np.save(os.path.join('PXP_{}_True_X_i_Gammas_cutoff_{}_{}'.format(n_PXP, Start_cutoff, End_cutoff),'Gamma_error_ave_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c, Start_cutoff,End_cutoff)), data_rel_err_new)
+            np.save(os.path.join('PXP_{}_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_ave_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_ave)
+            np.save(os.path.join('PXP_{}_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_errors_std_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_err_std)
+            np.save(os.path.join('PXP_{}_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_errors_confidence_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_err_confidence)
+            np.save(os.path.join('PXP_{}_Gammas_cutoff_{}_{}'.format(n_PXP, Start_cutoff, End_cutoff),'Gamma_error_ave_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c, Start_cutoff,End_cutoff)), data_rel_err_new)
 
-        FFT_data_move()
+        #FFT_data_move()
