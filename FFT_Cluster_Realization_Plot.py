@@ -9,13 +9,14 @@ from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 T_start=0
 T_max=400
 T_step= 1000
-n_PXP=10
-n_TI=13
-h_c=1.9
+n_PXP=9
+n_TI=10
+h_c=3.0
 Start_cutoff=105
 End_cutoff= 235
 #for sample in range(1,99):
-sample=2
+sample=1
+
 def Lorentzian_function(omega, omega_0, gamma, amp):
     '''
     Lorentzian function shape definer (variables and parameters)
@@ -138,7 +139,7 @@ def Lorentzian_curvefit_plt(T_start, T_max, T_step, Start_cutoff, End_cutoff, He
     plt.xlabel(r'Frequency [$1/t$]')
     plt.ylabel('Amplitudes of Harmonic Functions')
     plt.legend()
-    #plt.savefig("Figures/Frequency_fit/FFT_Fit_{}_PXP_{}_TI_{}_Coup_{}-{}_cutoff.png".format(n_PXP,n_TI,h_c,Start_cutoff,End_cutoff))
+    plt.savefig("Figures/Frequency_fit/FFT_Fit_{}_PXP_{}_TI_{}_Coup_{}-{}_cutoff.png".format(n_PXP,n_TI,h_c,Start_cutoff,End_cutoff))
     plt.show()
     return
 Lorentzian_curvefit_plt(T_start, T_max, T_step,Start_cutoff, End_cutoff)

@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 #                                  CODE BUILT FOR UNDERSTANDING THE ERROR IN FFT PLOTS                                               #
 #######################################################################################################################################
 
-n_PXP = 9
-n_TI_max = 14
-h_c_max = 2
+n_PXP = 10
+n_TI_max = 13
+h_c_max = 3
 h_c_step=0.1
 h_c_array=np.round(np.arange(0,h_c_max+h_c_step,h_c_step).astype('float'),2)
 
@@ -193,11 +193,11 @@ for n_TI in range(n_PXP,n_TI_max+1):
             std= np.std(sample_ave) #Standard deviation of the different means obtained with bootstrapping
             np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Gamma_errors_std_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),std)
 
-        # Gamma_time_ave()
-        # Gamma_pcov_std_err_ave()
+        #Gamma_time_ave()
+        #Gamma_pcov_std_err_ave()
 
-        # Gamma_Bootstrap_confidence(Sample_no)
-        # Gamma_Bootstrap_std(Sample_no)
+        #Gamma_Bootstrap_confidence(Sample_no)
+        #Gamma_Bootstrap_std(Sample_no)
 
         def FFT_data_move():
             '''

@@ -586,7 +586,7 @@ def PXP_EBE_BathHam(n_PXP, n_TI, Subspace, J, h_x, h_z, h_c, h_imp, m): #Needs f
 
 def Neelstate_spin_base_faster(n_PXP):
     '''
-    faster method Generates Neelstate in spin basis (1 in the first site)
+    faster method Generates Neelstate in binary basis (1 in the first site)
     :param n_PXP: No. of atoms
     :return: Vector (Neelstate)
     '''

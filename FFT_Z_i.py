@@ -10,13 +10,10 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 #from O_z_Oscillations import *
 
-#####################################################################################################################################
-#                                  CODE BUILT FOR UNDERSTANDING THE ERROR IN FFT PLOTS                                               #
-#######################################################################################################################################
 
-n_PXP = 10
-n_TI_max = 13
-h_c_max = 2
+n_PXP = 9
+n_TI_max = 14
+h_c_max = 3
 h_c_step=0.1
 h_c_array=np.round(np.arange(0,h_c_max+h_c_step,h_c_step).astype('float'),2)
 T_start = 0
@@ -48,8 +45,7 @@ for n_TI in range(n_PXP,n_TI_max+1):
                 VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
                 Fourier_components[i-1,:]= rfft(VecProp)
             np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),
-                                 'Fourier_components_{}_{}_{}.npy'.format(n_PXP, n_TI, h_c)),
-                    Height_norm * np.abs(Fourier_components))
+                                 'Fourier_components_{}_{}_{}.npy'.format(n_PXP, n_TI, h_c)),Height_norm * np.abs(Fourier_components))
         #Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
         def FFT_Freq(T_start, T_max, T_step):
@@ -99,7 +95,7 @@ for n_TI in range(n_PXP,n_TI_max+1):
                 popt, pcov = curve_fit(Lorentzian_function, Freq[Start_cutoff:End_cutoff], sig_func[i-1,Start_cutoff:End_cutoff]) # popt= parameter optimal values
                 popt_tot[i-1,:]=popt
                 pcov_tot[i - 1, :] = np.diag(pcov)
-            print('for n_TI {} h_c {}'.format(n_TI,h_c),np.divide(np.sqrt(pcov_tot[:,1]),popt_tot[:,1])*100)
+            #print('for n_TI {} h_c {}'.format(n_TI,h_c),np.divide(np.sqrt(pcov_tot[:,1]),popt_tot[:,1])*100)
             np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)), popt_tot[:,1])
             np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),'gamma_error_array_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c, Start_cutoff, End_cutoff)), np.sqrt(pcov_tot[:, 1]))
 
@@ -193,8 +189,8 @@ for n_TI in range(n_PXP,n_TI_max+1):
         #Gamma_time_ave()
         #Gamma_pcov_std_err_ave()
 
-        # Gamma_Bootstrap_confidence(Sample_no)
-        # Gamma_Bootstrap_std(Sample_no)
+        #Gamma_Bootstrap_confidence(Sample_no)
+        #Gamma_Bootstrap_std(Sample_no)
 
         def FFT_data_move():
             '''
