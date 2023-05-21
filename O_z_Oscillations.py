@@ -678,6 +678,78 @@ def PXP_TI_Neelstate(n_PXP,n_TI):
     PXP_TI_Neel = np.kron(PXP_Neel,TI_Neel)
     return PXP_TI_Neel
 
+def Z_i_TI_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index):
+    '''
+    Returns <Neel_bath|Z_i(t)|Neel_bath> values FOR TI MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: vector -  <NeelxHaar|O_z(t)|NeelxHaar>
+    '''
+    Z_i = Ebe.Z_i_Spin_Basis_sparse(n_TI, i_index)
+    Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.TIOBCNew_Sparse(n_TI, J, h_x, h_z),Initialstate,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ Z_i @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
+
+def Run_Z_i_TI_only_Sparse_Time_prop(n_TI,i_index,T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation FOR TI MODEL ONLY (uncoupled to anything) plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = TI_Neelstate(n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return Z_i_TI_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
+
+
+def Run_Z_i_TI_only_Sparse_Time_prop_plt(n_TI,i_index,T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation FOR TI MODEL ONLY (uncoupled to anything) plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = TI_Neelstate(n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    sandwich= Z_i_TI_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
+    plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
+    plt.title('$<Z_{}>$ vs. time for {} TI atoms (Pure TI)'.format(i_index,n_TI))
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    return plt.show()
 
 
 def Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index, h_imp=0, m=2):
@@ -754,42 +826,69 @@ def Run_Z_i_Bath_Sparse_Time_prop_plt(n_PXP, n_TI, h_c, i_index, T_start, T_max,
     plt.ylabel('Amplitude')
     return plt.show()
 
-def Run_Z_i_Bath_Sparse_time_prop_fig_sys_size(n_PXP, i_index, T_start, T_max, T_step):
-    '''
-    Runs time propagation plotter in EBE sparse method
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param Initialstate: NeelHaar state usually
-    :param J: Ising term strength
-    :param h_x: longtitudinal field strength
-    :param h_z: Traverse field strength
-    :param h_c: coupling strength
-    :param T_start: start time
-    :param T_max: end time
-    :param T_step: time division
-    :return: Plot of Time propagation
-    '''
-    J = 1
-    h_x = np.sin(0.485 * np.pi)
-    h_z = np.cos(0.485 * np.pi)
-    avg = np.zeros((4))
-    n_TI_arr= np.arange(6,10,1)
-    for h_c in np.arange(0, 1.1, 0.1):
-        for n_TI in n_TI_arr:
-            Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
-            sandwich= Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
-            avg[n_TI-6]= np.mean(sandwich)
-        plt.plot(n_TI_arr,avg, label='$h_c$={}'.format(np.round(h_c,5)))
-    plt.legend()
-    plt.xlabel('TI chain size')
-    plt.ylabel('Avg Mag Amp ({}th site)'.format(i_index))
-    plt.title('time averaged $<Z_{}>$ vs. TI size for var. $h_c$, {} PXP'.format(i_index,n_PXP))
-    return plt.show()
+# def Run_Z_i_Bath_Sparse_time_prop_fig_sys_size(n_PXP, i_index, T_start, T_max, T_step):
+#     '''
+#     Runs time propagation plotter in EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param n_TI: No. of TI atoms
+#     :param Initialstate: NeelHaar state usually
+#     :param J: Ising term strength
+#     :param h_x: longtitudinal field strength
+#     :param h_z: Traverse field strength
+#     :param h_c: coupling strength
+#     :param T_start: start time
+#     :param T_max: end time
+#     :param T_step: time division
+#     :return: Plot of Time propagation
+#     '''
+#     J = 1
+#     h_x = np.sin(0.485 * np.pi)
+#     h_z = np.cos(0.485 * np.pi)
+#     avg = np.zeros((4))
+#     n_TI_arr= np.arange(6,10,1)
+#     for h_c in np.arange(0, 1.1, 0.1):
+#         for n_TI in n_TI_arr:
+#             Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
+#             sandwich= Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
+#             avg[n_TI-6]= np.mean(sandwich)
+#         plt.plot(n_TI_arr,avg, label='$h_c$={}'.format(np.round(h_c,5)))
+#     plt.legend()
+#     plt.xlabel('TI chain size')
+#     plt.ylabel('Avg Mag Amp ({}th site)'.format(i_index))
+#     plt.title('time averaged $<Z_{}>$ vs. TI size for var. $h_c$, {} PXP'.format(i_index,n_PXP))
+#     return plt.show()
 
 
-def Z_i_Bath_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index):
+def O_z_True_X_i_oscillations(): #TODO take the regular oscillations for X_i
+    return
+
+def Run_O_z_True_X_i_oscillations():
+    return
+
+def PXP_TI_Neelstate_True_X_i(n_PXP,n_TI):
     '''
-    Returns <Neel_bath|Z_i(t)|Neel_bath> values and corresponding time values, working with EBE sparse method
+    Combined Neel state of PXP and TI!
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :return: kronekered Neel state
+    '''
+    TI_Neel= TI_Neelstate(n_TI)
+    PXP_Neel= Neel_X_i_Extended_Subspace_Basis(n_PXP)
+    PXP_TI_Neel = np.kron(PXP_Neel,TI_Neel)
+    return PXP_TI_Neel
+
+def Z_i_TI_only_True_X_i_time_prop(): #TODO build
+    return
+
+def Run_Z_i_TI_only_True_X_i_Sparse_Time_prop(n_TI,i_index,T_start, T_max, T_step): #TODO build
+    return
+
+def Run_Z_i_TI_only_True_X_i_Sparse_Time_prop_plt(n_TI,i_index,T_start, T_max, T_step): #TODO build
+    return
+
+def Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0, m=2):
+    '''
+    Returns <Neel_bath|Z_i(t)|Neel_bath> values and corresponding time values FOR X_i coupling!, working with EBE sparse method
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI Atoms
     :param J: TI ising term strength
@@ -805,14 +904,17 @@ def Z_i_Bath_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_s
     :return: vector -  <NeelxHaar|O_z(t)|NeelxHaar>
     '''
     Z_i = Ebe.Z_i_Spin_Basis_sparse(n_TI, i_index)
-    Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.TIOBCNew_Sparse(n_TI, J, h_x, h_z),Initialstate,
-                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
-    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Z_i_Full = sp.kron(sp.eye(Extended_X_i_Subspace_basis_count_faster(n_PXP)), Z_i)
+    Propagated_ket = Ebe.spla.expm_multiply(-1j * Ebe.PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),
+                                            Initialstate,
+                                            start=T_start, stop=T_max, num=T_step, endpoint=True)
+    Propagated_ket_fin = np.transpose(Propagated_ket)
     Propagated_bra_fin = np.conjugate(Propagated_ket)
-    Sandwich = np.diag(Propagated_bra_fin @ Z_i @ Propagated_ket_fin)
+    Sandwich = np.diag(Propagated_bra_fin @ Z_i_Full @ Propagated_ket_fin)
     return Sandwich.round(4).astype('float')
 
-def Run_Z_i_Bath_only_Sparse_Time_prop(n_TI,i_index,T_start, T_max, T_step):
+
+def Run_Z_i_Bath_True_X_i_Sparse_Time_prop(n_PXP, n_TI, h_c, i_index, T_start, T_max, T_step):
     '''
     Runs time AVERAGE propagation plotter in EBE sparse method
     :param n_PXP: No. of PXP atoms
@@ -827,14 +929,15 @@ def Run_Z_i_Bath_only_Sparse_Time_prop(n_TI,i_index,T_start, T_max, T_step):
     :param T_step: time division
     :return: Plot of Time propagation
     '''
-    Initialstate = TI_Neelstate(n_TI)
+    Initialstate = PXP_TI_Neelstate_True_X_i(n_PXP, n_TI)
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    return Z_i_Bath_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
+    return Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0,
+                              m=2)
 
 
-def Run_Z_i_Bath_only_Sparse_Time_prop_plt(n_TI,i_index,T_start, T_max, T_step):
+def Run_Z_i_Bath_True_X_i_Sparse_Time_prop_plt(n_PXP, n_TI, h_c, i_index, T_start, T_max, T_step):
     '''
     Runs time AVERAGE propagation plotter in EBE sparse method
     :param n_PXP: No. of PXP atoms
@@ -849,20 +952,51 @@ def Run_Z_i_Bath_only_Sparse_Time_prop_plt(n_TI,i_index,T_start, T_max, T_step):
     :param T_step: time division
     :return: Plot of Time propagation
     '''
-    Initialstate = TI_Neelstate(n_TI)
+    Initialstate = PXP_TI_Neelstate_True_X_i(n_PXP, n_TI)
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    sandwich= Z_i_Bath_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
-    plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
-    plt.title('$<Z_{}>$ vs. time for {} TI atoms (Pure TI)'.format(i_index,n_TI))
+    sandwich = Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0,
+                                  m=2)
+    plt.plot(np.linspace(T_start, T_max, T_step), sandwich)
+    plt.title('$<Z_{}>$ vs. time for {} TI atoms {} PXP atoms $h_c$={} X_i coupling'.format(i_index, n_TI, n_PXP, np.round(h_c, 5)))
     plt.xlabel('time')
     plt.ylabel('Amplitude')
     return plt.show()
 
 
-
-
+# def Run_Z_i_Bath_True_X_i_Sparse_time_prop_fig_sys_size(n_PXP, i_index, T_start, T_max, T_step):
+#     '''
+#     Runs time propagation plotter in EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param n_TI: No. of TI atoms
+#     :param Initialstate: NeelHaar state usually
+#     :param J: Ising term strength
+#     :param h_x: longtitudinal field strength
+#     :param h_z: Traverse field strength
+#     :param h_c: coupling strength
+#     :param T_start: start time
+#     :param T_max: end time
+#     :param T_step: time division
+#     :return: Plot of Time propagation
+#     '''
+#     J = 1
+#     h_x = np.sin(0.485 * np.pi)
+#     h_z = np.cos(0.485 * np.pi)
+#     avg = np.zeros((4))
+#     n_TI_arr = np.arange(6, 10, 1)
+#     for h_c in np.arange(0, 1.1, 0.1):
+#         for n_TI in n_TI_arr:
+#             Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
+#             sandwich = Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index,
+#                                           h_imp=0, m=2)
+#             avg[n_TI - 6] = np.mean(sandwich)
+#         plt.plot(n_TI_arr, avg, label='$h_c$={}'.format(np.round(h_c, 5)))
+#     plt.legend()
+#     plt.xlabel('TI chain size')
+#     plt.ylabel('Avg Mag Amp ({}th site)'.format(i_index))
+#     plt.title('time avg. $<Z_{}>$ vs. TI size for var. $h_c$, X_i coupling {} PXP'.format(i_index, n_PXP))
+#     return plt.show()
 
 
 #######################################################################################################################################################3######################
@@ -1083,6 +1217,7 @@ def ScaledDampingLength(n_PXP, n_TI, h_c, T_start, T_max, T_step,Threshold=-0.3)
 
 
 #TODO Write the scaled damping length differently so that the PXP length will only be calculated once.
+
 
 # def ScaledDampinglength(n_PXP, n_TI, h_c, T_start, T_max, T_step, Cap=5):
 #     '''

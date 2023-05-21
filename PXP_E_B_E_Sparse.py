@@ -43,7 +43,7 @@ Z_i_Sparse = csr_matrix([[1, 0], [0, -1]])  # pauli Z
 
 def O_z_PXP_Entry_Sparse(n, Subspace):
     '''
-    Builds O_z in Subspace basis of PXP entry Sparsely, WORKS FOR X_i EXTENDED ASWELL!!!
+    Builds O_z in Subspace basis of PXP entry Sparsely, WORKS FOR X_i EXTENDED ASWELL!!!!
     :param n: number of atoms
     :return: O_z matrix sparse
     '''

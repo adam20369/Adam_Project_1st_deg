@@ -586,13 +586,17 @@ def PXP_EBE_BathHam(n_PXP, n_TI, Subspace, J, h_x, h_z, h_c, h_imp, m): #Needs f
 
 def Neelstate_spin_base_faster(n_PXP):
     '''
-    faster method Generates Neelstate in binary basis (1 in the first site)
+    faster method Generates Neelstate in binary basis: first 1 in first site for ODD, first 1 in second site for EVEN !!!!!
     :param n_PXP: No. of atoms
     :return: Vector (Neelstate)
     '''
     Neel = np.zeros((n_PXP))
-    Even = np.arange(0,n_PXP,2)
-    Neel[Even]=1
+    if n_PXP % 2 ==0:
+        Even = np.arange(1,n_PXP,2)
+        Neel[Even]=1
+    else:
+        Odd = np.arange(0,n_PXP,2)
+        Neel[Odd]=1
     return Neel
 
 def Neel_Subspace_Basis(n_PXP):
