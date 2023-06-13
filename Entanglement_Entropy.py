@@ -257,15 +257,23 @@ def Entanglement_entropy_avg_std(n_PXP, n_TI, h_c, interval_width): #8 PXP 10 TI
     '''
     SVD_vec_mat, eval = Evec_SVD_PXP_TI(n_PXP, n_TI, np.round(h_c,5))
     Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
-    eval_interval_arg_min= np.min(np.argwhere(eval>(h_c-interval_width)))
-    print('Minimum interval point', eval_interval_arg_min)
-    eval_interval_arg_max= np.min(np.argwhere(eval>(h_c+interval_width)))
-    print('Maximum interval point', eval_interval_arg_max)
-    average = np.average(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
-    std = np.std(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
-    return np.round(average,4), np.round(std,4)
+    eval_interval_arg_min_left= np.min(np.argwhere(eval>(-h_c-interval_width)))
+    eval_interval_arg_max_left=np.min(np.argwhere(eval>(-h_c+interval_width)))
+    eval_interval_arg_min_right= np.min(np.argwhere(eval>(h_c-interval_width)))
+    eval_interval_arg_max_right= np.min(np.argwhere(eval>(h_c+interval_width)))
+    # print('coupling=',h_c,'minimum left interval of eval', eval[eval_interval_arg_min_left])
+    # print('coupling=',h_c,'maximum left interval of eval', eval[eval_interval_arg_max_left])
+    # print('coupling=',h_c,'minimum right interval of eval', eval[eval_interval_arg_min_right])
+    # print('coupling=',h_c,'maximum right interval of eval', eval[eval_interval_arg_max_right])
+    average_left = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    average_right = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    average= (average_left+average_right)/2
+    std_left = np.std(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    std_right = np.std(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    std= (std_left+std_right)/2
+    return np.round(average,5), np.round(std,5)
 
-def EE_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
+def EE_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width=0.5):
     '''
     Plots average and Standard deviation of entanglement for given interval
     :param n_PXP: No. of PXP atoms
@@ -301,10 +309,16 @@ def Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width): #8 P
     SVD_vec_mat = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Entanglement_h_c_{}.npy'.format(h_c)))
     eval = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Eval_h_c_{}.npy'.format(h_c)))
     Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
-    eval_interval_arg_min= np.min(np.argwhere(eval>(h_c-interval_width)))
-    eval_interval_arg_max= np.min(np.argwhere(eval>(h_c+interval_width)))
-    average = np.average(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
-    std = np.std(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
+    eval_interval_arg_min_left= np.min(np.argwhere(eval>(-h_c-interval_width)))
+    eval_interval_arg_max_left=np.min(np.argwhere(eval>(-h_c+interval_width)))
+    eval_interval_arg_min_right= np.min(np.argwhere(eval>(h_c-interval_width)))
+    eval_interval_arg_max_right= np.min(np.argwhere(eval>(h_c+interval_width)))
+    average_left = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    average_right = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    average= (average_left+average_right)/2
+    std_left = np.std(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    std_right = np.std(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    std= (std_left+std_right)/2
     try:
         os.mkdir('EE_PXP_{}_TI_{}/AVG_STD_width_{}'.format(n_PXP,n_TI,interval_width))
     except:
@@ -455,14 +469,21 @@ def Entanglement_entropy_True_X_i_avg_std(n_PXP, n_TI, h_c, interval_width): #8 
     '''
     SVD_vec_mat, eval = Evec_SVD_True_X_i_PXP_TI(n_PXP, n_TI, np.round(h_c,5))
     Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
-    print(Entanglement_entropy_vec)
-    eval_interval_arg_min= np.min(np.argwhere(eval>(h_c-interval_width)))
-    print('Minimum interval point', eval_interval_arg_min)
-    eval_interval_arg_max= np.min(np.argwhere(eval>(h_c+interval_width)))
-    print('Maximum interval point', eval_interval_arg_max)
-    average = np.average(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
-    std = np.std(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
-    return np.round(average,4), np.round(std,4)
+    eval_interval_arg_min_left= np.min(np.argwhere(eval>(-h_c-interval_width)))
+    eval_interval_arg_max_left=np.min(np.argwhere(eval>(-h_c+interval_width)))
+    eval_interval_arg_min_right= np.min(np.argwhere(eval>(h_c-interval_width)))
+    eval_interval_arg_max_right= np.min(np.argwhere(eval>(h_c+interval_width)))
+    # print('coupling=',h_c,'minimum left interval of eval', eval[eval_interval_arg_min_left])
+    # print('coupling=',h_c,'maximum left interval of eval', eval[eval_interval_arg_max_left])
+    # print('coupling=',h_c,'minimum right interval of eval', eval[eval_interval_arg_min_right])
+    # print('coupling=',h_c,'maximum right interval of eval', eval[eval_interval_arg_max_right])
+    average_left = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    average_right = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    average= (average_left+average_right)/2
+    std_left = np.std(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    std_right = np.std(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    std= (std_left+std_right)/2
+    return np.round(average,5), np.round(std,5)
 
 # def EE_True_X_i_Avg_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
 #     '''
@@ -486,7 +507,7 @@ def Entanglement_entropy_True_X_i_avg_std(n_PXP, n_TI, h_c, interval_width): #8 
 #     #plt.savefig('Figures/Entanglement_Entropy/Average_Entanglement_Entropy')
 #     return plt.show()
 
-def EE_True_X_i_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
+def EE_True_X_i_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width=0.5):
     '''XX coupling
     Plots average and Standard deviation of entanglement for given interval
     :param n_PXP: No. of PXP atoms
@@ -500,7 +521,7 @@ def EE_True_X_i_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
     avg = np.empty((np.size(h_c)))
     std = avg.copy()
     for i in np.nditer(h_c):
-        avg[int(np.round(i, 1) * 10 - h_c_start * 10)], std[int(np.round(i, 1) * 10 - h_c_start * 10)] = Entanglement_entropy_True_X_i_avg_std(n_PXP, n_TI, i, interval_width)
+        avg[int(np.round(i, 1) * 10 - h_c_start * 10)], std[int(np.round(i, 1) * 10 - h_c_start * 10)] = Entanglement_entropy_True_X_i_avg_std(n_PXP, n_TI, np.round(i,2), interval_width)
     plt.plot(h_c[:], avg[:], linestyle='-',color='b')
     #plt.errorbar(h_c[:], avg[:], yerr=std[:],marker='s', markersize=2, linestyle='-', barsabove=True, capsize=3, capthick=3)
     plt.fill_between(h_c[:], avg[:] - std[:], avg[:]+std[:], alpha=0.4)
@@ -522,10 +543,16 @@ def Entanglement_entropy_True_X_i_avg_std_Cluster(n_PXP, n_TI, h_c, interval_wid
     SVD_vec_mat = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Entanglement_h_c_{}_True_X_i.npy'.format(h_c)))
     eval = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Eval_h_c_{}_True_X_i.npy'.format(h_c)))
     Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
-    eval_interval_arg_min= np.min(np.argwhere(eval>(h_c-interval_width)))
-    eval_interval_arg_max= np.min(np.argwhere(eval>(h_c+interval_width)))
-    average = np.average(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
-    std = np.std(Entanglement_entropy_vec[eval_interval_arg_min:eval_interval_arg_max])
+    eval_interval_arg_min_left= np.min(np.argwhere(eval>(-h_c-interval_width)))
+    eval_interval_arg_max_left=np.min(np.argwhere(eval>(-h_c+interval_width)))
+    eval_interval_arg_min_right= np.min(np.argwhere(eval>(h_c-interval_width)))
+    eval_interval_arg_max_right= np.min(np.argwhere(eval>(h_c+interval_width)))
+    average_left = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    average_right = np.mean(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    average= (average_left+average_right)/2
+    std_left = np.std(Entanglement_entropy_vec[eval_interval_arg_min_left:eval_interval_arg_max_left])
+    std_right = np.std(Entanglement_entropy_vec[eval_interval_arg_min_right:eval_interval_arg_max_right])
+    std= (std_left+std_right)/2
     try:
         os.mkdir('EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width))
     except:
