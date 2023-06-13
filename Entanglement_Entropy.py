@@ -215,7 +215,7 @@ def Entanglement_entropy_calc_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - us
     :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
     '''
     SVD_vec_mat, eval = Evec_SVD_PXP_TI(n_PXP, n_TI, np.round(h_c,5))
-    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
     plt.scatter(eval, np.round(Entanglement_entropy_vec,32))
     plt.title('Entanglement vs Energy for {} PXP & {} TI atoms, $h_c$ {} '.format(n_PXP, n_TI, np.round(h_c,5)))
     plt.xlabel('Energy')
@@ -434,7 +434,7 @@ def Entanglement_entropy_calc_True_X_i_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 
     :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
     '''
     SVD_vec_mat, eval = Evec_SVD_True_X_i_PXP_TI(n_PXP, n_TI, np.round(h_c,5))
-    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
     plt.scatter(eval, np.round(Entanglement_entropy_vec,32))
     plt.title('Entanglement vs Energy for {} PXP & {} TI atoms, $h_c$ {} XX coupl '.format(n_PXP, n_TI, np.round(h_c,5)))
     plt.xlabel('Energy')
@@ -562,11 +562,11 @@ def EE_True_X_i_Avg_Std_Cluster_plot(n_PXP, n_TI,h_c_start, h_c_max,interval_wid
 #Evec_SVD_True_X_i_PXP_TI_Cluster(n_PXP, n_TI, h_c)
 #Entanglement_entropy_True_X_i_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=1)
 
-#####################################################################################################################################
-#                                                   PXP-PXP CUT EE CODE                                                             #
-#####################################################################################################################################
+#####################################################################################################################################################################
+#                                                                                   PXP-PXP CUT EE CODE                                                             #
+######################################################################################################################################################################
 
-#                                                   PXP-PXP CUT EE CODE FOR PXP OBC ONLY                                            #
+#####                                                             PXP-PXP CUT EE CODE FOR PXP OBC ONLY                                                            #####
 
 def PXP_PXP_Full_Permutation_Basis(n_PXP):
     '''
@@ -673,7 +673,7 @@ def Entanglement_entropy_calc_PXP_PXP(n_PXP): #TOP NUMBER TO CALC IS ???
     :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
     '''
     SVD_vec_mat, eval = Evec_SVD_PXP_PXP(n_PXP)
-    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
     plt.scatter(eval, Entanglement_entropy_vec)
     plt.title('Entanglement vs Energy for {} PXP atoms, pure PXP'.format(n_PXP))
     plt.xlabel('Energy')
@@ -813,7 +813,7 @@ def Entanglement_entropy_calc_PXP_PXP_TI(n_PXP,n_TI, h_c): #TOP NUMBER TO CALC I
     SVD_vec_mat, eval = Evec_SVD_PXP_PXP_TI(n_PXP,n_TI, np.round(h_c,5))
     #Entanglement_entropy_normalization_check= np.sum(SVD_vec_mat**2,axis=1)
     #print(np.nonzero(np.round(Entanglement_entropy_normalization_check,5)!=1))
-    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.log(SVD_vec_mat),axis=1)
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
     #print('Entanglement_entropy_vec', Entanglement_entropy_vec,'eval',eval)
     plt.scatter(eval, np.round(Entanglement_entropy_vec,32)) #TODO check if doesn't screw anything
     plt.title('Entanglement vs Energy for {} PXP {} TI, {} $h_c$ PXP-PXP cut'.format(n_PXP,n_TI, np.round(h_c,5)))
@@ -891,7 +891,7 @@ def Evec_SVD_PXP_PXP_TI_Cluster(n_PXP,n_TI,h_c): #TOP NUMBER TO CALC IS????
 #Evec_SVD_PXP_PXP_TI_Cluster(n_PXP,n_TI,h_c)
 
 
-def Neel_Overlap_calc_Pure_PXP(n_PXP):
+def Neel_Overlap_calc_Pure_PXP_plt(n_PXP):
     '''
     Calculates different overlaps of pure PXP OBC Hamiltonian eigenstates with the Neel state
     :param n_PXP: No. of PXP atoms
@@ -907,48 +907,6 @@ def Neel_Overlap_calc_Pure_PXP(n_PXP):
     # plt.savefig('Overlap_{}_PXP_atoms.pdf'.format(n_PXP))
     return plt.show()
 
-
-def Neel_Overlap_calc_PXP_TI_plt(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp = 0, m=2):
-    '''
-    Calculates different overlaps of PXP-TI Hamiltonian eigenstates with the Neel state (Neel matrix x identity)
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param h_c: coupling strength
-    :return: plot overlap graph
-    '''
-    eval, evec = la.eigh(PXP_TI_coupled_Sparse(n_PXP, n_TI,J ,h_x ,h_z ,h_c ,h_imp ,m).todense())
-    Neel_state_coupled_mat= np.kron(np.outer(Neel_Subspace_Basis(n_PXP),Neel_Subspace_Basis(n_PXP)),np.identity(2**n_TI))
-    overlap_vec_Neel_outer= np.diag(np.matmul(np.conjugate(np.transpose(evec)),np.matmul(Neel_state_coupled_mat,evec)))
-    plt.scatter(eval,np.log10(overlap_vec_Neel_outer.round(32)))
-    plt.xlabel('Energy')
-    plt.ylabel(r'$log_{10}(|\langle\mathbb{Z}_{2}|\psi\rangle|)^{2}$')
-    plt.title('Overlap of Neel State with Eigenstates vs. Eigenstate Energy')
-    #plt.savefig('Overlap_{}_PXP_atoms.pdf'.format(n_PXP))
-    #plt.show()
-    return eval, np.log10(overlap_vec_Neel_outer.round(32))
-
-def Neel_Max_Overlap_plt(n_PXP, n_TI, h_c): #TODO need to fix #will work if the 2 highest overlap values have a multiplicity of 1 only
-    '''
-    finds 3/4 x 2^n_TI max Overlapped eigenstates with the Neel state
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param h_c: coupling strength
-    :anomalous_eigenstates: n_PXP + 1
-    :return: eigenenergies of max overlap
-    '''
-    eval, overlap_vec = Neel_Overlap_calc_PXP_TI_plt(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
-    if n_PXP%2==0:
-        overlap_max_vals=np.flip(np.sort(overlap_vec))[(1*(2**n_TI)):4*(2**n_TI)] #take first 4 (*2**n_TI) anomalous eigenvalues, EXCLUDING 0
-        #print(overlap_max_vals)
-    else:
-        overlap_max_vals=np.flip(np.sort(overlap_vec))[:4*(2**n_TI)] #take first 4 (*2**n_TI) anomalous eigenvalues
-        #print(overlap_max_vals)
-    overlap_max_indeces=np.squeeze(np.nonzero(np.isin(overlap_vec,overlap_max_vals)))
-    max_overlap_evals=eval[overlap_max_indeces]
-    #print((max_overlap_evals))
-    plt.scatter(max_overlap_evals,overlap_vec[overlap_max_indeces])
-    return plt.show()
-
 def Neel_Overlap_calc_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp = 0, m=2):
     '''
     Calculates different overlaps of PXP-TI Hamiltonian eigenstates with the Neel state (Neel matrix x identity)
@@ -961,6 +919,24 @@ def Neel_Overlap_calc_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h
     Neel_state_coupled_mat= np.kron(np.outer(Neel_Subspace_Basis(n_PXP),Neel_Subspace_Basis(n_PXP)),np.identity(2**n_TI))
     overlap_vec_Neel_outer= np.diag(np.matmul(np.conjugate(np.transpose(evec)),np.matmul(Neel_state_coupled_mat,evec)))
     return eval, np.log10(overlap_vec_Neel_outer.round(32))
+
+def Neel_Overlap_calc_PXP_TI_plt(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp = 0, m=2):
+    '''
+    Calculates different overlaps of PXP-TI Hamiltonian eigenstates with the Neel state (Neel matrix x identity)
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :return: evals, log of overlap of each eigenvector with Neel state
+    '''
+    eval, evec = la.eigh(PXP_TI_coupled_Sparse(n_PXP, n_TI,J ,h_x ,h_z ,h_c ,h_imp ,m).todense())
+    Neel_state_coupled_mat= np.kron(np.outer(Neel_Subspace_Basis(n_PXP),Neel_Subspace_Basis(n_PXP)),np.identity(2**n_TI))
+    overlap_vec_Neel_outer= np.diag(np.matmul(np.conjugate(np.transpose(evec)),np.matmul(Neel_state_coupled_mat,evec)))
+    plt.scatter(eval,np.log10(overlap_vec_Neel_outer.round(32)))
+    plt.xlabel('Energy')
+    plt.ylabel(r'$log_{10}(|\langle\mathbb{Z}_{2}|\psi\rangle|)^{2}$')
+    plt.title('Overlap of Neel State with Eigenstates vs. Eigenstate Energy')
+    #plt.savefig('Overlap_{}_PXP_atoms.pdf'.format(n_PXP))
+    return plt.show()
 
 def Neel_Max_Overlap(n_PXP, n_TI, h_c): #TODO need to fix #will work if the 2 highest overlap values have a multiplicity of 1 only
     '''
@@ -982,6 +958,29 @@ def Neel_Max_Overlap(n_PXP, n_TI, h_c): #TODO need to fix #will work if the 2 hi
     max_overlap_evals=eval[overlap_max_indeces]
     overlap_max_vals_eval_ordered= overlap_vec[overlap_max_indeces]
     return max_overlap_evals, overlap_max_vals_eval_ordered
+
+def Neel_Max_Overlap_plt(n_PXP, n_TI, h_c): #TODO need to fix #will work if the 2 highest overlap values have a multiplicity of 1 only
+    '''
+    finds 3/4 x 2^n_TI max Overlapped eigenstates with the Neel state
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :anomalous_eigenstates: n_PXP + 1
+    :return: eigenenergies of max overlap
+    '''
+    eval, overlap_vec = Neel_Overlap_calc_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
+    if n_PXP%2==0:
+        overlap_max_vals=np.flip(np.sort(overlap_vec))[(1*(2**n_TI)):4*(2**n_TI)] #take first 4 (*2**n_TI) anomalous eigenvalues, EXCLUDING 0
+        #print(overlap_max_vals)
+    else:
+        overlap_max_vals=np.flip(np.sort(overlap_vec))[:4*(2**n_TI)] #take first 4 (*2**n_TI) anomalous eigenvalues
+        #print(overlap_max_vals)
+    overlap_max_indeces=np.squeeze(np.nonzero(np.isin(overlap_vec,overlap_max_vals)))
+    max_overlap_evals=eval[overlap_max_indeces]
+    #print((max_overlap_evals))
+    plt.scatter(max_overlap_evals,overlap_vec[overlap_max_indeces])
+    return plt.show()
+
 
 
 def Max_Overlap_EE_plt(n_PXP, n_TI, h_c): #TDOO does not work
