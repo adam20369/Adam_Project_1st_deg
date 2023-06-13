@@ -5,6 +5,8 @@ import PXP_E_B_E_Sparse as Ebe
 from PXP_Entry_By_Entry import *
 import numpy.linalg as la
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as colors
 from matplotlib.lines import Line2D
 from scipy.linalg import expm
 from scipy.signal import find_peaks
@@ -14,6 +16,7 @@ from scipy.sparse.csgraph import connected_components
 from Coupling_To_Bath import *
 from scipy.fft import fft, ifft, rfft, irfft, fftfreq, rfftfreq
 from scipy.optimize import curve_fit
+from matplotlib import colors
 
 
 def ZiSandwichCheck2(Ham, n_PXP, n_TI,  Initialstate,
@@ -572,9 +575,63 @@ def Residuals_plot(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm, Start_
     return plt.show()
 
 
+
 ######################################################################################################################################################################################################################################################################3
 ##                                                                                                                    Bath oscillations                                                                                                                              #
 ######################################################################################################################################################################################################################################################################3
+
+
+def O_z_Sparse_Time_prop_PXP_OBC_Only(n_PXP, Initialstate, T_start, T_max, T_step):
+    '''
+    Returns <Neel|O_z(t)|Neel> values and corresponding time values for PXP Hamiltonian only!!, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :return: vector -  <Neel_pxp|O_z(t)|Neel_pxp>
+    '''
+    O_z_PXP = Ebe.O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo)
+    Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.PXP_Ham_OBC_Sparse(n_PXP,PXP_Subspace_Algo),Initialstate ,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ O_z_PXP @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
+
+def Run_O_z_Sparse_Time_prop_PXP_OBC_Only(n_PXP ,T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation plotter for PXP Hamiltonian only!!, in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param Initialstate: NeelHaar state usually
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_Subspace_Basis(n_PXP)
+    return O_z_Sparse_Time_prop_PXP_OBC_Only(n_PXP, Initialstate, T_start, T_max, T_step)
+
+def Run_O_z_Sparse_Time_prop_PXP_OBC_Only_plt(n_PXP, T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation plotter for PXP Hamiltonian only!!,in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param Initialstate: NeelHaar state usually
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_Subspace_Basis(n_PXP)
+    sandwich = O_z_Sparse_Time_prop_PXP_OBC_Only(n_PXP, Initialstate, T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start, T_max, T_step), sandwich)
+    plt.xlabel('time')
+    plt.ylabel('<N|$O_z(t)$|N>')
+    plt.ylim(-0.8,0.3)
+    plt.title('$O_z$ Oscillations vs time for {} PXP $ZZ$ coupling'.format(n_PXP))
+    return plt.show()
+
+
 def O_z_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
     '''
     Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method
@@ -643,28 +700,12 @@ def Run_O_z_Sparse_Time_prop_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step):
     h_z = np.cos(0.485 * np.pi)
     sandwich = O_z_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
     plt.plot(np.linspace(T_start, T_max, T_step), sandwich)
+    plt.xlabel('time')
+    plt.ylabel('<N|$O_z(t)$|N>')
+    plt.ylim(-0.8,0.3)
+    plt.title('$O_z$ Oscillations vs time for {} PXP, {} TI, $h_c=${}'.format(n_PXP,n_TI,np.round(h_c,2)))
     return plt.show()
 
-
-def TI_Neelstate(n_TI):
-    '''
-    Tilted Ising (only) Neel state - just Neel in 2^n kron basis
-    :param n_TI: Tilted Ising atom number
-    :return:
-    '''
-    Neel_base= np.zeros((2**n_TI))
-    Neel= Neel_base.copy()
-    if n_TI%2==0:
-        Base_array= np.arange(1,n_TI,2)
-        Neel_no= np.sum(2**(Base_array))
-        Neel[int(Neel_no)]=1
-        Neel=np.flip(Neel)
-    else:
-        Base_array= np.arange(0,n_TI,2)
-        Neel_no= np.sum(2**(Base_array))
-        Neel[int(Neel_no)]=1
-        Neel=np.flip(Neel)
-    return Neel
 
 def PXP_TI_Neelstate(n_PXP,n_TI):
     '''
@@ -678,7 +719,7 @@ def PXP_TI_Neelstate(n_PXP,n_TI):
     PXP_TI_Neel = np.kron(PXP_Neel,TI_Neel)
     return PXP_TI_Neel
 
-def Z_i_TI_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index):
+def Z_i_TI_only_Sparse_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index):
     '''
     Returns <Neel_bath|Z_i(t)|Neel_bath> values FOR TI MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
     :param n_PXP: No. of PXP atoms
@@ -693,7 +734,7 @@ def Z_i_TI_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_ste
     :param T_step: time step (division)
     :param h_imp: impurity (TI) strength
     :param m: impurity site
-    :return: vector -  <NeelxHaar|O_z(t)|NeelxHaar>
+    :return: vector -  <Neel_bath|Z_i(t)|Neel_bath>
     '''
     Z_i = Ebe.Z_i_Spin_Basis_sparse(n_TI, i_index)
     Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.TIOBCNew_Sparse(n_TI, J, h_x, h_z),Initialstate,
@@ -722,7 +763,7 @@ def Run_Z_i_TI_only_Sparse_Time_prop(n_TI,i_index,T_start, T_max, T_step):
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    return Z_i_TI_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
+    return Z_i_TI_only_Sparse_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
 
 
 def Run_Z_i_TI_only_Sparse_Time_prop_plt(n_TI,i_index,T_start, T_max, T_step):
@@ -744,17 +785,70 @@ def Run_Z_i_TI_only_Sparse_Time_prop_plt(n_TI,i_index,T_start, T_max, T_step):
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    sandwich= Z_i_TI_only_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
+    sandwich= Z_i_TI_only_Sparse_time_prop(n_TI, Initialstate, J, h_x, h_z, T_start, T_max, T_step,i_index)
     plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
     plt.title('$<Z_{}>$ vs. time for {} TI atoms (Pure TI)'.format(i_index,n_TI))
     plt.xlabel('time')
     plt.ylabel('Amplitude')
+    plt.ylim(-0.8,0.3)
+    return plt.show()
+
+def Z_i_Sys_PXP_Only_Sparse_time_prop(n_PXP,i_index, Initialstate,T_start, T_max, T_step):
+    '''
+    Returns <Neel|Z_i(t)|Neel> values FOR PXP MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param i_index: site of Z_i
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :return: vector -  <Neel|Z_i(t)|Neel>
+    '''
+    Z_n = Ebe.Z_i_PXP_Entry_Sparse(n_PXP,i_index, PXP_Subspace_Algo)
+    Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.PXP_Ham_OBC_Sparse(n_PXP,PXP_Subspace_Algo),Initialstate,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ Z_n @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
+
+def Run_Z_i_Sys_PXP_Only_Sparse_time_prop(n_PXP, i_index, T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation FOR PXP MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param i_index: site of Z_i
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_Subspace_Basis(n_PXP)
+    return Z_i_Sys_PXP_Only_Sparse_time_prop(n_PXP,i_index, Initialstate,T_start, T_max, T_step)
+
+
+def Run_Z_i_Sys_PXP_Only_Sparse_time_prop_plt(n_PXP,i_index, T_start, T_max, T_step):
+    '''
+    plots time AVERAGE propagation FOR PXP MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param i_index: site of Z_i
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_Subspace_Basis(n_PXP)
+    sandwich= Z_i_Sys_PXP_Only_Sparse_time_prop(n_PXP,i_index, Initialstate,T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
+    plt.title('$<Z_{}>$ vs. time for {} PXP atoms (Pure PXP OBC)'.format(i_index,n_PXP))
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.ylim(-1,1)
     return plt.show()
 
 
-def Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index, h_imp=0, m=2):
+def Z_i_Bath_Sparse_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index, h_imp=0, m=2):
     '''
-    Returns <Neel_bath|Z_i(t)|Neel_bath> values and corresponding time values, working with EBE sparse method
+    Returns <NeelxNeel|Z_i(t)TI|NeelxNeel> values and corresponding time values, working with EBE sparse method
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI Atoms
     :param J: TI ising term strength
@@ -767,7 +861,7 @@ def Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_m
     :param T_step: time step (division)
     :param h_imp: impurity (TI) strength
     :param m: impurity site
-    :return: vector -  <NeelxHaar|O_z(t)|NeelxHaar>
+    :return: vector -<NeelxNeel|Z_i(t)|NeelxNeel>
     '''
     Z_i = Ebe.Z_i_Spin_Basis_sparse(n_TI, i_index)
     Z_i_Full = sp.kron(sp.eye(Subspace_basis_count_faster(n_PXP)),Z_i)
@@ -797,7 +891,7 @@ def Run_Z_i_Bath_Sparse_Time_prop(n_PXP, n_TI, h_c,i_index,T_start, T_max, T_ste
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    return Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
+    return Z_i_Bath_Sparse_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
 
 
 def Run_Z_i_Bath_Sparse_Time_prop_plt(n_PXP, n_TI, h_c, i_index, T_start, T_max, T_step):
@@ -819,76 +913,204 @@ def Run_Z_i_Bath_Sparse_Time_prop_plt(n_PXP, n_TI, h_c, i_index, T_start, T_max,
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    sandwich= Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
-    plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
-    plt.title('$<Z_{}>$ vs. time for {} TI atoms {} PXP atoms $h_c$={}'.format(i_index,n_TI,n_PXP,np.round(h_c,5)))
-    plt.xlabel('time')
-    plt.ylabel('Amplitude')
+    sandwich= Z_i_Bath_Sparse_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
+    time_cutoff_arr=np.array((250,500,1000))
+    for time_cutoff in np.nditer(time_cutoff_arr):
+        plt.plot(np.linspace(T_start,T_max,T_step)[:time_cutoff],sandwich[:time_cutoff])
+        plt.title('$<Z_{}>$ vs. time for {} TI atoms {} PXP atoms $h_c$={}'.format(i_index,n_TI,n_PXP,np.round(h_c,5)))
+        plt.xlabel('time')
+        plt.ylabel('Amplitude')
+        plt.ylim(-1,1)
+        try:
+            os.mkdir('Bath_Oscillations/PXP_{}'.format(n_PXP,))
+        except:
+            pass
+        try:
+            os.mkdir('Bath_Oscillations/PXP_{}/h_c_{}/'.format(n_PXP, np.round(h_c, 2)))
+        except:
+            pass
+        plt.savefig('Bath_Oscillations/PXP_{}/h_c_{}/Cutoff_{}_Z_1_Bath_Oscillations_TI_{}_PXP_{}.png'.format(n_PXP,np.round(h_c,2),time_cutoff,n_TI,n_PXP))
+        plt.show()
+    return
+
+
+def Run_Z_i_Bath_Sparse_Time_prop_grid():#TODO build!!!
+    '''
+    runs Z_i bath propagation for all TI sites (all i's), returns a matrix of time propagation (x axis is i'th atom, y axis is time propagation)
+    :return: T_step X n_TI matrix
+    '''
+    return
+
+
+def Run_Z_i_Bath_Sparse_Time_prop_plt_grid(n_PXP, n_TI, h_c, T_start, T_max, T_step):
+    '''
+    plots grid of y=time, x=(-1)^(i+1) * <Z_i> for running i, and actual values as colors
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    Time = np.round(np.linspace(T_start,T_max,T_step),2)
+    Z_i_array= np.arange(0,n_TI+1,1)
+    Sandwich_mat=np.zeros((T_step,n_TI))
+    for i_index in range(1,n_TI+1) :
+        Sandwich_mat[:,i_index-1]= ((-1)**(i_index-1))*Z_i_Bath_Sparse_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
+    Sandwich_mat_fin= Sandwich_mat
+    cmap = cm.get_cmap('plasma') #define cmap as 'plasma' color map (defult 256 elements in string)
+    #bounds = np.linspace(-1.5,1.5,180) #define bin values to map regular values to
+    #norm = colors.BoundaryNorm(bounds, cmap.N) #attaches the boundarie bin values to colormap values
+    plt.pcolor(Z_i_array,Time,Sandwich_mat_fin, shading='auto', cmap=cmap)
+    plt.colorbar()
+    plt.title('$<Z_i>$ for different times - $ZZ$ coupling strength {}'.format(np.round(h_c,2)))
+    plt.ylabel('Time')
+    plt.xlabel('$<Z_i>$')
     return plt.show()
 
-# def Run_Z_i_Bath_Sparse_time_prop_fig_sys_size(n_PXP, i_index, T_start, T_max, T_step):
-#     '''
-#     Runs time propagation plotter in EBE sparse method
-#     :param n_PXP: No. of PXP atoms
-#     :param n_TI: No. of TI atoms
-#     :param Initialstate: NeelHaar state usually
-#     :param J: Ising term strength
-#     :param h_x: longtitudinal field strength
-#     :param h_z: Traverse field strength
-#     :param h_c: coupling strength
-#     :param T_start: start time
-#     :param T_max: end time
-#     :param T_step: time division
-#     :return: Plot of Time propagation
-#     '''
-#     J = 1
-#     h_x = np.sin(0.485 * np.pi)
-#     h_z = np.cos(0.485 * np.pi)
-#     avg = np.zeros((4))
-#     n_TI_arr= np.arange(6,10,1)
-#     for h_c in np.arange(0, 1.1, 0.1):
-#         for n_TI in n_TI_arr:
-#             Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
-#             sandwich= Z_i_Bath_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
-#             avg[n_TI-6]= np.mean(sandwich)
-#         plt.plot(n_TI_arr,avg, label='$h_c$={}'.format(np.round(h_c,5)))
-#     plt.legend()
-#     plt.xlabel('TI chain size')
-#     plt.ylabel('Avg Mag Amp ({}th site)'.format(i_index))
-#     plt.title('time averaged $<Z_{}>$ vs. TI size for var. $h_c$, {} PXP'.format(i_index,n_PXP))
-#     return plt.show()
-
-
-def O_z_True_X_i_oscillations(): #TODO take the regular oscillations for X_i
-    return
-
-def Run_O_z_True_X_i_oscillations():
-    return
-
-def PXP_TI_Neelstate_True_X_i(n_PXP,n_TI):
+def Z_i_System_PXP_TI_Sparse_time_prop(n_PXP, n_TI, i_index, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
     '''
-    Combined Neel state of PXP and TI!
-    :param n_PXP: Size of PXP chain (atoms)
-    :param n_TI: Size of TI chain (atoms)
-    :return: kronekered Neel state
+    Returns <NeelxNeel|Z_i(t)_PXP|NeelxNeel> values for PXP-TI and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param i_index: site of Z_i
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: vector - <NeelxNeel|Z_i(t)|NeelxNeel>
     '''
-    TI_Neel= TI_Neelstate(n_TI)
-    PXP_Neel= Neel_X_i_Extended_Subspace_Basis(n_PXP)
-    PXP_TI_Neel = np.kron(PXP_Neel,TI_Neel)
-    return PXP_TI_Neel
+    Z_n = Ebe.Z_i_PXP_Entry_Sparse(n_PXP, i_index, PXP_Subspace_Algo)
+    Z_n_Full = sp.kron(Z_n,sp.eye(2**n_TI))
+    Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ Z_n_Full @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
 
-def Z_i_TI_only_True_X_i_time_prop(): #TODO build
-    return
-
-def Run_Z_i_TI_only_True_X_i_Sparse_Time_prop(n_TI,i_index,T_start, T_max, T_step): #TODO build
-    return
-
-def Run_Z_i_TI_only_True_X_i_Sparse_Time_prop_plt(n_TI,i_index,T_start, T_max, T_step): #TODO build
-    return
-
-def Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0, m=2):
+def Run_Z_i_System_PXP_TI_Sparse_time_prop(n_PXP, n_TI, h_c, i_index, T_start, T_max, T_step):
     '''
-    Returns <Neel_bath|Z_i(t)|Neel_bath> values and corresponding time values FOR X_i coupling!, working with EBE sparse method
+    runs time AVG propagation for PXP-TI and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param i_index: site of Z_i
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :return: Plot of Time propagation
+    '''
+    Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return Z_i_System_PXP_TI_Sparse_time_prop(n_PXP, n_TI, i_index,Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
+
+
+def Run_Z_i_System_PXP_TI_Sparse_time_prop_plt(n_PXP, n_TI, h_c,i_index, T_start, T_max, T_step):
+    '''
+    plots time AVERAGE propagation for PXP-TI and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    sandwich= Z_i_System_PXP_TI_Sparse_time_prop(n_PXP, n_TI, i_index,Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
+    plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
+    plt.title('$<Z_{}>$ vs. time for {} PXP atoms {} TI atoms $h_c$={}'.format(i_index,n_PXP,n_TI,np.round(h_c,2)))
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.ylim(-1,1)
+    return plt.show()
+
+def Z_i_Bath_Z_i_Bath_Sparse_Compare_plt(n_PXP_1,n_PXP_2,n_TI_1,n_TI_2,h_c_1,h_c_2,Z_index_1,Z_index_2,T_start,T_max,T_step,step_cutoff):
+    '''
+    Plot of comparison of 2 oscillation graphs (different parameters can be changed)
+    :param n_PXP_1: No. of PXP atoms 1st graph
+    :param n_PXP_2: No. of PXP atoms 2nd graph
+    :param n_TI_1: No. of TI atoms 1st graph
+    :param n_TI_2: No. of TI atoms 2nd graph
+    :param h_c_1: coupling strength 1st graph
+    :param h_c_2: coupling strength 2nd graph
+    :param Z_index_1: index of Z_i operator of 1st graph
+    :param Z_index_2: index of Z_i operator of 2nd graph
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: number of steps
+    :param step_cutoff: cutoff of plot
+    :return: figure with 2 plots
+    '''
+    sandwich1=(-1)**(Z_index_1+1)*Run_Z_i_Bath_Sparse_Time_prop(n_PXP_1, n_TI_1, h_c_1, Z_index_1, T_start, T_max, T_step)
+    sandwich2=(-1)**(Z_index_2+1)*Run_Z_i_Bath_Sparse_Time_prop(n_PXP_2, n_TI_2, h_c_2, Z_index_2, T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start, T_max, T_step)[:step_cutoff], sandwich1[:step_cutoff],label=r'{} PXP, {} TI, {} $h_c$, $Z_{}$'.format(n_PXP_1, n_TI_1, h_c_1, Z_index_1))
+    plt.plot(np.linspace(T_start, T_max, T_step)[:step_cutoff], sandwich2[:step_cutoff],label=r'{} PXP, {} TI, {} $h_c$, $Z_{}$'.format(n_PXP_2, n_TI_2, h_c_2, Z_index_2))
+    plt.title(r'Comparison of $ZZ$ coup. bath osc. for cutoff {} (see legend)'.format(step_cutoff))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.ylim(-1, 1)
+    return plt.show()
+
+def Z_i_System_Z_i_Bath_Sparse_time_prop_plt(n_PXP, n_TI, h_c,i_index_sys,i_index_bath, T_start, T_max, T_step,Cutoff_step):
+    '''
+    Plot of comparison between Z_i of system to Z_i of Bath for Z coupling
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param i_index: index of Z_i operator of bath and system
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :param Cutoff_step: cutoff of time division for plots
+    :return: Plot of Time propagation
+    :return: graph with 2 plots
+    '''
+    sandwich_Z_i_sys=Run_Z_i_System_PXP_TI_Sparse_time_prop(n_PXP, n_TI, h_c,i_index_sys, T_start, T_max, T_step)
+    sandwich_Z_i_bath=Run_Z_i_Bath_Sparse_Time_prop(n_PXP, n_TI, h_c,i_index_bath,T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_sys[:Cutoff_step], label='$Z_{}$ system'.format(i_index_sys))
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_bath[:Cutoff_step],label='$Z_{}$ Bath'.format(i_index_bath))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.title('$Z_{}$ of Bath, $Z_{}$ of Sys, {} PXP, {} TI, {} $h_c$ XX coup'.format(i_index_bath,i_index_sys,n_PXP,n_TI,h_c))
+    plt.ylim(-1,1)
+    plt.show()
+
+
+#######################################################################################################################################################################
+####                                                             True X_i Oscillations Part                                                                        ####
+#######################################################################################################################################################################
+
+
+
+def O_z_Sparse_True_X_i_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
+    '''
+    Returns <NeelxHaar|O_z(t)|NeelxHaar> values and corresponding time values, FOR EXTENDED PXP BASIS, working with EBE sparse method
     :param n_PXP: No. of PXP atoms
     :param n_TI: No. of TI Atoms
     :param J: TI ising term strength
@@ -902,6 +1124,192 @@ def Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_s
     :param h_imp: impurity (TI) strength
     :param m: impurity site
     :return: vector -  <NeelxHaar|O_z(t)|NeelxHaar>
+    '''
+    O_z_PXP = Ebe.O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo_extended_X_i)
+    O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
+    Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
+
+def Run_O_z_Sparse_True_X_i_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_EBE_Haar_X_i_Extended(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return O_z_Sparse_True_X_i_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
+
+def Run_O_z_Sparse_True_X_i_Time_prop_plt(n_PXP, n_TI, h_c, T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = Neel_EBE_Haar_X_i_Extended(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    sandwich = O_z_Sparse_True_X_i_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
+    plt.plot(np.linspace(T_start, T_max, T_step), sandwich)
+    plt.xlabel('time')
+    plt.ylabel('<N|$O_z(t)$|N>')
+    plt.title('$O_z$ True $X_i$ Oscillations vs time for {} PXP, {} TI, $h_c=${}'.format(n_PXP,n_TI,np.round(h_c,2)))
+    plt.ylim(-0.8,0.3)
+    return plt.show()
+
+# def O_z_Sparse_True_X_i_Time_prop_PXP_OBC_Only(n_PXP, Initialstate, T_start, T_max, T_step):
+#     '''
+#     Returns <Neel|O_z(t)|Neel> values and corresponding time values for PXP Hamiltonian only!! FOR EXTENDED PXP BASIS, working with EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param Initialstate:  Initial Vector state we would like to propagate
+#     :param T_start: Start Time of propagation
+#     :param T_max: Max Time of propagation
+#     :param T_step: time step (division)
+#     :return: vector -  <Neel_pxp|O_z(t)|Neel_pxp>
+#     '''
+#     O_z_PXP = Ebe.O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo_extended_X_i)
+#     Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.PXP_Ham_OBC_Sparse_True_X_i(n_PXP,PXP_Subspace_Algo_extended_X_i),Initialstate ,
+#                                         start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+#     Propagated_ket_fin= np.transpose(Propagated_ket)
+#     Propagated_bra_fin = np.conjugate(Propagated_ket)
+#     Sandwich = np.diag(Propagated_bra_fin @ O_z_PXP @ Propagated_ket_fin)
+#     return Sandwich.round(4).astype('float')
+#
+# def Run_O_z_Sparse_True_X_i_Time_prop_PXP_OBC_Only(n_PXP ,T_start, T_max, T_step):
+#     '''
+#     Runs time AVERAGE propagation plotter for PXP Hamiltonian only!! FOR EXTENDED PXP BASIS, in EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param Initialstate: NeelHaar state usually
+#     :param T_start: start time
+#     :param T_max: end time
+#     :param T_step: time division
+#     :return: Plot of Time propagation
+#     '''
+#     Initialstate = Neel_X_i_Extended_Subspace_Basis(n_PXP)
+#     return O_z_Sparse_True_X_i_Time_prop_PXP_OBC_Only(n_PXP, Initialstate, T_start, T_max, T_step)
+#
+# def Run_O_z_Sparse_True_X_i_Time_prop_PXP_OBC_Only_plt(n_PXP, T_start, T_max, T_step):
+#     '''
+#     Runs time AVERAGE propagation plotter for PXP Hamiltonian only!! FOR EXTENDED PXP BASIS,in EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param Initialstate: NeelHaar state usually
+#     :param T_start: start time
+#     :param T_max: end time
+#     :param T_step: time division
+#     :return: Plot of Time propagation
+#     '''
+#     Initialstate = Neel_X_i_Extended_Subspace_Basis(n_PXP)
+#     sandwich = O_z_Sparse_True_X_i_Time_prop_PXP_OBC_Only(n_PXP, Initialstate, T_start, T_max, T_step)
+#     plt.plot(np.linspace(T_start, T_max, T_step), sandwich)
+#     plt.xlabel('time')
+#     plt.ylabel('<N|$O_z(t)$|N>')
+#     plt.ylim(-0.8,0.3)
+#     plt.title('<$O_z$> Oscillations vs time for {} PXP $XX$ coupling'.format(n_PXP))
+#     return plt.show()
+
+
+def PXP_TI_Neelstate_True_X_i(n_PXP,n_TI):
+    '''
+    Combined Neel state of PXP and TI! for extended X_i PXP basis
+    :param n_PXP: Size of PXP chain (atoms)
+    :param n_TI: Size of TI chain (atoms)
+    :return: kronekered Neel state
+    '''
+    TI_Neel= TI_Neelstate(n_TI)
+    PXP_Neel= Neel_X_i_Extended_Subspace_Basis(n_PXP)
+    PXP_TI_Neel = np.kron(PXP_Neel,TI_Neel)
+    return PXP_TI_Neel
+
+# def Z_n_PXP_True_X_i_Only_Sparse_time_prop(n_PXP, Initialstate,T_start, T_max, T_step):
+#     '''
+#     Returns <Neel|Z_n(t)|Neel> values FOR PXP extended X_i MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param Initialstate:  Initial Vector state we would like to propagate
+#     :param T_start: Start Time of propagation
+#     :param T_max: Max Time of propagation
+#     :param T_step: time step (division)
+#     :return: vector -  <Neel|Z_n(t)|Neel>
+#     '''
+#     Z_n = Ebe.Z_i_PXP_Entry_Sparse(n_PXP, n_PXP, PXP_Subspace_Algo_extended_X_i)
+#     Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.PXP_Ham_OBC_Sparse_True_X_i(n_PXP,PXP_Subspace_Algo_extended_X_i),Initialstate,
+#                                         start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+#     Propagated_ket_fin= np.transpose(Propagated_ket)
+#     Propagated_bra_fin = np.conjugate(Propagated_ket)
+#     Sandwich = np.diag(Propagated_bra_fin @ Z_n @ Propagated_ket_fin)
+#     return Sandwich.round(4).astype('float')
+#
+# def Run_Z_n_PXP_True_X_i_Only_Sparse_time_prop(n_PXP,T_start, T_max, T_step):
+#     '''
+#     Runs time AVERAGE propagation FOR PXP extended X_i MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param T_start: start time
+#     :param T_max: end time
+#     :param T_step: time division
+#     :return: Plot of Time propagation
+#     '''
+#     Initialstate = Neel_X_i_Extended_Subspace_Basis(n_PXP)
+#     return Z_n_PXP_True_X_i_Only_Sparse_time_prop(n_PXP, Initialstate,T_start, T_max, T_step)
+#
+#
+# def Run_Z_n_PXP_True_X_i_Only_Sparse_time_prop_plt(n_PXP,T_start, T_max, T_step):
+#     '''
+#     plots time AVERAGE propagation FOR PXP extended X_i MODEL ONLY (uncoupled to anything) and corresponding time values, working with EBE sparse method
+#     :param n_PXP: No. of PXP atoms
+#     :param T_start: start time
+#     :param T_max: end time
+#     :param T_step: time division
+#     :return: Plot of Time propagation
+#     '''
+#     Initialstate = Neel_X_i_Extended_Subspace_Basis(n_PXP)
+#     sandwich= Z_n_PXP_True_X_i_Only_Sparse_time_prop(n_PXP, Initialstate,T_start, T_max, T_step)
+#     plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
+#     plt.title('$<Z_n>$ vs. time for {} PXP atoms (Pure PXP OBC)'.format(n_PXP))
+#     plt.xlabel('time')
+#     plt.ylabel('Amplitude')
+#     plt.ylim(-1,1)
+#     return plt.show()
+
+def Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0, m=2):
+    '''
+    Returns <NeelxNeel|Z_i(t)|NeelxNeel>  values and corresponding time values FOR X_i coupling!, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: vector -  <NeelxNeel|Z_i(t)|NeelxNeel>
     '''
     Z_i = Ebe.Z_i_Spin_Basis_sparse(n_TI, i_index)
     Z_i_Full = sp.kron(sp.eye(Extended_X_i_Subspace_basis_count_faster(n_PXP)), Z_i)
@@ -933,9 +1341,7 @@ def Run_Z_i_Bath_True_X_i_Sparse_Time_prop(n_PXP, n_TI, h_c, i_index, T_start, T
     J = 1
     h_x = np.sin(0.485 * np.pi)
     h_z = np.cos(0.485 * np.pi)
-    return Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0,
-                              m=2)
-
+    return Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0, m=2)
 
 def Run_Z_i_Bath_True_X_i_Sparse_Time_prop_plt(n_PXP, n_TI, h_c, i_index, T_start, T_max, T_step):
     '''
@@ -958,50 +1364,367 @@ def Run_Z_i_Bath_True_X_i_Sparse_Time_prop_plt(n_PXP, n_TI, h_c, i_index, T_star
     h_z = np.cos(0.485 * np.pi)
     sandwich = Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index, h_imp=0,
                                   m=2)
-    plt.plot(np.linspace(T_start, T_max, T_step), sandwich)
-    plt.title('$<Z_{}>$ vs. time for {} TI atoms {} PXP atoms $h_c$={} X_i coupling'.format(i_index, n_TI, n_PXP, np.round(h_c, 5)))
-    plt.xlabel('time')
-    plt.ylabel('Amplitude')
+    time_cutoff_arr=np.array((250,500,1000))
+    for time_cutoff in np.nditer(time_cutoff_arr):
+        plt.plot(np.linspace(T_start,T_max,T_step)[:time_cutoff],sandwich[:time_cutoff])
+        plt.title('$<Z_{}>$ vs. time for {} TI atoms {} PXP atoms $h_c$={} X_i coupling'.format(i_index, n_TI, n_PXP, np.round(h_c, 5)))
+        plt.xlabel('time')
+        plt.ylabel('Amplitude')
+        plt.ylim(-1,1)
+        # try:
+        #     os.mkdir('Bath_Oscillations/PXP_{}'.format(n_PXP,))
+        # except:
+        #     pass
+        # try:
+        #     os.mkdir('Bath_Oscillations/PXP_{}/h_c_{}_True_X_i/'.format(n_PXP, np.round(h_c, 2)))
+        # except:
+        #     pass
+        # plt.savefig('Bath_Oscillations/PXP_{}/h_c_{}_True_X_i/Cutoff_{}_Z_1_Bath_Oscillations_TI_{}_PXP_{}.png'.format(n_PXP,np.round(h_c,2),time_cutoff,n_TI,n_PXP))
+
+        plt.show()
+    return
+
+
+def Run_Z_i_Bath_True_X_i_Sparse_Time_prop_grid():#TODO build for cluster code!!!
+    '''
+    runs Z_i bath propagation for all TI sites (all i's), returns a matrix of time propagation (x axis is i'th atom, y axis is time propagation)
+    :return: T_step X n_TI matrix
+    '''
+    return
+
+def Run_Z_i_Bath_True_X_i_Sparse_Time_prop_plt_grid(n_PXP, n_TI, h_c, T_start, T_max, T_step):
+    '''
+    plots grid of y=time, x=(-1)^(i+1) * <Z_i> running i, and actual values as colors for extended X_i basis!!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = PXP_TI_Neelstate_True_X_i(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    Time = np.round(np.linspace(T_start,T_max,T_step),2)
+    Z_i_array= np.arange(0,n_TI+1,1)
+    Sandwich_mat=np.zeros((T_step,n_TI))
+    for i_index in range(1,n_TI+1) :
+        Sandwich_mat[:,i_index-1]= ((-1)**(i_index+1))*Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index,h_imp=0, m=2)
+    Sandwich_mat_fin= Sandwich_mat
+    print(Sandwich_mat_fin)
+    cmap = cm.get_cmap('plasma') #define cmap as 'plasma' color map (defult 256 elements in string)
+    #bounds = np.linspace(-1.5,1.5,180) #define bin values to map regular values to
+    #norm = colors.BoundaryNorm(bounds, cmap.N) #attaches the boundary bin values to colormap values
+    plt.pcolor(Z_i_array,Time,Sandwich_mat_fin, shading='auto', cmap=cmap)
+    plt.colorbar()
+    plt.title('$<Z_i>$ for different times - $XX$ coupling strength {}'.format(np.round(h_c,2)))
+    plt.ylabel('Time')
+    plt.xlabel('$<Z_i>$')
     return plt.show()
 
+def Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP, n_TI, i_index, Initialstate,J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
+    '''
+    Returns <NeelxNeel|Z_i(t)_PXP|NeelxNeel> values for PXP-TI Extended X_i basis and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param i: index of Z_i
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: vector - <NeelxNeel|Z_n(t)|NeelxNeel> extended X_i
+    '''
+    Z_n = Ebe.Z_i_PXP_Entry_Sparse(n_PXP, i_index, PXP_Subspace_Algo_extended_X_i)
+    Z_n_Full = sp.kron(Z_n,sp.eye(2**n_TI))
+    Propagated_ket = Ebe.spla.expm_multiply(-1j*Ebe.PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ Z_n_Full @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
 
-# def Run_Z_i_Bath_True_X_i_Sparse_time_prop_fig_sys_size(n_PXP, i_index, T_start, T_max, T_step):
-#     '''
-#     Runs time propagation plotter in EBE sparse method
-#     :param n_PXP: No. of PXP atoms
-#     :param n_TI: No. of TI atoms
-#     :param Initialstate: NeelHaar state usually
-#     :param J: Ising term strength
-#     :param h_x: longtitudinal field strength
-#     :param h_z: Traverse field strength
-#     :param h_c: coupling strength
-#     :param T_start: start time
-#     :param T_max: end time
-#     :param T_step: time division
-#     :return: Plot of Time propagation
-#     '''
-#     J = 1
-#     h_x = np.sin(0.485 * np.pi)
-#     h_z = np.cos(0.485 * np.pi)
-#     avg = np.zeros((4))
-#     n_TI_arr = np.arange(6, 10, 1)
-#     for h_c in np.arange(0, 1.1, 0.1):
-#         for n_TI in n_TI_arr:
-#             Initialstate = PXP_TI_Neelstate(n_PXP, n_TI)
-#             sandwich = Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, i_index,
-#                                           h_imp=0, m=2)
-#             avg[n_TI - 6] = np.mean(sandwich)
-#         plt.plot(n_TI_arr, avg, label='$h_c$={}'.format(np.round(h_c, 5)))
-#     plt.legend()
-#     plt.xlabel('TI chain size')
-#     plt.ylabel('Avg Mag Amp ({}th site)'.format(i_index))
-#     plt.title('time avg. $<Z_{}>$ vs. TI size for var. $h_c$, X_i coupling {} PXP'.format(i_index, n_PXP))
-#     return plt.show()
+def Run_Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP, n_TI, h_c, i, T_start, T_max, T_step):
+    '''
+    runs time AVG propagation for Z_i(t) PXP of PXP-TI coupled HAM Extended X_i basis!!!! and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param i: index of Z_i
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :return: Plot of Time propagation
+    '''
+    Initialstate = PXP_TI_Neelstate_True_X_i(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    return Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP, n_TI, i, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
 
+
+def Run_Z_i_System_PXP_TI_True_X_i_Sparse_time_prop_plt(n_PXP, n_TI, h_c, i, T_start, T_max, T_step):
+    '''
+    plots time AVERAGE propagation for PXP-TI Extended X_i basis!!!! and corresponding time values, working with EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param h_c: coupling term strength
+    :param i: index of Z_i
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = PXP_TI_Neelstate_True_X_i(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    sandwich= Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP, n_TI, i, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2)
+    plt.plot(np.linspace(T_start,T_max,T_step),sandwich)
+    plt.title('$<Z_{}>$ vs. time for {} PXP atoms {} TI atoms $h_c$={} $X_i$ coup'.format(i,n_PXP,n_TI,np.round(h_c,2)))
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.ylim(-1,1)
+    return plt.show()
+
+def Z_i_Bath_Z_i_Bath_True_X_i_Sparse_Compare_plt(n_PXP_1,n_PXP_2,n_TI_1,n_TI_2,h_c_1,h_c_2,Z_index_1,Z_index_2,T_start,T_max,T_step,step_cutoff):
+    '''
+    Plot of comparison of 2 oscillation graphs (different parameters can be changed) for X_i coupling!!!!
+    :param n_PXP_1: No. of PXP atoms 1st graph
+    :param n_PXP_2: No. of PXP atoms 2nd graph
+    :param n_TI_1: No. of TI atoms 1st graph
+    :param n_TI_2: No. of TI atoms 2nd graph
+    :param h_c_1: coupling strength 1st graph
+    :param h_c_2: coupling strength 2nd graph
+    :param Z_index_1: index of Z_i operator of 1st graph
+    :param Z_index_2: index of Z_i operator of 2nd graph
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: number of steps
+    :param step_cutoff: cutoff of plot
+    :return: figure with 2 plots
+    '''
+    sandwich1=(-1)**(Z_index_1+1)*Run_Z_i_Bath_True_X_i_Sparse_Time_prop(n_PXP_1, n_TI_1, h_c_1, Z_index_1, T_start, T_max, T_step)
+    sandwich2=(-1)**(Z_index_2+1)*Run_Z_i_Bath_True_X_i_Sparse_Time_prop(n_PXP_2, n_TI_2, h_c_2, Z_index_2, T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start, T_max, T_step)[:step_cutoff], sandwich1[:step_cutoff],label=r'{} PXP, {} TI, {} $h_c$, $Z_{}$'.format(n_PXP_1, n_TI_1, h_c_1, Z_index_1))
+    plt.plot(np.linspace(T_start, T_max, T_step)[:step_cutoff], sandwich2[:step_cutoff],label=r'{} PXP, {} TI, {} $h_c$, $Z_{}$'.format(n_PXP_2, n_TI_2, h_c_2, Z_index_2))
+    plt.title(r'Comparison of $X_i$ coup. bath osc. for cutoff {} (see legend)'.format(step_cutoff))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.ylim(-1, 1)
+    return plt.show()
+
+def Z_i_Bath_ZZ_Coup_Z_i_XX_Coup_Sparse_Compare_plt(n_PXP_1,n_PXP_2,n_TI_1,n_TI_2,h_c_1,h_c_2,Z_index_1,Z_index_2,T_start,T_max,T_step,step_cutoff):
+    '''
+    Plot of comparison of 2 oscillation graphs (different parameters can be changed) one for ZZ and other for XX coupling!!!!
+    :param n_PXP_1: No. of PXP atoms 1st graph
+    :param n_PXP_2: No. of PXP atoms 2nd graph
+    :param n_TI_1: No. of TI atoms 1st graph
+    :param n_TI_2: No. of TI atoms 2nd graph
+    :param h_c_1: coupling strength 1st graph
+    :param h_c_2: coupling strength 2nd graph
+    :param Z_index_1: index of Z_i operator of 1st graph
+    :param Z_index_2: index of Z_i operator of 2nd graph
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: number of steps
+    :param step_cutoff: cutoff of plot
+    :return: figure with 2 plots
+    '''
+    sandwich1=(-1)**(Z_index_1+1)*Run_Z_i_Bath_Sparse_Time_prop(n_PXP_1, n_TI_1, h_c_1, Z_index_1, T_start, T_max, T_step)
+    sandwich2=(-1)**(Z_index_2+1)*Run_Z_i_Bath_True_X_i_Sparse_Time_prop(n_PXP_2, n_TI_2, h_c_2, Z_index_2, T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start, T_max, T_step)[:step_cutoff], sandwich1[:step_cutoff],label=r'{} PXP, {} TI, {} $h_c$, $Z_{}$, $ZZ$ coup'.format(n_PXP_1, n_TI_1, h_c_1, Z_index_1))
+    plt.plot(np.linspace(T_start, T_max, T_step)[:step_cutoff], sandwich2[:step_cutoff],label=r'{} PXP, {} TI, {} $h_c$, $Z_{}$, $XX$ coup'.format(n_PXP_2, n_TI_2, h_c_2, Z_index_2))
+    plt.title(r'Comparison of $ZZ$ coup and $XX$ coup. bath osc. for cutoff {} (see legend)'.format(step_cutoff))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.ylim(-1, 1)
+    return plt.show()
+
+def Z_i_System_Z_i_Bath_True_X_i_Sparse_Compare_plt(n_PXP, n_TI, h_c, i_index_system, i_index_bath, T_start, T_max, T_step,Cutoff_step):
+    '''
+    Plot of comparison between Z_ן of system to Z_i of Bath for X_i coupling nature!!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param i_index: index of Z_i operator
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :param Cutoff_step: cutoff of steps in plots
+    :return: graph with 2 plots
+    '''
+    sandwich_Z_i_sys=(-1)**(i_index_system+1)*Run_Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP, n_TI, h_c, i_index_system, T_start, T_max, T_step)
+    sandwich_Z_i_bath=(-1)**(i_index_bath+1)*Run_Z_i_Bath_True_X_i_Sparse_Time_prop(n_PXP, n_TI, h_c,i_index_bath,T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_sys[:Cutoff_step], label='$Z_{}$ system'.format(i_index_system))
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_bath[:Cutoff_step],label='$Z_{}$ Bath'.format(i_index_bath))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.title('$Z_{}$ of Bath, $Z_{}$ of Sys, {} PXP, {} TI, {} $h_c$ X_i coup.'.format(i_index_bath,i_index_system,n_PXP,n_TI,h_c))
+    plt.ylim(-1,1)
+    plt.show()
+
+def O_z_System_Z_i_Bath_True_X_i_Sparse_Compare_plt(n_PXP, n_TI, h_c,i_index, T_start, T_max, T_step,Cutoff_step):
+    '''
+    Plot of comparison between O_z of system to Z_i of bath for X_i coupling nature!!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param i_index: index of Z_i operator
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :param Cutoff_step: cutoff of steps in plots
+    :return: graph with 2 plots
+    '''
+    sandwich_O_z_sys=Run_O_z_Sparse_True_X_i_Time_prop(n_PXP, n_TI, h_c,T_start, T_max, T_step)
+    sandwich_Z_i_bath=Run_Z_i_Bath_True_X_i_Sparse_Time_prop(n_PXP, n_TI, h_c,i_index,T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_O_z_sys[:Cutoff_step], label='$O_z$ system')
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_bath[:Cutoff_step],label='$Z_{}$ Bath'.format(i_index))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.title('$Z_{}$ of Bath, $O_z$ of Sys, {} PXP, {} TI, {} $h_c$ X_i coup.'.format(i_index,n_PXP,n_TI,h_c))
+    plt.ylim(-1,1)
+    plt.show()
+
+def Z_i_System_O_z_System_True_X_i_Sparse_Compare_plt(n_PXP, n_TI, h_c,i_index_sys, T_start, T_max, T_step,Cutoff_step):
+    '''
+    Plot of comparison between Z_i of system to O_z of system for X_i coupling nature!!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :param Cutoff_step: cutoff of steps in plots
+    :return: Plot of Time propagation
+    :return: graph with 2 plots
+    '''
+    sandwich_Z_i_sys=Run_Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP, n_TI, h_c, i_index_sys,T_start, T_max, T_step)
+    sandwich_O_z_bath=Run_O_z_Sparse_True_X_i_Time_prop(n_PXP, n_TI, h_c,T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_sys[:Cutoff_step], label='$Z_i$ system'.format(i_index_sys))
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_O_z_bath[:Cutoff_step],label='$O_z$ system')
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.title('$O_z$ of Sys, $Z_{}$ of Sys, {} PXP, {} TI, {} $h_c$ X_i coup.'.format(i_index_sys,n_PXP,n_TI,h_c))
+    plt.ylim(-1,1)
+    plt.show()
+
+def O_z_System_O_z_System_True_X_i_Sparse_Compare_plt(n_PXP_1, n_PXP_2, n_TI_1, n_TI_2, h_c_1,h_c_2, T_start, T_max, T_step,Cutoff_step):
+    '''
+    Plot of comparison between O_z of system to O_z of system for X_i coupling nature!!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param i_index: index of Z_i operator
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :param Cutoff_step: cutoff of steps in plots
+    :return: graph with 2 plots
+    '''
+    sandwich_O_z_1_sys=Run_O_z_Sparse_True_X_i_Time_prop(n_PXP_1, n_TI_1, h_c_1,T_start, T_max, T_step)
+    sandwich_O_z_2_sys=Run_O_z_Sparse_True_X_i_Time_prop(n_PXP_2, n_TI_2, h_c_2,T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_O_z_1_sys[:Cutoff_step], label=r'$O_z$ sys {} PXP, {} TI, $h_c={}$'.format(n_PXP_1,n_TI_1,np.round(h_c_1,2)))
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_O_z_2_sys[:Cutoff_step],label=r'$O_z$ sys {} PXP, {} TI, $h_c={}$'.format(n_PXP_2,n_TI_2,np.round(h_c_2,2)))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.title('Compare $O_z$ of Sys (see legend)')
+    plt.ylim(-0.8,0.2)
+    plt.show()
+
+def Z_i_System_Z_i_System_True_X_i_Sparse_Compare_plt(n_PXP_1, n_PXP_2, n_TI_1, n_TI_2, i_index_sys_1, i_index_sys_2, h_c_1,h_c_2, T_start, T_max, T_step,Cutoff_step):
+    '''
+    Plot of comparison between Z_i of system to Z_i of system for X_i coupling nature!!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param i_index: indeces of Z_i operator
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :param Cutoff_step: cutoff of steps in plots
+    :return: graph with 2 plots
+    '''
+    sandwich_Z_i_1_sys=(-1)**(i_index_sys_1+1)*Run_Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP_1, n_TI_1, h_c_1, i_index_sys_1,T_start, T_max, T_step)
+    sandwich_Z_i_2_sys=(-1)**(i_index_sys_2+1)*Run_Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP_2, n_TI_2, h_c_2,i_index_sys_2, T_start, T_max, T_step)
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_1_sys[:Cutoff_step], label=r'$Z_{}$ sys {} PXP, {} TI, $h_c={}$'.format(i_index_sys_1,n_PXP_1,n_TI_1,np.round(h_c_1,2)))
+    plt.plot(np.linspace(T_start,T_max,T_step)[:Cutoff_step],sandwich_Z_i_2_sys[:Cutoff_step],label=r'$Z_{}$ sys {} PXP, {} TI, $h_c={}$'.format(i_index_sys_2,n_PXP_2,n_TI_2,np.round(h_c_2,2)))
+    plt.legend()
+    plt.xlabel('time')
+    plt.ylabel('Amplitude')
+    plt.title('Comparison of $Z_i$ of Sys (see legend)')
+    plt.ylim(-1,1)
+    plt.show()
+
+
+def Run_Z_i_System_Z_i_Bath_True_X_i_Sparse_Time_prop_plt_grid(n_PXP, n_TI, h_c, T_start, T_max, T_step):
+    '''
+    plots grid of y=time, x=(-1)^(i+1) * <Z_i> running i FOR SYSTEM and BATH, and actual values as colors for extended X_i basis!!!
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    Initialstate = PXP_TI_Neelstate_True_X_i(n_PXP, n_TI)
+    J = 1
+    h_x = np.sin(0.485 * np.pi)
+    h_z = np.cos(0.485 * np.pi)
+    Time = np.round(np.linspace(T_start,T_max,T_step),2)
+    Z_i_array_full= np.arange(0,n_TI+n_PXP+1,1)
+    Sandwich_mat=np.zeros((T_step,n_TI+n_PXP))
+    for i_index in range(1,n_TI+n_PXP+1):
+        if i_index<(n_PXP+1):
+            Sandwich_mat[:, i_index - 1] = ((-1) ** (i_index + 1)) * Z_i_System_PXP_TI_True_X_i_Sparse_time_prop(n_PXP, n_TI, i_index, Initialstate, J, h_x, h_z, h_c, T_start,T_max, T_step,h_imp=0, m=2)
+        else:
+            Sandwich_mat[:,i_index-1]= ((-1)**(n_PXP+i_index+1))*Z_i_Bath_True_X_i_time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,i_index-n_PXP,h_imp=0, m=2)
+    Sandwich_mat_fin= Sandwich_mat
+    print(Sandwich_mat_fin)
+    cmap = cm.get_cmap('plasma') #define cmap as 'plasma' color map (defult 256 elements in string)
+    #bounds = np.linspace(-1.5,1.5,180) #define bin values to map regular values to
+    #norm = colors.BoundaryNorm(bounds, cmap.N) #attaches the boundary bin values to colormap values
+    plt.pcolor(Z_i_array_full,Time,Sandwich_mat_fin, shading='auto', cmap=cmap)
+    plt.colorbar()
+    plt.title('$<Z_i>$ for different times - $XX$ coupling strength {}'.format(np.round(h_c,2)))
+    plt.ylabel('Time')
+    plt.xlabel('$<Z_i>$')
+    return plt.show()
 
 #######################################################################################################################################################3######################
 #                                              OLD METHODS - TO BE DELETED?                                                                                                  #
 ##############################################################################################################################################################################
+
+
+
+
 
 def Averagesig(n_PXP, n_TI, h_c, T_start=0, T_max=100, T_step=1):
     '''
@@ -1216,7 +1939,6 @@ def ScaledDampingLength(n_PXP, n_TI, h_c, T_start, T_max, T_step,Threshold=-0.3)
     return Scaled_length
 
 
-#TODO Write the scaled damping length differently so that the PXP length will only be calculated once.
 
 
 # def ScaledDampinglength(n_PXP, n_TI, h_c, T_start, T_max, T_step, Cap=5):

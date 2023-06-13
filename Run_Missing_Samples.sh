@@ -1,22 +1,28 @@
 #!/bin/bash
 
-n_PXP='10'
+n_PXP='11'
 n_TI_max='13'
-h_c_max='5'
+h_c_max='10'
 Sample_no='1000'
-seed_max='100'
+seed_max='30'
 Sleep='60'
+T_max='40'
+Step='500'
 
 for n_TI in $(seq $n_PXP 1 $n_TI_max)
   do
-    for h_c in $(seq 3.2 0.2 $h_c_max)
+    for h_c in $(seq 0.0 0.1 $h_c_max)
       do
-        r=$(find "PXP_$n_PXP""_TI_$n_TI""/h_c_$h_c" -type f | wc -l)
-        echo "PXP $n_PXP T_I $n_TI h_c $h_c file count is $r"
-        for seed in $(seq 1 1 99)
+        r=$(find "PXP_$n_PXP""_TI_$n_TI""_T_max_$T_max""_Step_$Step""/h_c_$h_c" -type f | wc -l)
+        echo "PXP $n_PXP T_I $n_TI h_c $h_c ZZ file count is $r"
+        l=$(find "PXP_$n_PXP""_TI_$n_TI""_True_X_i""_T_max_$T_max""_Step_$Step""/h_c_$h_c" -type f | wc -l)
+        echo "PXP $n_PXP T_I $n_TI h_c $h_c XX file count is $l"
+        for seed in $(seq 1 1 $seed_max)
           do
-              f=$(find "PXP_$n_PXP""_TI_$n_TI""/h_c_$h_c""/Sparse_time_propagation_$n_PXP""_$n_TI""_$h_c""_sample_$seed"".npy" -type f | wc -l)
-              if [ $f = 0 ]; then
+              f=$(find "PXP_$n_PXP""_TI_$n_TI""_T_max_$T_max""_Step_$Step""/h_c_$h_c""/Sparse_time_propagation_$n_PXP""_$n_TI""_$h_c""_T_max_$T_max""_step_$Step""_sample_$seed"".npy" -type f | wc -l)
+              g=$(find "PXP_$n_PXP""_TI_$n_TI""_True_X_i""_T_max_$T_max""_Step_$Step""/h_c_$h_c""/Sparse_time_propagation_True_X_i_$n_PXP""_$n_TI""_$h_c""_T_max_$T_max""_Step_$Step""_sample_$seed"".npy" -type f | wc -l)
+
+              if [ $f = 0 ] || [ $g = 0 ]; then
                 r=$(qstat|grep adamgit|wc -l)
                 while [ $r -ge 1485 ]
                   do

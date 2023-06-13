@@ -49,23 +49,83 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
     :return: Plot of Time propagation
     '''
     try:
-        os.mkdir('PXP_{}_TI_{}'.format(n_PXP, n_TI))
+        os.mkdir('PXP_{}_TI_{}_T_max_{}_Step_{}'.format(n_PXP, n_TI,T_max,T_step))
     except:
         pass
     try:
-        os.mkdir('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c))
+        os.mkdir('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}'.format(n_PXP,n_TI,T_max,T_step,h_c))
     except:
         pass
-    if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,n_PXP,n_TI,h_c,seed)) == False:
+    if os.path.isfile('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}/Sparse_time_propagation_{}_{}_{}_T_max_{}_step_{}_sample_{}.npy'.format(n_PXP,n_TI,T_max,T_step,h_c,n_PXP,n_TI,h_c,T_max,T_step,seed)) == False:
         Initialstate = Neel_EBE_Haar(n_PXP, n_TI)
         J = 1
         h_x = np.sin(0.485 * np.pi)
         h_z = np.cos(0.485 * np.pi)
         Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
-        np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,seed)), Sandwich)
+        np.save(os.path.join('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}'.format(n_PXP,n_TI,T_max,T_step,h_c),'Sparse_time_propagation_{}_{}_{}_T_max_{}_step_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step,seed)), Sandwich)
     return
 
 Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
+
+def Cluster_Sparse_True_X_i_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step, h_imp=0, m=2):
+    '''
+    Returns <Neel|O_z(t)|Neel> values and corresponding time values, working with EBE sparse method for Extended X_i PXP basis
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI Atoms
+    :param J: TI ising term strength
+    :param Initialstate:  Initial Vector state we would like to propagate
+    :param h_x: longtitudinal term strength (TI)
+    :param h_z: transverse term strength
+    :param h_c: coupling term strength
+    :param T_start: Start Time of propagation
+    :param T_max: Max Time of propagation
+    :param T_step: time step (division)
+    :param h_imp: impurity (TI) strength
+    :param m: impurity site
+    :return: vector - <NeelxHaar|O_z(t)|NeelxHaar> for X_i coupling
+    '''
+    O_z_PXP = O_z_PXP_Entry_Sparse(n_PXP, PXP_Subspace_Algo_extended_X_i)
+    O_z_Full = sp.kron(O_z_PXP,sp.eye(2**n_TI))
+    Propagated_ket = spla.expm_multiply(-1j*PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m),Initialstate ,
+                                        start= T_start , stop=T_max ,num = T_step ,endpoint = True)
+    Propagated_ket_fin= np.transpose(Propagated_ket)
+    Propagated_bra_fin = np.conjugate(Propagated_ket)
+    Sandwich = np.diag(Propagated_bra_fin @ O_z_Full @ Propagated_ket_fin)
+    return Sandwich.round(4).astype('float')
+
+def Run_Cluster_Sparse_True_X_i_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
+    '''
+    Runs time AVERAGE propagation plotter in EBE sparse method
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param Initialstate: NeelHaar state usually
+    :param J: Ising term strength
+    :param h_x: longtitudinal field strength
+    :param h_z: Traverse field strength
+    :param h_c: coupling strength
+    :param T_start: start time
+    :param T_max: end time
+    :param T_step: time division
+    :return: Plot of Time propagation
+    '''
+    try:
+        os.mkdir('PXP_{}_TI_{}_True_X_i_T_max_{}_Step_{}'.format(n_PXP, n_TI,T_max,T_step))
+    except:
+        pass
+    try:
+        os.mkdir('PXP_{}_TI_{}_True_X_i_T_max_{}_Step_{}/h_c_{}'.format(n_PXP,n_TI,T_max,T_step,h_c))
+    except:
+        pass
+    if os.path.isfile('PXP_{}_TI_{}_True_X_i_T_max_{}_Step_{}/h_c_{}/Sparse_time_propagation_True_X_i_{}_{}_{}_T_max_{}_Step_{}_sample_{}.npy'.format(n_PXP,n_TI,T_max,T_step,h_c,n_PXP,n_TI,h_c,T_max,T_step,seed)) == False:
+        Initialstate = Neel_EBE_Haar_X_i_Extended(n_PXP, n_TI)
+        J = 1
+        h_x = np.sin(0.485 * np.pi)
+        h_z = np.cos(0.485 * np.pi)
+        Sandwich = Cluster_Sparse_True_X_i_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
+        np.save(os.path.join('PXP_{}_TI_{}_True_X_i_T_max_{}_Step_{}/h_c_{}'.format(n_PXP,n_TI,T_max,T_step,h_c),'Sparse_time_propagation_True_X_i_{}_{}_{}_T_max_{}_Step_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step,seed)), Sandwich)
+    return
+
+Run_Cluster_Sparse_True_X_i_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
 
 def Sparse_time_combine(seed_max):
     '''

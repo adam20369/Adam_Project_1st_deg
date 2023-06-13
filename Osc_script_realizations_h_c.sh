@@ -1,16 +1,16 @@
 #!/bin/bash
-seed_max='100'
-n_PXP='10'
+seed_max='30'
+n_PXP='8'
 n_TI_max='13'
-h_c_max='3'
+h_c_max='10'
 Sample_no='1000'
 Sleep='50'
 
 for n_TI in $(seq $n_PXP 1 $n_TI_max)
   do
-   for h_c in $(seq 2.1 0.1 $h_c_max)
+   for h_c in $(seq 8.1 0.1 $h_c_max)
     do
-      for ((sd=1; sd<100 ; sd++))
+      for ((sd=1; sd <$seed_max ; sd++))
         do
           r=$(qstat|grep adamgit|wc -l)
           while [ $r -ge 1495 ]

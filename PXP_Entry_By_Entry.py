@@ -586,7 +586,7 @@ def PXP_EBE_BathHam(n_PXP, n_TI, Subspace, J, h_x, h_z, h_c, h_imp, m): #Needs f
 
 def Neelstate_spin_base_faster(n_PXP):
     '''
-    faster method Generates Neelstate in binary basis: first 1 in first site for ODD, first 1 in second site for EVEN !!!!!
+    faster method Generates Neelstate in binary basis: first 1 in first site for ODD, first 1 in second site for EVEN!!!!!
     :param n_PXP: No. of atoms
     :return: Vector (Neelstate)
     '''
@@ -597,6 +597,17 @@ def Neelstate_spin_base_faster(n_PXP):
     else:
         Odd = np.arange(0,n_PXP,2)
         Neel[Odd]=1
+    return Neel
+
+def Neelstate_spin_base_faster_old(n_PXP):
+    '''
+    faster method Generates Neelstate in binary basis: first 1 in first site for Odd and Even
+    :param n_PXP: No. of atoms
+    :return: Vector (Neelstate)
+    '''
+    Neel = np.zeros((n_PXP))
+    Neel_arr = np.arange(0,n_PXP,2)
+    Neel[Neel_arr]=1
     return Neel
 
 def Neel_Subspace_Basis(n_PXP):
@@ -644,6 +655,26 @@ def Neel_EBE_Haar_X_i_Extended(n_PXP, n_TI): #Haarstate from Coupling_To_Bath
     """
     NeelHaarstate = np.kron(Neel_X_i_Extended_Subspace_Basis(n_PXP), Haarstate(n_TI))
     return NeelHaarstate
+
+def TI_Neelstate(n_TI):
+    '''
+    Tilted Ising (only) Neel state - just Neel in 2^n kron basis
+    :param n_TI: Tilted Ising atom number
+    :return:
+    '''
+    Neel_base= np.zeros((2**n_TI))
+    Neel= Neel_base.copy()
+    if n_TI%2==0:
+        Base_array= np.arange(1,n_TI,2)
+        Neel_no= np.sum(2**(Base_array))
+        Neel[int(Neel_no)]=1
+        Neel=np.flip(Neel)
+    else:
+        Base_array= np.arange(0,n_TI,2)
+        Neel_no= np.sum(2**(Base_array))
+        Neel[int(Neel_no)]=1
+        Neel=np.flip(Neel)
+    return Neel
 
 # def Neel_EBE_Haar_seeded(n_PXP, n_TI,seed): #Haarstate from Coupling_To_Bath
 #     """
