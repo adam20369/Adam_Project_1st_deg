@@ -84,6 +84,19 @@ def Z_i_Spin_Basis_sparse(n,i):
         Z_geni= sp.identity(2**n)
     return Z_geni
 
+def O_z_Spin_Basis_sparse(n):
+    '''
+    :param n: full dimension (2**n) O_z sparse matrix (Regular KRON SPIN BASIS FOR TI !!!)
+    :return: O_z in dimension 2**n sparsely!
+    '''
+    O_z=np.zeros((2**n,2**n))
+    for i in range(1,n+1):
+        Z_geni = sp.kron(sp.identity(2**(i-1)),sp.kron(Z_i_Sparse, sp.identity(2**(n-i))))
+        O_z=O_z + Z_geni
+    O_z_fin= (1/n)*O_z
+    return O_z_fin
+
+
 # def X_i_Dict_PXP_Full_Basis_Sparse(n, i):
 #     '''
 #     Builds X_i in FULL basis of PXP entry Sparsely (NOT SUBSPACE!!!)

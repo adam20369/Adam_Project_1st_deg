@@ -231,6 +231,7 @@ def PXP_Subspace_Algo_extended_X_i(n):
             vec = Subspace[i,:].copy()
             vec[n-1]=1
             Subspace = np.vstack((Subspace, vec))
+
     matsize = Extended_X_i_Subspace_basis_count_faster(n)
     #print(np.isclose(np.size(Subspace,axis=0),matsize)) #check
     return Subspace

@@ -1,14 +1,14 @@
 #!/bin/bash
-seed_max='30'
-n_PXP='9'
+seed_max='31'
+n_PXP='11'
 n_TI_max='13'
-h_c_max='10'
+h_c_max='0.6'
 Sample_no='1000'
 Sleep='50'
 
 for n_TI in $(seq $n_PXP 1 $n_TI_max)
   do
-   for h_c in $(seq 8.1 0.1 $h_c_max)
+   for h_c in $(seq 0.05 0.1 $h_c_max)
     do
       for ((sd=1; sd <$seed_max ; sd++))
         do

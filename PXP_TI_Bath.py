@@ -248,7 +248,7 @@ def TIOBCNew(n_TI, h_x, h_z): # Tilted Ising Hamiltonian OBC n= no of atoms (n m
         TI_fin = np.add(TI_fin, TI_ar)
     return TI_fin
 
-def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!!
+def TIOBCNewImpure(n_TI, h_x, h_z,imp_str,imp_loc): #Tilted Ising with impurity at the Z_1 site!!
     d = 2 ** n_TI
     TI_fin = np.zeros((d, d))
     for i in range(0, n_TI):
@@ -264,7 +264,7 @@ def TIOBCNewImpure(n_TI, h_x, h_z): #Tilted Ising with impurity at the Z_1 site!
         xi = np.kron(np.identity(2 ** (i)), np.kron(xi, np.identity(2 ** (n_TI - (i + 1)))))  # X_i term
         TI_ar = np.add(np.add(np.matmul(zi, ziplus1), (h_z) * zi), (h_x) * xi)  # calculates hamiltonian PER i
         TI_fin = np.add(TI_fin, TI_ar)
-    TI_fin_new= np.add(TI_fin, 0.11*np.kron(Z_i,np.identity(int(np.divide(d,2)))))
+    TI_fin_new= np.add(TI_fin, imp_str*np.kron(np.identity(2**(imp_loc-1)),np.kron(Z_i,np.identity(int(np.divide(d,2**(imp_loc)))))))
     return TI_fin_new
 
 
@@ -451,22 +451,55 @@ def RunTimeProp(n_tot, n, Coupl=Z_i, h_x=1, h_z=1, h_c=1, T_max=20):# 1 Time pro
 #### OLD RUN ######
 
 
+def RMeanMetric_Old(EV):  # r= 0.39 poisson, r=0.536 W-D
+    S = np.diff(EV)  # returns an array of n-1 (NonNegative)
+    # print(S)
+    r = 0
+    #c = 0  #counts the r's that don't contribute
+    np.seterr(invalid='ignore',divide='ignore')
+    for i in range(1, S.shape[0]):
+        r = r + np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1])) #out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
+            #c = c + 1  # counts the r's that contribute
+    #c_zeros= S.shape[0]-c
+    #print(c_zeros)
+    r = r / (S.shape[0] - (1))  # n-1 minus c+1 more ( n-(c+2) total)
+    return r
 
 def RMeanMetric(EV):  # r= 0.39 poisson, r=0.536 W-D
     S = np.diff(EV)  # returns an array of n-1 (NonNegative)
     # print(S)
-    r = 0
-    c = 0  #counts the r's that don't contribute
+    r = np.zeros(S.shape[0]-1)
+    c_num=0
+    np.seterr(invalid='ignore',divide='ignore')
     for i in range(1, S.shape[0]):
-        r = r + np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1])) #out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
-        #print(max(S[i], S[i - 1]))
-        # c = c + np.array((0,1))[int(max(S[i], S[i - 1]) == 0)]  # counts the r's that don't contribute
-        #print(c)
-    r = r / (S.shape[0] - (c+1))  # n-1 minus c+1 more (n-2-c total)
+        r[i-1] = np.divide(min(S[i], S[i - 1]), max(S[i], S[i - 1])) #out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
+    c_num = np.count_nonzero(np.isnan(r)) #number of nan enteries
+    r[np.isnan(r)]=0
+    #print(r)
+    r = np.sum(r) / (S.shape[0] - (c_num+1))  # n-1 minus c+1 more ( n-(c+2) total)
+    #print(r)
     return r
 
-def RunRmetric(n_TI, h_x, h_z, Hamiltonian): #running the metric for average r per one theta
-    H = Hamiltonian(n_TI, h_x, h_z)
+def RMeanMetric_trunc(EV):  # r= 0.39 poisson, r=0.536 W-D TRUNCATED VERSION
+    S = np.diff(EV)  # returns an array of n-1 (NonNegative)
+    # print(S)
+    r = np.zeros(int(np.divide(3*S.shape[0],4))+1)
+    c_num = 0
+    count=0
+    np.seterr(invalid='ignore', divide='ignore')
+    for i in range(int(np.divide(S.shape[0],8)), int(7*np.divide(S.shape[0],8))):
+        r[count] = np.divide(min(S[i], S[i - 1]),
+                             max(S[i], S[i - 1]))  # out=np.zeros((1)), where=max(S[i], S[i - 1]) != 0)
+        count=count+1
+    c_num = np.count_nonzero(np.isnan(r))  # number of nan enteries
+    r[np.isnan(r)] = 0
+    # print(r)
+    r = np.divide(np.sum(r), (int(np.divide(6*S.shape[0],8)) - (c_num + 1)))  # n-1 minus c+1 more ( n-(c+2) total)
+    # print(r)
+    return r
+
+def RunRmetric(n_TI, h_x, h_z, imp_str,imp_loc, Hamiltonian): #running the metric for average r per one theta
+    H = Hamiltonian(n_TI, h_x, h_z,imp_str,imp_loc)
     EV = la.eigvalsh(H)
     # print(EV)
     return RMeanMetric(EV)

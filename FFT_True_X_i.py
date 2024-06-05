@@ -10,14 +10,14 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 #from O_z_Oscillations import *
 
-#####################################################################################################################################
-#                                  CODE BUILT FOR UNDERSTANDING THE ERROR IN FFT PLOTS                                               #
-#######################################################################################################################################
+#######################################################################################################################################################################################################################
+#                                                                                CODE FOR ANALYZING FFT OF OSC REALIZATIONS! of XX                                                                                     #
+#######################################################################################################################################################################################################################
 
-n_PXP = 10
-n_TI_max = 13
-h_c_max = 3
-h_c_step=0.1
+n_PXP = 9
+n_TI_max = 11
+h_c_max = 4.2
+h_c_step=0.2
 h_c_array=np.round(np.arange(0,h_c_max+h_c_step,h_c_step).astype('float'),2)
 
 T_start = 0
@@ -27,10 +27,9 @@ Start_cutoff =105
 End_cutoff = 235
 Sample_no = 1000
 seed_max = 100
-
 for n_TI in range(n_PXP,n_TI_max+1):
 
-    for h_c in h_c_array:
+    for h_c in np.nditer(h_c_array):
 
         def Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1):
             '''
@@ -48,10 +47,8 @@ for n_TI in range(n_PXP,n_TI_max+1):
             for i in range(1,seed_max):
                 VecProp = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Sparse_time_propagation_True_X_i_{}_{}_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,i)))
                 Fourier_components[i-1,:]= rfft(VecProp)
-            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),
-                                 'Fourier_components_True_X_i_{}_{}_{}.npy'.format(n_PXP, n_TI, h_c)),
-                    Height_norm * np.abs(Fourier_components))
-        #Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
+            np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),'Fourier_components_True_X_i_{}_{}_{}.npy'.format(n_PXP, n_TI, h_c)),Height_norm * np.abs(Fourier_components))
+        Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
         def FFT_Freq(T_start, T_max, T_step):
             '''
@@ -62,11 +59,11 @@ for n_TI in range(n_PXP,n_TI_max+1):
             :return: vector of frequency components
             '''
             Time = np.linspace(T_start, T_max, T_step)
-            Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
+            Freq = rfftfreq(len(Time), d=((T_max-T_start)/T_step)) # Freq * (T_max-T_start) = integer that multiplies 2pi
             if os.path.isfile('PXP_{}_TI_{}_True_X_i/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP, n_TI, h_c, T_max,T_step)) == False:
                 np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP, n_TI, h_c),
                                  'Frequency_T_max_{}_T_step_{}.npy'.format(T_max, T_step)), Freq)
-        #FFT_Freq(T_start, T_max, T_step)
+        FFT_Freq(T_start, T_max, T_step)
 
         def Lorentzian_function(omega, omega_0, gamma, amp):
             '''
@@ -184,7 +181,7 @@ for n_TI in range(n_PXP,n_TI_max+1):
 
         def Gamma_Bootstrap_std(Sample_no):
             '''
-            Bootstrapping of Gamma samples - standard deviation of gamma means
+            Bootstrapping of Gamma samples - standard deviation of gamma means - asking: how far on average is an average (bootstrapped) from total average
             :return: standard deviation of gamma means (bootstrapped) for each h_c
             '''
             data = np.load(os.getcwd()+os.path.join('/PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'gamma_array_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)))
@@ -217,4 +214,4 @@ for n_TI in range(n_PXP,n_TI_max+1):
             np.save(os.path.join('PXP_{}_True_X_i_Gammas_cutoff_{}_{}'.format(n_PXP,Start_cutoff,End_cutoff),'Gamma_errors_confidence_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP,n_TI,h_c,Start_cutoff, End_cutoff)),data_err_confidence)
             np.save(os.path.join('PXP_{}_True_X_i_Gammas_cutoff_{}_{}'.format(n_PXP, Start_cutoff, End_cutoff),'Gamma_error_ave_True_X_i_{}_{}_{}_cutoff_{}_{}.npy'.format(n_PXP, n_TI, h_c, Start_cutoff,End_cutoff)), data_rel_err_new)
 
-        FFT_data_move()
+        #FFT_data_move()

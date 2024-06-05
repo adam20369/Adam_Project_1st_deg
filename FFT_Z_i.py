@@ -10,11 +10,14 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 #from O_z_Oscillations import *
 
+#######################################################################################################################################################################################################################
+#                                                                                CODE FOR ANALYZING FFT OF OSC REALIZATIONS!                                                                                       #
+#######################################################################################################################################################################################################################
 
-n_PXP = 9
-n_TI_max = 14
-h_c_max = 3
-h_c_step=0.1
+n_PXP = 10
+n_TI_max = 13
+h_c_max = 5
+h_c_step=0.2
 h_c_array=np.round(np.arange(0,h_c_max+h_c_step,h_c_step).astype('float'),2)
 T_start = 0
 T_max = 400
@@ -26,7 +29,7 @@ seed_max = 100
 
 for n_TI in range(n_PXP,n_TI_max+1):
 
-    for h_c in h_c_array:
+    for h_c in np.nditer(h_c_array):
 
         def Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1):
             '''
@@ -46,7 +49,7 @@ for n_TI in range(n_PXP,n_TI_max+1):
                 Fourier_components[i-1,:]= rfft(VecProp)
             np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),
                                  'Fourier_components_{}_{}_{}.npy'.format(n_PXP, n_TI, h_c)),Height_norm * np.abs(Fourier_components))
-        #Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
+        Realizations_FFT(n_PXP, n_TI, h_c, T_start, T_max, T_step, Height_norm=1)
 
         def FFT_Freq(T_start, T_max, T_step):
             '''
@@ -57,10 +60,9 @@ for n_TI in range(n_PXP,n_TI_max+1):
             :return: vector of frequency components
             '''
             Time = np.linspace(T_start, T_max, T_step)
-            Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
+            Freq = rfftfreq(len(Time), d=((T_max-T_start)/T_step)) # Freq * (T_max-T_start) = integer that multiplies 2pi
             if os.path.isfile('PXP_{}_TI_{}/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP, n_TI, h_c, T_max,T_step)) == False:
-                np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),
-                                 'Frequency_T_max_{}_T_step_{}.npy'.format(T_max, T_step)), Freq)
+                np.save(os.path.join('PXP_{}_TI_{}/h_c_{}'.format(n_PXP, n_TI, h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max, T_step)), Freq)
         #FFT_Freq(T_start, T_max, T_step)
 
         def Lorentzian_function(omega, omega_0, gamma, amp):

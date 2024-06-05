@@ -45,7 +45,7 @@ def Cluster_FFT_Freq(T_start, T_max, T_step):
     :return: vector of frequency components
     '''
     Time = np.linspace(T_start, T_max, T_step)
-    Freq = rfftfreq(len(Time), d=(T_max/T_step)) # Freq * T_max = integer that multiplies 2pi
+    Freq = rfftfreq(len(Time), d=((T_max-T_start)/T_step)) # Freq * (T_max-T_start) = integer that multiplies 2pi
     if os.path.isfile('PXP_{}_TI_{}_True_X_i/h_c_{}/Frequency_T_max_{}_T_step_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step)) == False:
         np.save(os.path.join('PXP_{}_TI_{}_True_X_i/h_c_{}'.format(n_PXP,n_TI,h_c),'Frequency_T_max_{}_T_step_{}.npy'.format(T_max,T_step)), Freq)
 Cluster_FFT_Freq(T_start, T_max, T_step)

@@ -12,60 +12,60 @@ import scipy.sparse as sp
 from scipy.special import comb
 #from Cluster_Sparse_Osc_Para import *
 
-def Subspace_basis_count(n):
-    '''
-    counts number of Subspace vectors (Fibonacci of n+3 if we start from {0,1})
-    :param n: No of atoms in chain
-    :return: Scalar - No of subspace vectors = fib(n+3)
-    '''
-    start= np.array((0,1))
-    for i in range(0,n+1):
-        start=np.append(start,start[i]+start[i+1])
-    return start[len(start)-1]
-
-def Subspace_basis_count_faster(n):
-    ''' Counts number of Subspace vectors in faster way, with the aid of Binet formula
-    :param n: No of atoms in chain
-    :return: Scalar - No of subspace vectors = fib(n+3)
-
-    '''
-    Fibonacci = np.arange(0,n+3)
-    lengthFibo = len(Fibonacci)
-    sqrtFive= np.sqrt(5)
-    alpha = (1 + sqrtFive) / 2
-    beta = (1 - sqrtFive) / 2
-    F_n = np.rint(((alpha ** Fibonacci)- (beta ** Fibonacci)) / (sqrtFive))
-    return int(F_n[len(F_n)-1])
-
-def PXP_Subspace_Algo(n): #TODO option to add stop condition instead of feeding subspace basis count
-    '''
-    New algorithm of producing PXP subspace from the start
-    :param n: No of atoms
-    :return: PXP constrained subspace matrix (Fib(n+3) x n )
-    '''
-    initial = np.zeros(n)
-    vec1 = initial.copy()
-    vec1[0] = 1
-    single_excited_states = np.identity(n) # base vectors of single excitations, col index of 1 is the row index of course
-    Subspace = np.vstack((initial, single_excited_states.copy()))
-    init_indeces = np.arange(0,n,1)
-    for i in range(1,Subspace_basis_count_faster(n)):
-        Og_One_indeces= np.where(Subspace[i,:] == 1) # returns array of col. indeces of 1's of a specific row of subspace mat
-        # print(Og_One_indeces)
-        Plus_one = np.array(Og_One_indeces)+1
-        Minus_one = np.array(Og_One_indeces)-1
-        One_indeces = np.unique(np.concatenate((np.concatenate((Og_One_indeces, Plus_one),axis=0),Minus_one),axis=0)) # unique array of indeces where one's are not allowed
-        # print(One_indeces)
-        OG_Last = Og_One_indeces[0][np.shape(Og_One_indeces)[1]-1] #Last 1 in subspace vector No. i
-        # print(OG_Last)
-        Boolean = np.isin(init_indeces, One_indeces, invert = True) # searches for One_indeces in init_indeces and returns flipped boolean
-            # print(Boolean)
-        Boolean[np.where(init_indeces < OG_Last)] = False #defining all entries before some entry as false
-            # print(Boolean)
-        Vec = init_indeces.copy()[Boolean] # indeces of all initial vectors that are allowed to add
-            # print(Vec)
-        Subspace = np.vstack((Subspace, single_excited_states[Vec,:]+Subspace[i,:]))
-    return Subspace
+# def Subspace_basis_count(n):
+#     '''
+#     counts number of Subspace vectors (Fibonacci of n+3 if we start from {0,1})
+#     :param n: No of atoms in chain
+#     :return: Scalar - No of subspace vectors = fib(n+3)
+#     '''
+#     start= np.array((0,1))
+#     for i in range(0,n+1):
+#         start=np.append(start,start[i]+start[i+1])
+#     return start[len(start)-1]
+#
+# def Subspace_basis_count_faster(n):
+#     ''' Counts number of Subspace vectors in faster way, with the aid of Binet formula
+#     :param n: No of atoms in chain
+#     :return: Scalar - No of subspace vectors = fib(n+3)
+#
+#     '''
+#     Fibonacci = np.arange(0,n+3)
+#     lengthFibo = len(Fibonacci)
+#     sqrtFive= np.sqrt(5)
+#     alpha = (1 + sqrtFive) / 2
+#     beta = (1 - sqrtFive) / 2
+#     F_n = np.rint(((alpha ** Fibonacci)- (beta ** Fibonacci)) / (sqrtFive))
+#     return int(F_n[len(F_n)-1])
+#
+# def PXP_Subspace_Algo(n):
+#     '''
+#     New algorithm of producing PXP subspace from the start
+#     :param n: No of atoms
+#     :return: PXP constrained subspace matrix (Fib(n+3) x n )
+#     '''
+#     initial = np.zeros(n)
+#     vec1 = initial.copy()
+#     vec1[0] = 1
+#     single_excited_states = np.identity(n) # base vectors of single excitations, col index of 1 is the row index of course
+#     Subspace = np.vstack((initial, single_excited_states.copy()))
+#     init_indeces = np.arange(0,n,1)
+#     for i in range(1,Subspace_basis_count_faster(n)):
+#         Og_One_indeces= np.where(Subspace[i,:] == 1) # returns array of col. indeces of 1's of a specific row of subspace mat
+#         # print(Og_One_indeces)
+#         Plus_one = np.array(Og_One_indeces)+1
+#         Minus_one = np.array(Og_One_indeces)-1
+#         One_indeces = np.unique(np.concatenate((np.concatenate((Og_One_indeces, Plus_one),axis=0),Minus_one),axis=0)) # unique array of indeces where one's are not allowed
+#         # print(One_indeces)
+#         OG_Last = Og_One_indeces[0][np.shape(Og_One_indeces)[1]-1] #Last 1 in subspace vector No. i
+#         # print(OG_Last)
+#         Boolean = np.isin(init_indeces, One_indeces, invert = True) # searches for One_indeces in init_indeces and returns flipped boolean
+#             # print(Boolean)
+#         Boolean[np.where(init_indeces < OG_Last)] = False #defining all entries before some entry as false
+#             # print(Boolean)
+#         Vec = init_indeces.copy()[Boolean] # indeces of all initial vectors that are allowed to add
+#             # print(Vec)
+#         Subspace = np.vstack((Subspace, single_excited_states[Vec,:]+Subspace[i,:]))
+#     return Subspace
 
 #########################################################################################################################################################
 #####                                   GOOD FOR NOTHING CODE I DID IN ORDER TO UNDERSTAND WHAT'S GOING ON                                          #####
@@ -133,8 +133,7 @@ def Full_PXP_TI_inverse_mapping(n_PXP, n_TI, Full_vec):
     TI_base_vec[TI_ind] = 1
     return PXP_algo_base_vec, TI_base_vec
 
-def VecSpan(n_PXP,n_TI,
-              VecState):
+def VecSpan(n_PXP,n_TI,VecState):
     """
     Spans some vector (VecState) in some chosen basis.
     :param Mat: Input matrix of which rows form a basis
@@ -162,9 +161,11 @@ def Evec_Reshape_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np
     '''
     eval, evec = la.eigh((PXP_TI_coupled_Sparse(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m)).todense())
     Ham_Dim = len(eval) #also number of evecs
-    Tensor = np.empty((Subspace_basis_count_faster(n_PXP), 2**(n_TI), Ham_Dim))
+    Tensor = np.zeros((Subspace_basis_count_faster(n_PXP), 2**(n_TI), Ham_Dim))
     for i in range(0, Ham_Dim):
         Tensor[:,:,i]=np.reshape(evec[:,i],(Subspace_basis_count_faster(n_PXP),2**(n_TI)))
+    #np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Evec_h_c_{}_compare.npy'.format(h_c)), evec)
+    #np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Eval_h_c_{}_compare.npy'.format(h_c)), eval)
     return Tensor, eval
 
 
@@ -197,7 +198,7 @@ def Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 gig
         pass
     Tensor, eval = Evec_Reshape_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
     SVD_num = np.minimum(2**(n_TI),Subspace_basis_count_faster(n_PXP))
-    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    SVD_vec_mat = np.zeros((len(eval),SVD_num))
     for i in range(0,len(eval)):
          SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
     np.save(os.path.join('EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Entanglement_h_c_{}.npy'.format(h_c)), SVD_vec_mat)
@@ -214,35 +215,31 @@ def Entanglement_entropy_calc_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - us
     :param h_c: coupling strength
     :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
     '''
-    SVD_vec_mat, eval = Evec_SVD_PXP_TI(n_PXP, n_TI, np.round(h_c,5))
+    SVD_vec_mat, eval = Evec_SVD_PXP_TI(n_PXP, n_TI, np.round(h_c,4))
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
+    plt.scatter(eval, np.round(Entanglement_entropy_vec,32))
+    plt.title('Entanglement vs Energy for {} PXP & {} TI atoms, $h_c$ {} '.format(n_PXP, n_TI, np.round(h_c,4)))
+    plt.xlabel('Energy')
+    plt.ylabel('Entanglement Entropy')
+    #plt.savefig("Figures/Entanglement_Entropy/Entropy_for_PXP_{}_TI_{}_Coup_{}.png".format(n_PXP, n_TI, np.round(h_c,5)))
+    return plt.show()
+
+def EE_PXP_TI_Cluster_Plot(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 giga (8x11 uses 100 Giga)
+    '''
+    plots entanglement entropy of each eigenstate from singular values -sigma^2ln(sigma) for splitting at PXP - TI boundary
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
+    '''
+    SVD_vec_mat = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Entanglement_h_c_{}.npy'.format(h_c)))
+    eval = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}'.format(n_PXP,n_TI),'Eval_h_c_{}.npy'.format(h_c)))
     Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
     plt.scatter(eval, np.round(Entanglement_entropy_vec,32))
     plt.title('Entanglement vs Energy for {} PXP & {} TI atoms, $h_c$ {} '.format(n_PXP, n_TI, np.round(h_c,5)))
     plt.xlabel('Energy')
     plt.ylabel('Entanglement Entropy')
     #plt.savefig("Figures/Entanglement_Entropy/Entropy_for_PXP_{}_TI_{}_Coup_{}.png".format(n_PXP, n_TI, np.round(h_c,5)))
-    return plt.show()
-
-def EE_Avg_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
-    '''
-    Plots average entanglement for given interval
-    :param n_PXP: No. of PXP atoms
-    :param n_TI: No. of TI atoms
-    :param h_c: coupling strength
-    :param interval_width: energy interval width +-delta
-    :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
-    :return: plot of average entanglement vs h_c
-    '''
-    h_c= np.arange(h_c_start,h_c_max+0.1,0.1)
-    avg= np.empty((np.size(h_c)))
-    std= avg.copy()
-    for i in np.nditer(h_c):
-        avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
-    plt.plot(h_c,avg, color='b')
-    plt.title('Average Entanglement vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
-    plt.xlabel('Coupling Strength $h_c$')
-    plt.ylabel('Average Entanglement Entropy')
-    #plt.savefig('Figures/Entanglement_Entropy/Average_Entanglement_Entropy')
     return plt.show()
 
 def Entanglement_entropy_avg_std(n_PXP, n_TI, h_c, interval_width): #8 PXP 10 TI max calc
@@ -273,6 +270,28 @@ def Entanglement_entropy_avg_std(n_PXP, n_TI, h_c, interval_width): #8 PXP 10 TI
     std= (std_left+std_right)/2
     return np.round(average,5), np.round(std,5)
 
+def EE_Avg_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width):
+    '''
+    Plots average entanglement for given interval
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :param interval_width: energy interval width +-delta
+    :param interval_center = h_c!!!!! (moves with the coupling exactly - weird)
+    :return: plot of average entanglement vs h_c
+    '''
+    h_c= np.arange(h_c_start,h_c_max+0.1,0.1)
+    avg= np.zeros((np.size(h_c)))
+    std= avg.copy()
+    for i in np.nditer(h_c):
+        avg[int(np.round(i,1)*10-h_c_start*10)], std[int(np.round(i,1)*10-h_c_start*10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
+    plt.plot(h_c,avg, color='b')
+    plt.title('Average Entanglement vs coupling strength $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
+    plt.xlabel('Coupling Strength $h_c$')
+    plt.ylabel('Average Entanglement Entropy')
+    #plt.savefig('Figures/Entanglement_Entropy/Average_Entanglement_Entropy')
+    return plt.show()
+
 def EE_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width=0.5):
     '''
     Plots average and Standard deviation of entanglement for given interval
@@ -284,7 +303,7 @@ def EE_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width=0.5):
     :return: plot of average entanglement and Standard deviation vs h_c
     '''
     h_c = np.arange(h_c_start, h_c_max + 0.1, 0.1)
-    avg = np.empty((np.size(h_c)))
+    avg = np.zeros((np.size(h_c)))
     std = avg.copy()
     for i in np.nditer(h_c):
         avg[int(np.round(i, 1) * 10 - h_c_start * 10)], std[int(np.round(i, 1) * 10 - h_c_start * 10)] = Entanglement_entropy_avg_std(n_PXP, n_TI, i, interval_width)
@@ -366,7 +385,7 @@ def EE_Avg_Std_Cluster_plot(n_PXP, n_TI,h_c_start, h_c_max,interval_width):
     :return: plot of average entanglement and Standard deviation vs h_c
     '''
     h_c = np.arange(h_c_start, h_c_max + 0.1, 0.1)
-    avg = np.empty((np.size(h_c)))
+    avg = np.zeros((np.size(h_c)))
     std = avg.copy()
     for i in np.nditer(h_c):
         avg[int(np.round(i, 1) * 10 - h_c_start * 10)]  = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}/AVG_STD_width_{}'.format(n_PXP,n_TI,interval_width),'Average_h_c_{}_width_{}.npy'.format(np.round(i,1),interval_width)))
@@ -376,11 +395,11 @@ def EE_Avg_Std_Cluster_plot(n_PXP, n_TI,h_c_start, h_c_max,interval_width):
     plt.title('Average Entanglement vs $h_c$ for {} PXP & {} TI atoms'.format(n_PXP, n_TI))
     plt.xlabel('Coupling Strength $h_c$')
     plt.ylabel('Average Entanglement Entropy')
-    plt.savefig('Figures/Entanglement_Entropy/Average_EE_filled_{}_PXP_{}_TI_{}_max_h_c'.format(n_PXP,n_TI,h_c_max))
+    plt.savefig('Figures/Entanglement_Entropy/Average_EE_filled_{}_PXP_{}_TI_{}_max_h_c_{}_width.png'.format(n_PXP,n_TI,h_c_max,interval_width))
     plt.show()
 
 #Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c)
-#Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=1)
+#Entanglement_entropy_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=0.5)
 
 #################################################################################### XX coupling #############################################################################
 
@@ -395,9 +414,11 @@ def Evec_Reshape_True_X_i_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi
     '''
     eval, evec = la.eigh((PXP_TI_coupled_Sparse_Xi(n_PXP, n_TI, J, h_x, h_z, h_c, h_imp, m)).todense())
     Ham_Dim = len(eval) #also number of evecs
-    Tensor = np.empty((Extended_X_i_Subspace_basis_count_faster(n_PXP), 2**(n_TI), Ham_Dim))
+    Tensor = np.zeros((Extended_X_i_Subspace_basis_count_faster(n_PXP), 2**(n_TI), Ham_Dim))
     for i in range(0, Ham_Dim):
         Tensor[:,:,i]=np.reshape(evec[:,i],(Extended_X_i_Subspace_basis_count_faster(n_PXP),2**(n_TI)))
+    #np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Evec_h_c_{}_True_X_i_compare.npy'.format(h_c)), evec)
+    #np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Eval_h_c_{}_True_X_i_compare.npy'.format(h_c)), eval)
     return Tensor, eval
 
 
@@ -430,14 +451,14 @@ def Evec_SVD_True_X_i_PXP_TI_Cluster(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - us
         pass
     Tensor, eval = Evec_Reshape_True_X_i_PXP_TI(n_PXP, n_TI, h_c, J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
     SVD_num = np.minimum(2**(n_TI),Extended_X_i_Subspace_basis_count_faster(n_PXP))
-    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    SVD_vec_mat = np.zeros((len(eval),SVD_num))
     for i in range(0,len(eval)):
          SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
     np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Entanglement_h_c_{}_True_X_i'.format(h_c)), SVD_vec_mat)
     np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Eval_h_c_{}_True_X_i'.format(h_c)), eval)
     return
 
-#Evec_SVD_PXP_TI_Cluster(n_PXP, n_TI, h_c)
+#Evec_SVD_True_X_i_PXP_TI_Cluster(n_PXP, n_TI, h_c)
 
 def Entanglement_entropy_calc_True_X_i_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 giga (8x11 uses 100 Giga)
     ''' XX coupling!
@@ -456,6 +477,25 @@ def Entanglement_entropy_calc_True_X_i_PXP_TI(n_PXP, n_TI, h_c): #TOP NUMBER IS 
     #plt.savefig("Figures/Entanglement_Entropy/Entropy_for_PXP_{}_TI_{}_Coup_{}.png".format(n_PXP, n_TI, np.round(h_c,5)))
     return plt.show()
 
+def EE_PXP_TI_True_X_i_Cluster_Plot(n_PXP, n_TI, h_c): #TOP NUMBER IS 8x10 - uses 25 giga (8x11 uses 100 Giga)
+    '''
+    plots entanglement entropy of each eigenstate XX Coupling from singular values -sigma^2ln(sigma) for splitting at PXP - TI boundary
+    :param n_PXP: No. of PXP atoms
+    :param n_TI: No. of TI atoms
+    :param h_c: coupling strength
+    :return: Plot of Entanglement entropy vs energy for each eigenstate & eigenenergy
+    '''
+    SVD_vec_mat = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Entanglement_h_c_{}_True_X_i.npy'.format(h_c)))
+    eval = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i'.format(n_PXP,n_TI),'Eval_h_c_{}_True_X_i.npy'.format(h_c)))
+    print(eval)
+    Entanglement_entropy_vec = -np.sum(2*(SVD_vec_mat**2)*np.nan_to_num(np.log(SVD_vec_mat)),axis=1)
+    print(Entanglement_entropy_vec)
+    plt.scatter(eval, np.round(Entanglement_entropy_vec,32))
+    plt.title('Entanglement vs Energy for {} PXP & {} TI atoms, XX coupling $h_c$ {} '.format(n_PXP, n_TI, np.round(h_c,5)))
+    plt.xlabel('Energy')
+    plt.ylabel('Entanglement Entropy')
+    #plt.savefig("Figures/Entanglement_Entropy/Entropy_for_PXP_{}_TI_{}_Coup_{}.png".format(n_PXP, n_TI, np.round(h_c,5)))
+    return plt.show()
 
 def Entanglement_entropy_True_X_i_avg_std(n_PXP, n_TI, h_c, interval_width): #8 PXP 10 TI max calc
     ''' XX coupling!
@@ -518,7 +558,7 @@ def EE_True_X_i_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width=0.5)
     :return: plot of average entanglement and Standard deviation vs h_c
     '''
     h_c = np.arange(h_c_start, h_c_max + 0.1, 0.1)
-    avg = np.empty((np.size(h_c)))
+    avg = np.zeros((np.size(h_c)))
     std = avg.copy()
     for i in np.nditer(h_c):
         avg[int(np.round(i, 1) * 10 - h_c_start * 10)], std[int(np.round(i, 1) * 10 - h_c_start * 10)] = Entanglement_entropy_True_X_i_avg_std(n_PXP, n_TI, np.round(i,2), interval_width)
@@ -530,7 +570,7 @@ def EE_True_X_i_Avg_Std_plot(n_PXP, n_TI,h_c_start, h_c_max, interval_width=0.5)
     plt.ylabel('Average Entanglement Entropy')
     plt.show()
 
-def Entanglement_entropy_True_X_i_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width): #8 PXP 10 TI max calc
+def Entanglement_entropy_True_X_i_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width):
     ''' XX coupling
     Calculating entanglement entropy average and standard deviation for some energy interval from cluster data!!
     :param n_PXP: No. of PXP atoms
@@ -557,8 +597,8 @@ def Entanglement_entropy_True_X_i_avg_std_Cluster(n_PXP, n_TI, h_c, interval_wid
         os.mkdir('EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width))
     except:
         pass
-    np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'Average_h_c_{}_width_{}_True_X_i'.format(h_c,interval_width)), average)
-    np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'STD_h_c_{}_width_{}_True_X_i'.format(h_c,interval_width)), std)
+    np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'Average_h_c_{}_width_{}_True_X_i.npy'.format(h_c,interval_width)), average)
+    np.save(os.path.join('EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'STD_h_c_{}_width_{}_True_X_i.npy'.format(h_c,interval_width)), std)
     return
 
 
@@ -573,25 +613,25 @@ def EE_True_X_i_Avg_Std_Cluster_plot(n_PXP, n_TI,h_c_start, h_c_max,interval_wid
     :return: plot of average entanglement and Standard deviation vs h_c
     '''
     h_c = np.arange(h_c_start, h_c_max + 0.1, 0.1)
-    avg = np.empty((np.size(h_c)))
+    avg = np.zeros((np.size(h_c)))
     std = avg.copy()
     for i in np.nditer(h_c):
-        avg[int(np.round(i, 1) * 10 - h_c_start * 10)]  = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'Average_h_c_{}_width_{}.npy'.format(np.round(i,1),interval_width)))
-        std[int(np.round(i, 1) * 10 - h_c_start * 10)] = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'STD_h_c_{}_width_{}.npy'.format(np.round(i,1),interval_width)))
+        avg[int(np.round(i, 1) * 10 - h_c_start * 10)]  = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'Average_h_c_{}_width_{}_True_X_i.npy'.format(np.round(i,1),interval_width)))
+        std[int(np.round(i, 1) * 10 - h_c_start * 10)] = np.load(os.getcwd()+os.path.join('/EE_PXP_{}_TI_{}_True_X_i/AVG_STD_width_{}_True_X_i'.format(n_PXP,n_TI,interval_width),'STD_h_c_{}_width_{}_True_X_i.npy'.format(np.round(i,1),interval_width)))
     plt.plot(h_c[:], avg[:], linestyle='-',color='b')
     plt.fill_between(h_c[:], avg[:] - std[:], avg[:]+std[:], alpha=0.4)
     plt.title('Average Entanglement vs $h_c$ for {} PXP & {} TI atoms XX coupl'.format(n_PXP, n_TI))
     plt.xlabel('Coupling Strength $h_c$')
     plt.ylabel('Average Entanglement Entropy')
-    plt.savefig('Figures/Entanglement_Entropy/Average_EE_True_X_i_filled_{}_PXP_{}_TI_{}_max_h_c'.format(n_PXP,n_TI,h_c_max))
+    plt.savefig('Figures/Entanglement_Entropy/Average_EE_True_X_i_filled_{}_PXP_{}_TI_{}_max_h_c_{}_width.png'.format(n_PXP,n_TI,h_c_max,interval_width))
     plt.show()
 
 #Evec_SVD_True_X_i_PXP_TI_Cluster(n_PXP, n_TI, h_c)
-#Entanglement_entropy_True_X_i_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=1)
+#Entanglement_entropy_True_X_i_avg_std_Cluster(n_PXP, n_TI, h_c, interval_width=0.5)
 
-#####################################################################################################################################################################
-#                                                                                   PXP-PXP CUT EE CODE                                                             #
-######################################################################################################################################################################
+##############################################################################################################################################################################################################################################
+#                                                                                                               PXP-PXP CUT EE CODE                                                                                                          #
+#############################################################################################################################################################################################################################################
 
 #####                                                             PXP-PXP CUT EE CODE FOR PXP OBC ONLY                                                            #####
 
@@ -741,7 +781,7 @@ def Evec_SVD_PXP_PXP_Cluster(n_PXP): #TOP NUMBER TO CALC IS????
         pass
     Tensor, eval = PXP_PXP_schmidt_decomposition_matrix_efficient(n_PXP,PXP_Subspace_Algo)
     SVD_num = np.minimum(np.shape(Tensor)[0],np.shape(Tensor)[1])
-    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    SVD_vec_mat = np.zeros((len(eval),SVD_num))
     for i in range(0,len(eval)):
          SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
     np.save(os.path.join('EE_PXP_{}_OBC_CUT'.format(n_PXP),'SVD.npy'), SVD_vec_mat)
@@ -908,7 +948,7 @@ def Evec_SVD_PXP_PXP_TI_Cluster(n_PXP,n_TI,h_c): #TOP NUMBER TO CALC IS????
         pass
     Tensor, eval =  PXP_PXP_TI_schmidt_decomposition_matrix_efficient(n_PXP, n_TI, np.round(h_c,5), J=1, h_x=np.sin(0.485 * np.pi), h_z=np.cos(0.485 * np.pi), h_imp=0, m=2)
     SVD_num = np.minimum(np.shape(Tensor)[0],np.shape(Tensor)[1])
-    SVD_vec_mat = np.empty((len(eval),SVD_num))
+    SVD_vec_mat = np.zeros((len(eval),SVD_num))
     for i in range(0,len(eval)):
          SVD_vec_mat[i,:]= scla.svdvals(Tensor[:,:,i])
     np.save(os.path.join('EE_PXP_PXPTI_CUT_PXP_{}'.format(n_PXP),'TI_{}_h_c_{}_SVD.npy'.format(n_TI,np.round(h_c,5))), SVD_vec_mat)

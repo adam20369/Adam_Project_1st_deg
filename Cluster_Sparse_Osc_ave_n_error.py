@@ -56,13 +56,13 @@ def Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step):
         os.mkdir('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}'.format(n_PXP,n_TI,T_max,T_step,h_c))
     except:
         pass
-    if os.path.isfile('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}/Sparse_time_propagation_{}_{}_{}_T_max_{}_step_{}_sample_{}.npy'.format(n_PXP,n_TI,T_max,T_step,h_c,n_PXP,n_TI,h_c,T_max,T_step,seed)) == False:
+    if os.path.isfile('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}/Sparse_time_propagation_{}_{}_{}_T_max_{}_Step_{}_sample_{}.npy'.format(n_PXP,n_TI,T_max,T_step,h_c,n_PXP,n_TI,h_c,T_max,T_step,seed)) == False:
         Initialstate = Neel_EBE_Haar(n_PXP, n_TI)
         J = 1
         h_x = np.sin(0.485 * np.pi)
         h_z = np.cos(0.485 * np.pi)
         Sandwich = Cluster_Sparse_Time_prop(n_PXP, n_TI, Initialstate, J, h_x, h_z, h_c, T_start, T_max, T_step,h_imp=0, m=2)
-        np.save(os.path.join('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}'.format(n_PXP,n_TI,T_max,T_step,h_c),'Sparse_time_propagation_{}_{}_{}_T_max_{}_step_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step,seed)), Sandwich)
+        np.save(os.path.join('PXP_{}_TI_{}_T_max_{}_Step_{}/h_c_{}'.format(n_PXP,n_TI,T_max,T_step,h_c),'Sparse_time_propagation_{}_{}_{}_T_max_{}_Step_{}_sample_{}.npy'.format(n_PXP,n_TI,h_c,T_max,T_step,seed)), Sandwich)
     return
 
 Run_Cluster_Sparse_Time_prop(n_PXP, n_TI, h_c ,T_start, T_max, T_step)
